@@ -68,7 +68,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                     if (!session.exists(ref)) {
                         DocumentModel container = session.createDocumentModel(
                                 parentPath, id,
-                                Constants.ENTITY_CONTAINTER_TYPE);
+                                Constants.ENTITY_CONTAINER_TYPE);
                         container.setPropertyValue("dc:title", ENTITY_CONTAINER_TITLE);
                         session.createDocument(container);
                         session.save();

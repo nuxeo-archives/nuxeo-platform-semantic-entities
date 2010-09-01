@@ -16,10 +16,13 @@
  */
 package org.nuxeo.ecm.platform.semanticentities;
 
-public interface Constants {
+public final class Constants {
 
-    public static final String ENTITY_CONTAINTER_TYPE = "EntityContainer";
+    public static final String ENTITY_CONTAINER_TYPE = "EntityContainer";
 
     public static final String ADD_OCCURRENCE_PERMISSION = "AddOccurrence";
+
+    private Constants() {
+    }
 
 }

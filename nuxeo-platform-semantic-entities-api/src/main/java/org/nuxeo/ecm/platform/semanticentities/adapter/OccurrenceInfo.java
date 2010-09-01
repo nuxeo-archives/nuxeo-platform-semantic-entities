@@ -26,7 +26,6 @@ import java.util.Map;
  * sentences).
  *
  * @author ogrisel
- *
  */
 public class OccurrenceInfo {
 
@@ -59,9 +58,9 @@ public class OccurrenceInfo {
             throw new IllegalArgumentException(
                     "Cannot build OccurrenceInfo instance without a mention");
         }
-        if (context.indexOf(mention) == -1) {
+        if (!context.contains(mention)) {
             throw new IllegalArgumentException(String.format(
-                    "'%s' should occurre in context '%s'", mention, context));
+                    "'%s' should occur in context '%s'", mention, context));
         }
         this.context = context;
         this.mention = mention;
@@ -118,23 +117,30 @@ public class OccurrenceInfo {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         OccurrenceInfo other = (OccurrenceInfo) obj;
         if (context == null) {
-            if (other.context != null)
+            if (other.context != null) {
                 return false;
-        } else if (!context.equals(other.context))
+            }
+        } else if (!context.equals(other.context)) {
             return false;
+        }
         if (mention == null) {
-            if (other.mention != null)
+            if (other.mention != null) {
                 return false;
-        } else if (!mention.equals(other.mention))
+            }
+        } else if (!mention.equals(other.mention)) {
             return false;
+        }
         return true;
     }
 

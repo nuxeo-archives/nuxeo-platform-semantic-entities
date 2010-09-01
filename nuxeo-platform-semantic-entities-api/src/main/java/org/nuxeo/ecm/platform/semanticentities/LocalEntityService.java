@@ -45,9 +45,8 @@ public interface LocalEntityService {
      *
      * @return the DocumentModel of type EntityContainer (create it if missing)
      *         or null if the user does not have the permission to see it
-     * @throws ClientException
      */
-    public DocumentModel getEntityContainer(CoreSession session)
+    DocumentModel getEntityContainer(CoreSession session)
             throws ClientException;
 
     /**
@@ -58,7 +57,7 @@ public interface LocalEntityService {
      * @param maxSuggestions maximum number of entities to suggest
      * @return a list of maximum maxSuggestions matching entities
      */
-    public List<DocumentModel> suggestEntity(CoreSession session,
+    List<DocumentModel> suggestEntity(CoreSession session,
             String keywords, String type, int maxSuggestions)
             throws ClientException;
 
@@ -79,7 +78,7 @@ public interface LocalEntityService {
      * @param endPosInContext
      * @return the DocumentModel of type Occurrence holding the relation
      */
-    public OccurrenceRelation addOccurrence(CoreSession session,
+    OccurrenceRelation addOccurrence(CoreSession session,
             DocumentRef docRef, DocumentRef entityRef, String quoteContext,
             int startPosInContext, int endPosInContext) throws ClientException;
 
@@ -93,9 +92,8 @@ public interface LocalEntityService {
      * @param entityRef the id of the entity referred to by the document snippet
      * @param occurrences list of occurrence data to add to the relationship
      * @return an OccurrenceRelation holding the aggregated occurrence data
-     * @throws ClientException
      */
-    public OccurrenceRelation addOccurrences(CoreSession session,
+    OccurrenceRelation addOccurrences(CoreSession session,
             DocumentRef docRef, DocumentRef entityRef,
             List<OccurrenceInfo> occurrences) throws ClientException;
 
@@ -108,7 +106,7 @@ public interface LocalEntityService {
      * @param entityRef the reference of the targeted entity
      * @return an instance of OccurrenceRelation or null
      */
-    public OccurrenceRelation getOccurrenceRelation(CoreSession session,
+    OccurrenceRelation getOccurrenceRelation(CoreSession session,
             DocumentRef documentRef, DocumentRef entityRef)
             throws ClientException;
 
@@ -120,7 +118,7 @@ public interface LocalEntityService {
      * @param entityType the Nuxeo type of entities to lookup (can be null)
      * @return a paginated collection of matching entities
      */
-    public PageProvider<DocumentModel> getRelatedEntities(CoreSession session,
+    PageProvider<DocumentModel> getRelatedEntities(CoreSession session,
             DocumentRef docRef, String entityType) throws ClientException;
 
     /**
@@ -131,7 +129,7 @@ public interface LocalEntityService {
      * @param documentType the Nuxeo type of documents to lookup (can be null)
      * @return a paginated collection of matching entities
      */
-    public PageProvider<DocumentModel> getRelatedDocuments(CoreSession session,
+    PageProvider<DocumentModel> getRelatedDocuments(CoreSession session,
             DocumentRef entityRef, String documentType) throws ClientException;
 
 }

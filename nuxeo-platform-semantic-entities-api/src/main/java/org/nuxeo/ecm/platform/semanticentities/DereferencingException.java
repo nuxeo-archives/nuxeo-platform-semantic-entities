@@ -23,7 +23,6 @@ import java.io.IOException;
  * a network or remote server problem.
  *
  * @author Olivier Grisel <ogrisel@nuxeo.com>
- *
  */
 public class DereferencingException extends IOException {
 

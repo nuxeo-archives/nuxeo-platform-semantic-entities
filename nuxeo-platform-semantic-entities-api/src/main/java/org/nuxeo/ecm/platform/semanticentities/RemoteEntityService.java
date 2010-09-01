@@ -34,6 +34,6 @@ public interface RemoteEntityService {
      *         or null if the remote resource does not match any remote source
      *         handler.
      */
-    public DocumentModel dereference(CoreSession session, URI remoteEntity) throws DereferencingException;
+    DocumentModel dereference(CoreSession session, URI remoteEntity) throws DereferencingException;
 
 }

@@ -39,20 +39,17 @@ public interface OccurrenceRelation {
     /**
      * @return the reference of the document that holds the text quotes
      *         mentioning the entity
-     * @throws ClientException
      */
     DocumentRef getSourceDocumentRef() throws ClientException;
 
     /**
      * @return the reference of the entity that is mentioned by the document
-     * @throws ClientException
      */
     DocumentRef getTargetEntityRef() throws ClientException;
 
     /**
      * @return the snippet info and the precise locations of the mentioned names
      *         inside those of snippets
-     * @throws ClientException
      */
     List<OccurrenceInfo> getOccurrences() throws ClientException;
 
@@ -60,8 +57,6 @@ public interface OccurrenceRelation {
      * Merge the list of occurrences with the existing occurrence info held by
      * the underlying document model using. Remove the duplicated entries
      * without altering the ordering.
-     *
-     * @throws ClientException
      */
     void addOccurrences(List<OccurrenceInfo> occurrences)
             throws ClientException;
@@ -69,8 +64,6 @@ public interface OccurrenceRelation {
     /**
      * Replace existing occurrences with the a new list of occurrence info.
      * Remove the duplicated entries without altering the ordering.
-     *
-     * @throws ClientException
      */
     void setOccurrences(List<OccurrenceInfo> occurrences)
             throws ClientException;
