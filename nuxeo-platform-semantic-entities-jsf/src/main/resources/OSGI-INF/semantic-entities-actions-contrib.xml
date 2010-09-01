@@ -20,6 +20,7 @@
 
   <extension target="org.nuxeo.ecm.platform.actions.ActionService"
     point="filters">
+
     <filter id="canBrowseEntityContainer">
       <rule grant="true">
         <condition>#{canBrowseEntityContainer}</condition>
@@ -30,6 +31,12 @@
       <rule grant="true">
         <permission>AddChildren</permission>
         <type>EntityContainer</type>
+      </rule>
+    </filter>
+
+    <filter id="view" append="true">
+      <rule grant="false">
+        <schema>entity</schema>
       </rule>
     </filter>
 
