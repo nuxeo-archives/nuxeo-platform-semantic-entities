@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Nuxeo Platform Semantic Entities Core
+Bundle-SymbolicName: org.nuxeo.ecm.platform.semanticentities.core
+Bundle-Localization: plugin
+Bundle-Vendor: Nuxeo
+Bundle-Category: runtime
+Require-Bundle: org.nuxeo.ecm.core.api
+Nuxeo-Component: OSGI-INF/semantic-entities-core-types-contrib.xml,
+  OSGI-INF/semantic-entities-service.xml,
+  OSGI-INF/semantic-entities-document-adapters-contrib.xml,
+  OSGI-INF/semantic-entities-permissions-contrib.xml

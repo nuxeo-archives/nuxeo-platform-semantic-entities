@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<xs:schema targetNamespace="http://www.nuxeo.org/ecm/schemas/occurrence/"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  xmlns:nxs="http://www.nuxeo.org/ecm/schemas/occurrence/">
+
+  <xs:element name="quotes" type="nxs:quoteList" />
+
+  <xs:complexType name="quoteList">
+    <xs:sequence>
+      <xs:element name="quoteItem" type="nxs:quoteItem"
+        minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="quoteItem">
+    <xs:sequence>
+      <xs:element name="text" type="xs:string" />
+      <xs:element name="startPos" type="xs:int" />
+      <xs:element name="endPos" type="xs:int" />
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>

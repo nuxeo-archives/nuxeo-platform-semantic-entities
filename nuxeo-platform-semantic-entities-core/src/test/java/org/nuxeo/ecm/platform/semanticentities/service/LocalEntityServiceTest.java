@@ -1,0 +1,326 @@
+package org.nuxeo.ecm.platform.semanticentities.service;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.GregorianCalendar;
+import java.util.List;
+
+import org.nuxeo.ecm.core.api.ClientException;
+import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.PageProvider;
+import org.nuxeo.ecm.core.event.EventService;
+import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
+import org.nuxeo.ecm.platform.semanticentities.Constants;
+import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
+import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceInfo;
+import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
+import org.nuxeo.runtime.api.Framework;
+
+public class LocalEntityServiceTest extends SQLRepositoryTestCase {
+
+    LocalEntityService service;
+
+    private DocumentModel john;
+
+    private DocumentModel johndoe;
+
+    private DocumentModel beatles;
+
+    private DocumentModel liverpool;
+
+    private DocumentModel doc1;
+
+    private DocumentModel doc2;
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        // necessary for the fulltext indexer
+        deployBundle("org.nuxeo.ecm.core.convert.api");
+        deployBundle("org.nuxeo.ecm.core.convert");
+        deployBundle("org.nuxeo.ecm.core.convert.plugins");
+
+        // semantic entities types
+        deployBundle("org.nuxeo.ecm.platform.semanticentities.core");
+
+        // CMIS query maker
+        deployBundle("org.nuxeo.ecm.core.chemistry.impl");
+
+        // initialize the session field
+        openSession();
+
+        service = Framework.getService(LocalEntityService.class);
+        assertNotNull(service);
+        makeSomeDocuments();
+    }
+
+    public void makeSomeDocuments() throws ClientException {
+        doc1 = session.createDocumentModel("/", "doc1", "File");
+        doc1.setPropertyValue("dc:title", "A short bio for John");
+        doc1.setPropertyValue("dc:description",
+                "John Lennon was born in Liverpool in 1940. John was a musician.");
+        doc1 = session.createDocument(doc1);
+
+        doc2 = session.createDocumentModel("/", "doc2", "File");
+        doc2.setPropertyValue("dc:title", "John Lennon is not a lemon");
+        doc2.setPropertyValue("dc:description",
+                "John Lennon is not a lemon despite his yellow submarine.");
+        doc2 = session.createDocument(doc2);
+
+        session.save(); // force write to SQL backend
+        Framework.getLocalService(EventService.class).waitForAsyncCompletion();
+    }
+
+    public void makeSomeEntities() throws ClientException {
+        DocumentModel container = service.getEntityContainer(session);
+        assertNotNull(container);
+        assertEquals(Constants.ENTITY_CONTAINTER_TYPE, container.getType());
+
+        john = session.createDocumentModel(container.getPathAsString(), null,
+                "Person");
+        john.setPropertyValue("dc:title", "John Lennon");
+        john.setPropertyValue(
+                "entity:summary",
+                "John Winston Ono Lennon, MBE (9 October 1940 – 8 December 1980)"
+                        + " was an English rock musician, singer-songwriter, author, and peace"
+                        + " activist who gained worldwide fame as one of the founding members of"
+                        + " The Beatles.");
+        john.setPropertyValue(
+                "entity:sameas",
+                (Serializable) Arrays.asList("http://dbpedia.org/resource/John_Lennon"));
+        john.setPropertyValue(
+                "entity:types",
+                (Serializable) Arrays.asList("http://dbpedia.org/ontology/MusicalArtist"));
+        john.setPropertyValue("person:birthDate", new GregorianCalendar(1940,
+                10, 9));
+        john.setPropertyValue("person:birthDate", new GregorianCalendar(1980,
+                12, 8));
+        john = session.createDocument(john);
+
+        // add another john
+        johndoe = session.createDocumentModel(container.getPathAsString(),
+                null, "Person");
+        johndoe.setPropertyValue("dc:title", "John Doe");
+        johndoe = session.createDocument(johndoe);
+
+        beatles = session.createDocumentModel(container.getPathAsString(),
+                null, "Organization");
+        beatles.setPropertyValue("dc:title", "The Beatles");
+        beatles.setPropertyValue(
+                "entity:summary",
+                "The Beatles were an English rock band, formed in Liverpool in 1960"
+                        + " and one of the most commercially successful and critically acclaimed"
+                        + " acts in the history of popular music.");
+        beatles.setPropertyValue(
+                "entity:sameas",
+                (Serializable) Arrays.asList("http://dbpedia.org/resource/The_Beatles"));
+        beatles.setPropertyValue(
+                "entity:types",
+                (Serializable) Arrays.asList("http://dbpedia.org/ontology/Band"));
+        beatles = session.createDocument(beatles);
+
+        liverpool = session.createDocumentModel(container.getPathAsString(),
+                null, "Place");
+        liverpool.setPropertyValue("dc:title", "Liverpool");
+        liverpool.setPropertyValue(
+                "entity:summary",
+                "Liverpool is a city and metropolitan borough of Merseyside, England, along"
+                        + " the eastern side of the Mersey Estuary. It was founded as a borough"
+                        + " in 1207 and was granted city status in 1880.");
+        liverpool.setPropertyValue(
+                "entity:sameas",
+                (Serializable) Arrays.asList("http://dbpedia.org/resource/Liverpool"));
+        liverpool.setPropertyValue(
+                "entity:types",
+                (Serializable) Arrays.asList("http://dbpedia.org/ontology/City"));
+        liverpool.setPropertyValue("place:latitude", 53.4);
+        liverpool.setPropertyValue("place:longitude", -2.983);
+        liverpool = session.createDocument(liverpool);
+        session.save();
+        Framework.getLocalService(EventService.class).waitForAsyncCompletion();
+    }
+
+    public void testCreateEntities() throws ClientException {
+        makeSomeEntities();
+    }
+
+    @SuppressWarnings("unchecked")
+    public void testAddOccurrences() throws Exception {
+        makeSomeEntities();
+
+        // fetch the initial john popularity for later comparison
+        double pop0 = john.getProperty("entity:popularity").getValue(
+                Double.class);
+
+        OccurrenceRelation occ1 = service.addOccurrence(session, doc1.getRef(),
+                john.getRef(), "John Lennon was born in Liverpool in 1940.", 0,
+                11);
+        assertNotNull(occ1);
+        john = session.getDocument(john.getRef());
+        // John Lennon is the main entity name, hence not stored in the altnames
+        // field
+        assertTrue(john.getProperty("entity:altnames").getValue(List.class).isEmpty());
+
+        // check the increase in popularity
+        double pop1 = john.getProperty("entity:popularity").getValue(
+                Double.class);
+        assertTrue(pop1 > pop0);
+
+        OccurrenceRelation occ2 = service.addOccurrence(session, doc1.getRef(),
+                john.getRef(), "John was a musician.", 0, 4);
+        assertNotNull(occ2);
+        john = session.getDocument(john.getRef());
+        // John is not the exact main entity name, hence stored in the altnames
+        // field of the entity to improve fulltext lookup quality of the entity
+        // in the future
+        assertEquals(new ArrayList<String>(
+                john.getProperty("entity:altnames").getValue(List.class)),
+                Arrays.asList("John"));
+        // check the popularity is still the same since this is an occurrence
+        // from the same document
+        double pop2 = john.getProperty("entity:popularity").getValue(
+                Double.class);
+        assertTrue(pop2 == pop1);
+
+        assertEquals(occ1.getOccurrenceDocument().getRef(),
+                occ2.getOccurrenceDocument().getRef());
+        List<OccurrenceInfo> occurrences = occ2.getOccurrences();
+        assertEquals(2, occurrences.size());
+        assertEquals("John Lennon", occurrences.get(0).mention);
+        assertEquals(0, occurrences.get(0).startPosInContext);
+        assertEquals(11, occurrences.get(0).endPosInContext);
+        assertEquals("John", occurrences.get(1).mention);
+
+        // add an occurrence from another document
+        OccurrenceRelation occ3 = service.addOccurrence(session, doc2.getRef(),
+                john.getRef(), "John Lennon is not a lemon.", 0, 11);
+
+        // check the increase in popularity
+        john = session.getDocument(john.getRef());
+        double pop3 = john.getProperty("entity:popularity").getValue(
+                Double.class);
+        assertTrue(pop3 > pop2);
+
+        assertNotNull(occ3);
+        assertEquals(1, occ3.getOccurrences().size());
+        assertEquals("John Lennon", occ3.getOccurrences().get(0).mention);
+        assertEquals(0, occ3.getOccurrences().get(0).startPosInContext);
+        assertEquals(11, occ3.getOccurrences().get(0).endPosInContext);
+    }
+
+    public void testGetRelatedDocumentsAndEntities() throws Exception {
+        // create some entities in the KB and an unrelated document
+        makeSomeEntities();
+
+        PageProvider<DocumentModel> johnDocs = service.getRelatedDocuments(
+                session, john.getRef(), null);
+        assertEquals(0L, johnDocs.getCurrentPage().size());
+
+        PageProvider<DocumentModel> doc1Entities = service.getRelatedEntities(
+                session, doc1.getRef(), null);
+        assertEquals(0L, doc1Entities.getCurrentPage().size());
+
+        // add a relation between John and his bio
+        service.addOccurrence(session, doc1.getRef(), john.getRef(),
+                "John Lennon was born in Liverpool in 1940.", 0, 11);
+
+        johnDocs = service.getRelatedDocuments(session, john.getRef(), null);
+        assertEquals(1L, johnDocs.getCurrentPage().size());
+        DocumentModel doc0 = johnDocs.getCurrentPage().get(0);
+        assertEquals("A short bio for John", doc0.getTitle());
+
+        doc1Entities = service.getRelatedEntities(session, doc1.getRef(), null);
+        assertEquals(1L, doc1Entities.getCurrentPage().size());
+        DocumentModel ent0 = doc1Entities.getCurrentPage().get(0);
+        assertEquals("John Lennon", ent0.getPropertyValue("dc:title"));
+
+        // add a relation between Liverpool and John's bio
+        service.addOccurrence(session, doc1.getRef(), liverpool.getRef(),
+                "John was born in Liverpool in 1940.", 17, 26);
+
+        // John still has only one related document, and Liverpool too
+        johnDocs = service.getRelatedDocuments(session, john.getRef(), null);
+        assertEquals(1L, johnDocs.getCurrentPage().size());
+        doc0 = johnDocs.getCurrentPage().get(0);
+        assertEquals("A short bio for John", doc0.getTitle());
+
+        PageProvider<DocumentModel> liverpoolDocs = service.getRelatedDocuments(
+                session, liverpool.getRef(), null);
+        assertEquals(1L, liverpoolDocs.getCurrentPage().size());
+        doc0 = liverpoolDocs.getCurrentPage().get(0);
+        assertEquals("A short bio for John", doc0.getTitle());
+
+        // the bio is hence now related to two entities
+        doc1Entities = service.getRelatedEntities(session, doc1.getRef(), null);
+        assertEquals(2L, doc1Entities.getCurrentPage().size());
+        ent0 = doc1Entities.getCurrentPage().get(0);
+        assertEquals("John Lennon", ent0.getPropertyValue("dc:title"));
+        DocumentModel ent1 = doc1Entities.getCurrentPage().get(1);
+        assertEquals("Liverpool", ent1.getPropertyValue("dc:title"));
+
+        // We can restrict the entities to lookup by type
+        doc1Entities = service.getRelatedEntities(session, doc1.getRef(),
+                "Person");
+        assertEquals(1L, doc1Entities.getCurrentPage().size());
+        ent0 = doc1Entities.getCurrentPage().get(0);
+        assertEquals("John Lennon", ent0.getPropertyValue("dc:title"));
+
+        doc1Entities = service.getRelatedEntities(session, doc1.getRef(),
+                "Place");
+        assertEquals(1L, doc1Entities.getCurrentPage().size());
+        ent0 = doc1Entities.getCurrentPage().get(0);
+        assertEquals("Liverpool", ent1.getPropertyValue("dc:title"));
+    }
+
+    public void testSuggestEntitiesEmptyKB() throws ClientException {
+        List<DocumentModel> suggestions = service.suggestEntity(session,
+                "John", null, 3);
+        assertTrue(suggestions.isEmpty());
+    }
+
+    public void testSuggestEntities() throws ClientException {
+        makeSomeEntities();
+
+        List<DocumentModel> suggestions = service.suggestEntity(session,
+                "John", "Person", 3);
+        assertEquals(2, suggestions.size());
+        // by default the popularities are identical hence the ordering is
+        // undefined
+        assertTrue(suggestions.contains(johndoe));
+        assertTrue(suggestions.contains(john));
+
+        suggestions = service.suggestEntity(session, "Lennon John", "Person", 3);
+        assertEquals(1, suggestions.size());
+        assertEquals(john, suggestions.get(0));
+
+        // make Lennon more popular my adding occurrences pointing to him
+        service.addOccurrence(session, doc1.getRef(), john.getRef(),
+                "John Lennon was born in Liverpool in 1940.", 0, 11);
+
+        // Lennon is now the top person for the "John" query
+        suggestions = service.suggestEntity(session, "John", "Person", 3);
+        assertEquals(2, suggestions.size());
+        assertEquals(john, suggestions.get(0));
+        assertEquals(johndoe, suggestions.get(1));
+    }
+
+    public void testGetOccurrenceRelation() throws Exception {
+        makeSomeEntities();
+        OccurrenceRelation relation = service.getOccurrenceRelation(session,
+                doc1.getRef(), john.getRef());
+        assertNull(relation);
+
+        List<OccurrenceInfo> mentions = Arrays.asList(new OccurrenceInfo(
+                "John Lennon", "John Lennon was born in Liverpool in 1940."),
+                new OccurrenceInfo("John", "John was a musician."));
+        service.addOccurrences(session, doc1.getRef(), john.getRef(), mentions);
+
+        relation = service.getOccurrenceRelation(session, doc1.getRef(),
+                john.getRef());
+        assertNotNull(relation);
+        assertEquals(doc1.getRef(), relation.getSourceDocumentRef());
+        assertEquals(john.getRef(), relation.getTargetEntityRef());
+        assertEquals(mentions, relation.getOccurrences());
+    }
+}
