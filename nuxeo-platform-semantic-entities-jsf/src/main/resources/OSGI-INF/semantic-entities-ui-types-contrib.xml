@@ -40,6 +40,9 @@
       <category>SimpleDocument</category>
       <description>Person.description</description>
       <default-view>view_documents</default-view>
+      <layouts mode="summary">
+        <layout>entity_summary_layout</layout>
+      </layouts>
       <layouts mode="any">
         <layout>entity_heading</layout>
       </layouts>
@@ -53,6 +56,9 @@
       <category>SimpleDocument</category>
       <description>Organization.description</description>
       <default-view>view_documents</default-view>
+      <layouts mode="summary">
+        <layout>entity_summary_layout</layout>
+      </layouts>
       <layouts mode="any">
         <layout>entity_heading</layout>
       </layouts>
@@ -66,6 +72,9 @@
       <category>SimpleDocument</category>
       <description>Place.description</description>
       <default-view>view_documents</default-view>
+      <layouts mode="summary">
+        <layout>entity_summary_layout</layout>
+      </layouts>
       <layouts mode="any">
         <layout>entity_heading</layout>
       </layouts>

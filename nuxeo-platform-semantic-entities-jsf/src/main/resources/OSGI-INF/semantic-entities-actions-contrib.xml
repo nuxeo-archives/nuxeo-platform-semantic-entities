@@ -36,12 +36,6 @@
       </rule>
     </filter>
 
-    <filter id="view" append="true">
-      <rule grant="false">
-        <schema>entity</schema>
-      </rule>
-    </filter>
-
   </extension>
 
 </component>

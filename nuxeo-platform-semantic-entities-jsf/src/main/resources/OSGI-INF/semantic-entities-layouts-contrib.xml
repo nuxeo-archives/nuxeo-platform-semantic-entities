@@ -4,6 +4,26 @@
   <extension target="org.nuxeo.ecm.platform.forms.layout.WebLayoutManager"
     point="layouts">
 
+    <layout name="entity_summary_layout">
+      <templates>
+        <template mode="any">/layouts/layout_summary_template.xhtml</template>
+      </templates>
+      <rows>
+        <row>
+          <widget>summary_current_entity_heading</widget>
+          <widget>summary_current_entity_view</widget>
+          <widget>summary_current_document_comments</widget>
+        </row>
+        <row>
+          <widget>summary_current_document_lc_and_version</widget>
+          <widget>summary_current_document_actions</widget>
+        </row>
+        <row>
+          <widget>summary_current_document_single_tasks</widget>
+        </row>
+      </rows>
+    </layout>
+
     <layout name="entity_heading">
       <templates>
         <template mode="any">/layouts/layout_default_template.xhtml</template>
@@ -18,11 +38,18 @@
         <row>
           <widget>altnames</widget>
         </row>
+        <row>
+          <widget>depiction</widget>
+        </row>
       </rows>
       <widget name="name" type="text">
         <fields>
           <field>dc:title</field>
         </fields>
+        <widgetModes>
+          <mode value="view">hidden</mode>
+          <mode value="any">edit</mode>
+        </widgetModes>
         <properties widgetMode="edit">
           <property name="required">true</property>
           <property name="styleClass">dataInputText</property>
@@ -32,8 +59,26 @@
         <fields>
           <field>entity:summary</field>
         </fields>
+        <widgetModes>
+          <mode value="view">hidden</mode>
+          <mode value="any">edit</mode>
+        </widgetModes>
         <properties widgetMode="edit">
           <property name="styleClass">dataInputText</property>
+        </properties>
+      </widget>
+      <widget name="depiction" type="template">
+        <fields>
+          <field>entity:depiction</field>
+        </fields>
+        <widgetModes>
+          <mode value="view">hidden</mode>
+          <mode value="any">edit</mode>
+        </widgetModes>
+        <properties mode="any">
+          <property name="template">
+            /widgets/extended_file_widget.xhtml
+          </property>
         </properties>
       </widget>
       <widget name="altnames" type="namelist">
@@ -56,7 +101,61 @@
   </extension>
 
   <extension target="org.nuxeo.ecm.platform.forms.layout.WebLayoutManager"
+    point="widgets">
+
+    <widget name="summary_current_entity_heading"
+      type="summary_current_entity_heading" />
+
+    <widget name="summary_current_entity_view"
+      type="summary_current_entity_view" />
+
+   </extension>
+
+  <extension target="org.nuxeo.ecm.platform.forms.layout.WebLayoutManager"
     point="widgettypes">
+
+    <widgetType name="summary_current_entity_heading">
+
+      <documentation>
+        This widget displays the heading common to all entities: depiction, entity type
+        and summary. The canonical name is expected to be displayed on above the entity
+        tabs hence not part of this summary widget.
+
+        It requires the following variables to be present in the EL context:
+        <ul>
+          <li>currentDocument: the current document</li>
+          <li>currentDocumentType : the Type of the current document</li>
+        </ul>
+      </documentation>
+
+      <handler-class>
+        org.nuxeo.ecm.platform.forms.layout.facelets.plugins.TemplateWidgetTypeHandler
+      </handler-class>
+      <property name="template">
+        /widgets/summary/summary_current_entity_heading_widget_template.xhtml
+      </property>
+    </widgetType>
+
+    <widgetType name="summary_current_entity_view">
+
+      <documentation>
+        This widgets displays the view layouts of the currentDocument as an Entity
+
+        It requires the following variables to be present in the EL context:
+        <ul>
+          <li>currentDocument: the current document</li>
+          <li>currentDocumentType : the Type of the current document</li>
+        </ul>
+      </documentation>
+
+      <handler-class>
+        org.nuxeo.ecm.platform.forms.layout.facelets.plugins.TemplateWidgetTypeHandler
+      </handler-class>
+      <property name="template">
+        /widgets/summary/summary_current_entity_view_widget_template.xhtml
+      </property>
+    </widgetType>
+
 
     <widgetType name="namelist">
       <documentation>
