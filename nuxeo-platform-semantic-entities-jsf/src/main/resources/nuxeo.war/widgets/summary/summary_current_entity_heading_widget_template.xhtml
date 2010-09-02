@@ -1,0 +1,34 @@
+<div class="entity_heading_block"
+  xmlns:nxu="http://nuxeo.org/nxweb/util"
+  xmlns:ui="http://java.sun.com/jsf/facelets"
+  xmlns:f="http://java.sun.com/jsf/core"
+  xmlns:h="http://java.sun.com/jsf/html"
+  xmlns:c="http://java.sun.com/jstl/core"
+  xmlns:nxh="http://nuxeo.org/nxweb/html"
+  xmlns:nxl="http://nuxeo.org/nxforms/layout"
+  xmlns:nxd="http://nuxeo.org/nxweb/document">
+  
+<!-- TODO: find a way to incrementally contribute a CSS to the current theme,
+ be it DM or DAM or anything else instead of using inline style -->
+
+<div class="entityDepictionContainer" style="float: left; margin: 0.5em">
+<h:graphicImage
+  url="#{nxd:fileUrl('downloadFile', currentDocument, 'entity:depiction', currentDocument.entity.depiction.filename)}?conversationId=#{conversation.id}"
+  style="max-height: 200px; max-width:150px; border: 1px solid darkGray; padding: 1px"
+  rendered="#{currentDocument.hasSchema('entity') and !empty currentDocument.entity.depiction}"
+  styleClass="entityDepiction" />
+</div>
+
+<div class="entityType"
+  style="margin: 0.5em; text-align: right; font-style: italic">
+  <h:outputText
+   value="#{messages[currentDocument.type]}" />
+</div>
+
+<div class="entitySummary" style="margin: 0.5em;">
+  <h:outputText
+    value="#{currentDocument.entity.summary}" />
+</div>
+
+<div style="clear: both"></div>
+</div>
