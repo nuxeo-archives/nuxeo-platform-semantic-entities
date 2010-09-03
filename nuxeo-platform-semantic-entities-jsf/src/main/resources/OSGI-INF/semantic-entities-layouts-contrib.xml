@@ -36,10 +36,13 @@
           <widget>summary</widget>
         </row>
         <row>
+          <widget>depiction</widget>
+        </row>
+        <row>
           <widget>altnames</widget>
         </row>
         <row>
-          <widget>depiction</widget>
+          <widget>entityType</widget>
         </row>
       </rows>
       <widget name="name" type="text">
@@ -94,6 +97,17 @@
 	    </subWidgets>
         <properties widgetMode="edit">
           <property name="styleClass">dataInputText</property>
+        </properties>
+      </widget>
+      <widget name="entityType" type="template">
+        <widgetModes>
+          <mode value="view">view</mode>
+          <mode value="any">hidden</mode>
+        </widgetModes>
+        <properties widgetMode="view">
+          <property name="template">
+            /widgets/entity_type_widget_template.xhtml
+          </property>
         </properties>
       </widget>
     </layout>
