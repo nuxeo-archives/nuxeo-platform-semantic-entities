@@ -85,6 +85,10 @@
         </properties>
       </widget>
       <widget name="altnames" type="namelist">
+        <widgetModes>
+          <mode value="view">#{nxu:test(empty layoutValue.entity.altnames, 'hidden', 'view')}</mode>
+	      <mode value="any">edit</mode>
+	    </widgetModes>
 	    <fields>
 	      <field>entity:altnames</field>
 	    </fields>
@@ -108,6 +112,49 @@
           <property name="template">
             /widgets/entity_type_widget_template.xhtml
           </property>
+        </properties>
+      </widget>
+    </layout>
+
+    <layout name="person">
+      <templates>
+        <template mode="any">/layouts/layout_default_template.xhtml</template>
+      </templates>
+      <rows>
+        <row>
+          <widget>birthDate</widget>
+        </row>
+        <row>
+          <widget>deathDate</widget>
+        </row>
+        <!-- TODO add widgets for relationship with
+         common relationships with organizations (position)
+          and places (birthplace, residence)  -->
+      </rows>
+      <widget name="birthDate" type="datetime">
+         <widgetModes>
+          <mode value="view">
+            #{empty layoutValue.person.birthDate ? 'hidden' : 'view'}
+          </mode>
+        </widgetModes>
+        <fields>
+          <field>person:birthDate</field>
+        </fields>
+        <properties widgetMode="edit">
+          <property name="styleClass">dataInputText</property>
+        </properties>
+      </widget>
+      <widget name="deathDate" type="datetime">
+         <widgetModes>
+          <mode value="view">
+            #{empty layoutValue.person.deathDate ? 'hidden' : 'view'}
+          </mode>
+        </widgetModes>
+        <fields>
+          <field>person:deathDate</field>
+        </fields>
+        <properties widgetMode="edit">
+          <property name="styleClass">dataInputText</property>
         </properties>
       </widget>
     </layout>
