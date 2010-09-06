@@ -67,9 +67,9 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 public void run() throws ClientException {
                     if (!session.exists(ref)) {
                         DocumentModel container = session.createDocumentModel(
-                                parentPath, id,
-                                Constants.ENTITY_CONTAINER_TYPE);
-                        container.setPropertyValue("dc:title", ENTITY_CONTAINER_TITLE);
+                                parentPath, id, Constants.ENTITY_CONTAINER_TYPE);
+                        container.setPropertyValue("dc:title",
+                                ENTITY_CONTAINER_TITLE);
                         session.createDocument(container);
                         session.save();
                     }
@@ -139,8 +139,9 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         }
         OccurrenceRelation relation = getOccurrenceRelation(session, docRef,
                 entityRef, true);
-        relation.addOccurrences(occurrences);
-
+        if (occurrences != null && !occurrences.isEmpty()) {
+            relation.addOccurrences(occurrences);
+        }
         UpdateOrCreateOccurrenceRelation op = new UpdateOrCreateOccurrenceRelation(
                 session, relation);
         op.runUnrestricted();
@@ -246,12 +247,26 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         if (type == null) {
             type = "Entity";
         }
-        String q = String.format(
-                "SELECT * FROM %s WHERE ecm:fulltext = '%s'"
-                        + " ORDER BY entity:popularity DESC, dc:title"
-                        + " LIMIT %d", type, keywords.replace("'", "\'"),
-                maxSuggestions);
+        String q = String.format("SELECT * FROM %s WHERE ecm:fulltext = '%s'"
+                + " ORDER BY entity:popularity DESC, dc:title" + " LIMIT %d",
+                type, keywords.replace("'", "\'"), maxSuggestions);
         return session.query(q);
+    }
+
+    public List<DocumentModel> suggestDocument(CoreSession session,
+            String keywords, String type, int maxSuggestions)
+            throws ClientException {
+        if (type == null) {
+            type = "Document";
+        }
+        String query = String.format(
+                "SELECT cmis:objectId, SCORE() relevance FROM %s "
+                        + "WHERE CONTAINS('%s') " + "ORDER BY relevance", type,
+                keywords.replace("'", "\'"));
+        PageProvider<DocumentModel> provider = new CMISQLDocumentPageProvider(
+                session, query, "cmis:objectId");
+        provider.setPageSize(maxSuggestions);
+        return provider.getCurrentPage();
     }
 
 }

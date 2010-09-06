@@ -75,8 +75,12 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     public void makeSomeDocuments() throws ClientException {
         doc1 = session.createDocumentModel("/", "doc1", "File");
         doc1.setPropertyValue("dc:title", "A short bio for John");
-        doc1.setPropertyValue("dc:description",
-                "John Lennon was born in Liverpool in 1940. John was a musician.");
+        doc1.setPropertyValue(
+                "dc:description",
+                "John Lennon was born in Liverpool in 1940. John was a musician."
+                        + " This document about John Lennon has many occurrences"
+                        + " of the words 'John' and 'Lennong' hence should rank high"
+                        + " for suggestions on such keywords.");
         doc1 = session.createDocument(doc1);
 
         doc2 = session.createDocumentModel("/", "doc2", "File");
@@ -340,4 +344,37 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(john.getRef(), relation.getTargetEntityRef());
         assertEquals(mentions, relation.getOccurrences());
     }
+
+    public void testAddOccurrenceRelationWithEmptyOccurrenceData()
+            throws Exception {
+        makeSomeEntities();
+        OccurrenceRelation relation = service.getOccurrenceRelation(session,
+                doc1.getRef(), john.getRef());
+        assertNull(relation);
+
+        service.addOccurrences(session, doc1.getRef(), john.getRef(), null);
+
+        relation = service.getOccurrenceRelation(session, doc1.getRef(),
+                john.getRef());
+        assertNotNull(relation);
+        assertEquals(doc1.getRef(), relation.getSourceDocumentRef());
+        assertEquals(john.getRef(), relation.getTargetEntityRef());
+        assertEquals(Arrays.asList(), relation.getOccurrences());
+    }
+
+    public void testSuggestDocument() throws Exception {
+        List<DocumentModel> suggestions = service.suggestDocument(session,
+                "lemon", null, 3);
+        assertNotNull(suggestions);
+        assertEquals(1, suggestions.size());
+        assertEquals(doc2.getRef(), suggestions.get(0).getRef());
+
+        suggestions = service.suggestDocument(session,
+                "Lennon John", null, 3);
+        assertNotNull(suggestions);
+        assertEquals(2, suggestions.size());
+        assertEquals(doc1.getRef(), suggestions.get(0).getRef());
+        assertEquals(doc2.getRef(), suggestions.get(1).getRef());
+    }
+
 }

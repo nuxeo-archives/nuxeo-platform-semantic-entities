@@ -57,9 +57,20 @@ public interface LocalEntityService {
      * @param maxSuggestions maximum number of entities to suggest
      * @return a list of maximum maxSuggestions matching entities
      */
-    List<DocumentModel> suggestEntity(CoreSession session,
-            String keywords, String type, int maxSuggestions)
-            throws ClientException;
+    List<DocumentModel> suggestEntity(CoreSession session, String keywords,
+            String type, int maxSuggestions) throws ClientException;
+
+    /**
+     * Helper method to suggest documents by keyword match on fulltext content.
+     *
+     * @param keywords keywords to match the document names
+     * @param type the Nuxeo type name of documents to match (or null)
+     * @param maxSuggestions maximum number of entities to suggest
+     * @return a list of maximum maxSuggestions matching documents ordered by
+     *         relevance
+     */
+    List<DocumentModel> suggestDocument(CoreSession session, String keywords,
+            String type, int maxSuggestions) throws ClientException;
 
     /**
      * Assert that an entity is referred to in the text content of a document.
@@ -78,9 +89,9 @@ public interface LocalEntityService {
      * @param endPosInContext
      * @return the DocumentModel of type Occurrence holding the relation
      */
-    OccurrenceRelation addOccurrence(CoreSession session,
-            DocumentRef docRef, DocumentRef entityRef, String quoteContext,
-            int startPosInContext, int endPosInContext) throws ClientException;
+    OccurrenceRelation addOccurrence(CoreSession session, DocumentRef docRef,
+            DocumentRef entityRef, String quoteContext, int startPosInContext,
+            int endPosInContext) throws ClientException;
 
     /**
      * Add several occurrences of the same entity in to a given document
@@ -93,9 +104,9 @@ public interface LocalEntityService {
      * @param occurrences list of occurrence data to add to the relationship
      * @return an OccurrenceRelation holding the aggregated occurrence data
      */
-    OccurrenceRelation addOccurrences(CoreSession session,
-            DocumentRef docRef, DocumentRef entityRef,
-            List<OccurrenceInfo> occurrences) throws ClientException;
+    OccurrenceRelation addOccurrences(CoreSession session, DocumentRef docRef,
+            DocumentRef entityRef, List<OccurrenceInfo> occurrences)
+            throws ClientException;
 
     /**
      * Find the occurrence relation instance linking a document to an entity.
