@@ -62,9 +62,7 @@
       </layouts>
       <layouts mode="any">
         <layout>entity_heading</layout>
-        <!--
         <layout>organization</layout>
-        -->
       </layouts>
     </type>
 
@@ -81,9 +79,7 @@
       </layouts>
       <layouts mode="any">
         <layout>entity_heading</layout>
-        <!--
         <layout>place</layout>
-        -->
       </layouts>
     </type>
 
