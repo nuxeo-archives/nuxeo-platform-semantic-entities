@@ -16,6 +16,8 @@
  */
 package org.nuxeo.ecm.platform.semanticentities.jsf.actions;
 
+import java.util.List;
+
 import org.jboss.seam.ScopeType;
 import org.jboss.seam.annotations.Factory;
 import org.jboss.seam.annotations.In;
@@ -24,6 +26,7 @@ import org.jboss.seam.annotations.Scope;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.ui.web.api.NavigationContext;
@@ -38,6 +41,12 @@ public class SemanticEntitiesActions {
 
     @In(required = false)
     protected CoreSession documentManager;
+
+    protected String documentSuggestionKeywords;
+
+    protected String selectedDocumentId;
+
+    protected List<DocumentModel> documentSuggestions;
 
     protected LocalEntityService leService;
 
@@ -75,6 +84,40 @@ public class SemanticEntitiesActions {
             DocumentModel entity) throws ClientException, Exception {
         return getLocalEntityService().getRelatedDocuments(documentManager,
                 entity.getRef(), null);
+    }
+
+    /**
+     * Ajax callbacks for new occurrence relationship creation.
+     */
+
+    public String getDocumentSuggestionKeywords() {
+        return documentSuggestionKeywords;
+    }
+
+    public void setDocumentSuggestionKeywords(String documentSuggestionKeywords) {
+        this.documentSuggestionKeywords = documentSuggestionKeywords;
+    }
+
+    public List<DocumentModel> suggestDocuments(Object keywords)
+            throws Exception {
+        // TODO: wrap exception in friendly JSF error messages
+        return getLocalEntityService().suggestDocument(documentManager,
+                keywords.toString(), null, 10);
+    }
+
+    public String getSelectedDocumentId() {
+        return selectedDocumentId;
+    }
+
+    public void setSelectedDocumentId(String selectedDocumentId) {
+        this.selectedDocumentId = selectedDocumentId;
+    }
+
+    public void addNewOccurrenceRelation() throws Exception {
+        // TODO: wrap exception in friendly JSF error messages
+        getLocalEntityService().addOccurrences(documentManager,
+                new IdRef(selectedDocumentId),
+                navigationContext.getCurrentDocument().getRef(), null);
     }
 
 }

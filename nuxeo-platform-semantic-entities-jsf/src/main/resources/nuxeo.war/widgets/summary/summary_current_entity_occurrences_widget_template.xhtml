@@ -6,10 +6,13 @@
   xmlns:c="http://java.sun.com/jstl/core"
   xmlns:nxh="http://nuxeo.org/nxweb/html"
   xmlns:nxl="http://nuxeo.org/nxforms/layout"
-  xmlns:nxd="http://nuxeo.org/nxweb/document">
+  xmlns:nxd="http://nuxeo.org/nxweb/document"
+  xmlns:rich="http://richfaces.org/rich"
+  xmlns:a4j="http://richfaces.org/a4j">
   
 <h3>#{messages['heading.entityOccurrences']}</h3>
-
+  <a4j:region id="occurrencesRegion">
+  <a4j:outputPanel id="occurrencesPanel">
   <nxu:set var="provider"
     value="#{semanticEntityActions.getEntityOccurrenceProvider(currentDocument)}"
     cache="true">
@@ -31,4 +34,29 @@
 
     </ui:decorate>
   </nxu:set>
+  
+  <h:form id="addNewOccurrenceForm">
+
+  <h:inputText id="documentSuggestionKeywords"
+    value="#{semanticEngitiesActions.documentSuggestionKeywords}"
+    styleClass="dataInputText" />
+
+  <rich:suggestionbox
+    suggestionAction="#{semanticEntitiesActions.suggestDocuments}"
+    var="doc" for="documentSuggestionKeywords" ajaxSingle="true">
+    <h:column>
+      <h:outputText value="#{doc.title}" />
+    </h:column>
+    <a4j:support event="onselect"
+     action="#{semanticEngitiesActions.addNewOccurrenceRelation}"
+     reRender="occurrencesPanel" >
+      <f:setPropertyActionListener value="#{doc.id}"
+       target="#{semanticEngitiesActions.selectedDocumentId}" />
+    </a4j:support>
+  </rich:suggestionbox>
+
+  </h:form>
+  
+  </a4j:outputPanel>
+  </a4j:region>
 </div>
