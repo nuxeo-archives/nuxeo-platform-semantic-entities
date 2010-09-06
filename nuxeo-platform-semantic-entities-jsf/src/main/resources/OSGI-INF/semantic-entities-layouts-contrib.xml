@@ -15,6 +15,7 @@
           <widget>summary_current_document_comments</widget>
         </row>
         <row>
+          <widget>summary_current_entity_occurrences</widget>
           <widget>summary_current_document_lc_and_version</widget>
           <widget>summary_current_document_actions</widget>
         </row>
@@ -22,6 +23,12 @@
           <widget>summary_current_document_single_tasks</widget>
         </row>
       </rows>
+      <widget name="summary_current_entity_heading"
+        type="summary_current_entity_heading" />
+      <widget name="summary_current_entity_occurrences"
+        type="summary_current_entity_occurrences" />
+      <widget name="summary_current_entity_view"
+        type="summary_current_entity_view" />
     </layout>
 
     <layout name="entity_heading">
@@ -246,17 +253,6 @@
   </extension>
 
   <extension target="org.nuxeo.ecm.platform.forms.layout.WebLayoutManager"
-    point="widgets">
-
-    <widget name="summary_current_entity_heading"
-      type="summary_current_entity_heading" />
-
-    <widget name="summary_current_entity_view"
-      type="summary_current_entity_view" />
-
-   </extension>
-
-  <extension target="org.nuxeo.ecm.platform.forms.layout.WebLayoutManager"
     point="widgettypes">
 
     <widgetType name="summary_current_entity_heading">
@@ -301,6 +297,27 @@
       </property>
     </widgetType>
 
+    <widgetType name="summary_current_entity_occurrences">
+
+      <documentation>
+        This widgets displays the list of documents linked to the currentDocument
+        seen as an Entity.
+
+        It requires the following variables to be present in the EL context:
+        <ul>
+          <li>currentDocument: the current document</li>
+          <li>semanticEntitiesActions: the seam component able to perform
+           the relationships queries</li>
+        </ul>
+      </documentation>
+
+      <handler-class>
+        org.nuxeo.ecm.platform.forms.layout.facelets.plugins.TemplateWidgetTypeHandler
+      </handler-class>
+      <property name="template">
+        /widgets/summary/summary_current_entity_occurrences_widget_template.xhtml
+      </property>
+    </widgetType>
 
     <widgetType name="namelist">
       <documentation>

@@ -21,8 +21,10 @@ import org.jboss.seam.annotations.Factory;
 import org.jboss.seam.annotations.In;
 import org.jboss.seam.annotations.Name;
 import org.jboss.seam.annotations.Scope;
+import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.ui.web.api.NavigationContext;
 import org.nuxeo.runtime.api.Framework;
@@ -65,4 +67,14 @@ public class SemanticEntitiesActions {
         }
         return navigationContext.navigateToDocument(entityContainer);
     }
+
+    /**
+     * Return the documents that hold an occurrence to the given entity.
+     */
+    public PageProvider<DocumentModel> getEntityOccurrenceProvider(
+            DocumentModel entity) throws ClientException, Exception {
+        return getLocalEntityService().getRelatedDocuments(documentManager,
+                entity.getRef(), null);
+    }
+
 }

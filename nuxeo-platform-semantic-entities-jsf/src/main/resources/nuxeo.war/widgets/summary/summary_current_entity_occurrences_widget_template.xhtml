@@ -1,0 +1,34 @@
+<div class="entity_heading_block"
+  xmlns:nxu="http://nuxeo.org/nxweb/util"
+  xmlns:ui="http://java.sun.com/jsf/facelets"
+  xmlns:f="http://java.sun.com/jsf/core"
+  xmlns:h="http://java.sun.com/jsf/html"
+  xmlns:c="http://java.sun.com/jstl/core"
+  xmlns:nxh="http://nuxeo.org/nxweb/html"
+  xmlns:nxl="http://nuxeo.org/nxforms/layout"
+  xmlns:nxd="http://nuxeo.org/nxweb/document">
+  
+<h3>#{messages['heading.entityOccurrences']}</h3>
+
+  <nxu:set var="provider"
+    value="#{semanticEntityActions.getEntityOccurrenceProvider(currentDocument)}"
+    cache="true">
+    <ui:decorate template="/incl/documents_layout_table.xhtml">
+      <ui:param name="documents" value="#{provider.currentSelectPage}" />
+      <ui:param name="listName" value="OCCURRENCES_SELECTION" />
+      <ui:param name="layoutName" value="document_listing" />
+      
+      <ui:define name="empty_folder_label">
+        <h:outputText value="#{messages['label.content.noOccurrence']}"
+          rendered="#{documents.rowCount == 0 and not provider.hasError()}" />
+      </ui:define>
+    
+      <ui:define name="error_message">
+        <c:if test="#{provider.hasError()}">
+          #{provider.errorMessage}
+        </c:if>
+      </ui:define>
+
+    </ui:decorate>
+  </nxu:set>
+</div>
