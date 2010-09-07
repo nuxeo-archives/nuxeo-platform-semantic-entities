@@ -62,11 +62,12 @@ public class CMISQLDocumentPageProvider extends
     protected List<DocumentModel> currentPageDocumentModels;
 
     public CMISQLDocumentPageProvider(CoreSession session, String query,
-            String docIdColumnName) {
+            String docIdColumnName, String providerName) {
         this.session = session;
         this.query = query;
         this.docIdColumnName = docIdColumnName;
         pageSize = 10;
+        name = providerName;
     }
 
     @Override

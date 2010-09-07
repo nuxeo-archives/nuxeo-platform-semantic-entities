@@ -217,7 +217,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                         + "ORDER BY Doc.dc:modified DESC", documentType,
                 entityRef);
         return new CMISQLDocumentPageProvider(session, query,
-                "Doc.cmis:objectId");
+                "Doc.cmis:objectId", "relatedDocuments");
     }
 
     public PageProvider<DocumentModel> getRelatedEntities(CoreSession session,
@@ -238,7 +238,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                         + "WHERE Rel.relation:source = '%s' "
                         + "ORDER BY Ent.dc:title", entityType, docRef);
         return new CMISQLDocumentPageProvider(session, query,
-                "Ent.cmis:objectId");
+                "Ent.cmis:objectId", "relatedEntities");
     }
 
     public List<DocumentModel> suggestEntity(CoreSession session,
@@ -264,7 +264,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                         + "WHERE CONTAINS('%s') " + "ORDER BY relevance", type,
                 keywords.replace("'", "\'"));
         PageProvider<DocumentModel> provider = new CMISQLDocumentPageProvider(
-                session, query, "cmis:objectId");
+                session, query, "cmis:objectId", "suggestedDocuments");
         provider.setPageSize(maxSuggestions);
         return provider.getCurrentPage();
     }

@@ -105,10 +105,6 @@ public class SemanticEntitiesActions {
                 keywords.toString(), null, 10);
     }
 
-    public String getSelectedDocumentId() {
-        return selectedDocumentId;
-    }
-
     public void setSelectedDocumentId(String selectedDocumentId) {
         this.selectedDocumentId = selectedDocumentId;
     }

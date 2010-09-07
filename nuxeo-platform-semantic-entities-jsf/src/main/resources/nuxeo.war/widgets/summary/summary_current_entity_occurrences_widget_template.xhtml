@@ -10,11 +10,11 @@
   xmlns:rich="http://richfaces.org/rich"
   xmlns:a4j="http://richfaces.org/a4j">
   
-<h3>#{messages['heading.entityOccurrences']}</h3>
+  <h3>#{messages['heading.entityOccurrences']}</h3>
   <a4j:region id="occurrencesRegion">
   <a4j:outputPanel id="occurrencesPanel">
   <nxu:set var="provider"
-    value="#{semanticEntityActions.getEntityOccurrenceProvider(currentDocument)}"
+    value="#{semanticEntitiesActions.getEntityOccurrenceProvider(currentDocument)}"
     cache="true">
     <ui:decorate template="/incl/documents_layout_table.xhtml">
       <ui:param name="documents" value="#{provider.currentSelectPage}" />
@@ -37,22 +37,21 @@
   
   <h:form id="addNewOccurrenceForm">
 
-  <h:inputText id="documentSuggestionKeywords"
-    value="#{semanticEngitiesActions.documentSuggestionKeywords}"
-    styleClass="dataInputText" />
+  <h:inputText id="documentSuggestionKeywords" styleClass="dataInputText" />
 
   <rich:suggestionbox
     suggestionAction="#{semanticEntitiesActions.suggestDocuments}"
-    var="doc" for="documentSuggestionKeywords" ajaxSingle="true">
+    var="doc" for="documentSuggestionKeywords" nothingLabel="No matching document"
+    ajaxSingle="true">
+    <a4j:support event="onselect" reRender="occurrencesPanel"
+      action="#{semanticEntitiesActions.addNewOccurrenceRelation}"
+      ajaxSingle="true">
+      <f:setPropertyActionListener value="#{doc.id}"
+       target="#{semanticEntitiesActions.selectedDocumentId}" />
+    </a4j:support>
     <h:column>
       <h:outputText value="#{doc.title}" />
     </h:column>
-    <a4j:support event="onselect"
-     action="#{semanticEngitiesActions.addNewOccurrenceRelation}"
-     reRender="occurrencesPanel" >
-      <f:setPropertyActionListener value="#{doc.id}"
-       target="#{semanticEngitiesActions.selectedDocumentId}" />
-    </a4j:support>
   </rich:suggestionbox>
 
   </h:form>
