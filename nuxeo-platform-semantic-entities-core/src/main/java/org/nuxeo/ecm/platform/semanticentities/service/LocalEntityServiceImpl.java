@@ -257,11 +257,11 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             String keywords, String type, int maxSuggestions)
             throws ClientException {
         if (type == null) {
-            type = "Document";
+            type = "cmis:document";
         }
         String query = String.format(
                 "SELECT cmis:objectId, SCORE() relevance FROM %s "
-                        + "WHERE CONTAINS('%s') " + "ORDER BY relevance", type,
+                        + "WHERE CONTAINS('%s') ORDER BY relevance", type,
                 keywords.replace("'", "\'"));
         PageProvider<DocumentModel> provider = new CMISQLDocumentPageProvider(
                 session, query, "cmis:objectId", "suggestedDocuments");
