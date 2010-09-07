@@ -77,6 +77,12 @@ public class SemanticEntitiesActions {
         return navigationContext.navigateToDocument(entityContainer);
     }
 
+    @Factory(scope = ScopeType.EVENT, value = "entityOccurrenceProvider")
+    public PageProvider<DocumentModel> getCurrentEntityOccurrenceProvider()
+            throws ClientException, Exception {
+        return getEntityOccurrenceProvider(navigationContext.getCurrentDocument());
+    }
+
     /**
      * Return the documents that hold an occurrence to the given entity.
      */
@@ -86,7 +92,7 @@ public class SemanticEntitiesActions {
                 entity.getRef(), null);
     }
 
-    /**
+    /*
      * Ajax callbacks for new occurrence relationship creation.
      */
 
