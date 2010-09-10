@@ -9,22 +9,25 @@
   xmlns:nxd="http://nuxeo.org/nxweb/document"
   xmlns:rich="http://richfaces.org/rich"
   xmlns:a4j="http://richfaces.org/a4j">
-  
-  <h3>#{messages['heading.entityOccurrences']}</h3>
+
+
   <a4j:region renderRegionOnly="true" id="occurrencesRegion">
   <a4j:outputPanel id="occurrencesPanel">
+
+  <h3 class="summaryTitle">#{messages['heading.entityOccurrences']}</h3>
+
   <nxu:set var="provider" value="#{entityOccurrenceProvider}" cache="true">
     #{provider.setSelectedEntries(documentsListsManager.getWorkingList('OCCURRENCES_SELECTION'))}
     <ui:decorate template="/incl/documents_layout_table.xhtml">
       <ui:param name="documents" value="#{provider.currentSelectPage}" />
       <ui:param name="listName" value="OCCURRENCES_SELECTION" />
       <ui:param name="layoutName" value="document_listing_ajax" />
-      
+
       <ui:define name="empty_folder_label">
         <h:outputText value="#{messages['label.content.noOccurrence']}"
           rendered="#{documents.rowCount == 0 and not provider.hasError()}" />
       </ui:define>
-    
+
       <ui:define name="error_message">
         <c:if test="#{provider.hasError()}">
           #{provider.errorMessage}
@@ -33,7 +36,8 @@
 
     </ui:decorate>
   </nxu:set>
-  
+
+  <h3 class="summaryTitle">#{messages['heading.entityAddANewOccurrence']}</h3>
   <h:form id="addNewOccurrenceForm">
 
   <h:inputText id="documentSuggestionKeywords" styleClass="dataInputText" />
@@ -53,7 +57,9 @@
   </rich:suggestionbox>
 
   </h:form>
-  
+
   </a4j:outputPanel>
   </a4j:region>
+
+  <br/>
 </div>
