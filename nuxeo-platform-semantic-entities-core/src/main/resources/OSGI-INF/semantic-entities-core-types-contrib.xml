@@ -25,9 +25,7 @@
       </subtypes>
     </doctype>
 
-    <!-- Does not extends="Document" to avoid having entities
-     show up in regular document search results -->
-    <doctype name="Entity">
+    <doctype name="Entity" extends="Document">
       <schema name="entity"/>
       <schema name="common"/>
       <schema name="dublincore"/>

@@ -20,8 +20,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.ClientException;
@@ -33,10 +35,12 @@ import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.PageProvider;
 import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.core.api.UnrestrictedSessionRunner;
+import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceInfo;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
+import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.DefaultComponent;
 
 public class LocalEntityServiceImpl extends DefaultComponent implements
@@ -223,7 +227,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     public PageProvider<DocumentModel> getRelatedEntities(CoreSession session,
             DocumentRef docRef, String entityType) throws ClientException {
         if (entityType == null) {
-            entityType = "Entity";
+            entityType = Constants.ENTITY_TYPE;
         }
         if (!(docRef instanceof IdRef)) {
             throw new NotImplementedException(
@@ -245,7 +249,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             String keywords, String type, int maxSuggestions)
             throws ClientException {
         if (type == null) {
-            type = "Entity";
+            type = Constants.ENTITY_TYPE;
         }
         String q = String.format("SELECT * FROM %s WHERE ecm:fulltext = '%s'"
                 + " ORDER BY entity:popularity DESC, dc:title" + " LIMIT %d",
@@ -254,19 +258,25 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     }
 
     public List<DocumentModel> suggestDocument(CoreSession session,
-            String keywords, String type, int maxSuggestions)
-            throws ClientException {
+            String keywords, String type, int maxSuggestions) throws Exception {
         if (type == null) {
             type = "cmis:document";
         }
         String query = String.format(
                 "SELECT cmis:objectId, SCORE() relevance FROM %s "
-                        + "WHERE CONTAINS('%s') ORDER BY relevance", type,
-                keywords.replace("'", "\'"));
+                        + "WHERE CONTAINS('%s') AND cmis:objectTypeId NOT IN ('%s') "
+                        + "ORDER BY relevance", type,
+                keywords.replace("'", " "), StringUtils.join(
+                        getEntityTypeNames(), "', '"));
         PageProvider<DocumentModel> provider = new CMISQLDocumentPageProvider(
                 session, query, "cmis:objectId", "suggestedDocuments");
         provider.setPageSize(maxSuggestions);
         return provider.getCurrentPage();
+    }
+
+    public Set<String> getEntityTypeNames() throws Exception {
+        return Framework.getService(SchemaManager.class).getDocumentTypeNamesExtending(
+                Constants.ENTITY_TYPE);
     }
 
 }

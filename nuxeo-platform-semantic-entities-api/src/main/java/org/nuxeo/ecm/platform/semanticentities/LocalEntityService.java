@@ -70,7 +70,7 @@ public interface LocalEntityService {
      *         relevance
      */
     List<DocumentModel> suggestDocument(CoreSession session, String keywords,
-            String type, int maxSuggestions) throws ClientException;
+            String type, int maxSuggestions) throws Exception;
 
     /**
      * Assert that an entity is referred to in the text content of a document.

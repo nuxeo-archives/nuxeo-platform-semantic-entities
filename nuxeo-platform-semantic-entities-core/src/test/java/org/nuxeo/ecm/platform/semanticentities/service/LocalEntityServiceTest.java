@@ -369,8 +369,15 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(1, suggestions.size());
         assertEquals(doc2.getRef(), suggestions.get(0).getRef());
 
-        suggestions = service.suggestDocument(session,
-                "Lennon John", null, 3);
+        suggestions = service.suggestDocument(session, "Lennon John", null, 3);
+        assertNotNull(suggestions);
+        assertEquals(2, suggestions.size());
+        assertEquals(doc1.getRef(), suggestions.get(0).getRef());
+        assertEquals(doc2.getRef(), suggestions.get(1).getRef());
+
+        // check that entities don't show up in the results
+        makeSomeEntities();
+        suggestions = service.suggestDocument(session, "Lennon John", null, 3);
         assertNotNull(suggestions);
         assertEquals(2, suggestions.size());
         assertEquals(doc1.getRef(), suggestions.get(0).getRef());
