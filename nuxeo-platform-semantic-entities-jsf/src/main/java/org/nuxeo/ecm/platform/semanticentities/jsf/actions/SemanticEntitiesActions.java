@@ -22,7 +22,9 @@ import org.jboss.seam.ScopeType;
 import org.jboss.seam.annotations.Factory;
 import org.jboss.seam.annotations.In;
 import org.jboss.seam.annotations.Name;
+import org.jboss.seam.annotations.Observer;
 import org.jboss.seam.annotations.Scope;
+import org.jboss.seam.contexts.Contexts;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -30,6 +32,7 @@ import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.ui.web.api.NavigationContext;
+import org.nuxeo.ecm.webapp.helpers.EventNames;
 import org.nuxeo.runtime.api.Framework;
 
 @Name("semanticEntitiesActions")
@@ -77,7 +80,7 @@ public class SemanticEntitiesActions {
         return navigationContext.navigateToDocument(entityContainer);
     }
 
-    @Factory(scope = ScopeType.EVENT, value = "entityOccurrenceProvider")
+    @Factory(scope = ScopeType.CONVERSATION, value = "entityOccurrenceProvider")
     public PageProvider<DocumentModel> getCurrentEntityOccurrenceProvider()
             throws ClientException, Exception {
         return getEntityOccurrenceProvider(navigationContext.getCurrentDocument());
@@ -120,6 +123,11 @@ public class SemanticEntitiesActions {
         getLocalEntityService().addOccurrences(documentManager,
                 new IdRef(selectedDocumentId),
                 navigationContext.getCurrentDocument().getRef(), null);
+        invalidateEntityOccurrenceProvider();
     }
 
+    @Observer(value = EventNames.USER_ALL_DOCUMENT_TYPES_SELECTION_CHANGED, create = false, inject = false)
+    public void invalidateEntityOccurrenceProvider() {
+        Contexts.removeFromAllContexts("entityOccurrenceProvider");
+    }
 }
