@@ -24,7 +24,6 @@ public final class Constants {
 
     public static final String ADD_OCCURRENCE_PERMISSION = "AddOccurrence";
 
-    private Constants() {
-    }
+    public static final String OCCURRENCE_TYPE = "Occurrence";
 
 }

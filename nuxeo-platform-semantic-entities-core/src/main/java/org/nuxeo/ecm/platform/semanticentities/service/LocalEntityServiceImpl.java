@@ -43,6 +43,14 @@ import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.DefaultComponent;
 
+/**
+ * Service to handle semantic entities linked to documents in the local
+ * repository.
+ *
+ * Relations between documents and entities are stored in the Nuxeo repository
+ * and documents of type "Occurrence" which is a sub-type of the "Relation" core
+ * type.
+ */
 public class LocalEntityServiceImpl extends DefaultComponent implements
         LocalEntityService {
 
@@ -114,7 +122,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             if (createIfMissing) {
                 // create an empty document model in memory and adapt it to the
                 // OccurrenceRelation interface
-                DocumentModel occ = session.createDocumentModel("Occurrence");
+                DocumentModel occ = session.createDocumentModel(Constants.OCCURRENCE_TYPE);
                 occ.setPropertyValue("relation:source", docRef.toString());
                 occ.setPropertyValue("relation:target", entityRef.toString());
                 return occ.getAdapter(OccurrenceRelation.class);
