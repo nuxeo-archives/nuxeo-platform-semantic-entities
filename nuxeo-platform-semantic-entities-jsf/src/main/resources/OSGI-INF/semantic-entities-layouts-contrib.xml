@@ -12,12 +12,12 @@
         <row>
           <widget>summary_current_entity_heading</widget>
           <widget>summary_current_entity_view</widget>
-          <widget>summary_current_document_comments</widget>
+          <widget>summary_current_entity_occurrences</widget>
         </row>
         <row>
-          <widget>summary_current_entity_occurrences</widget>
           <widget>summary_current_document_lc_and_version</widget>
           <widget>summary_current_document_actions</widget>
+          <widget>summary_current_document_comments</widget>
         </row>
         <row>
           <widget>summary_current_document_single_tasks</widget>
