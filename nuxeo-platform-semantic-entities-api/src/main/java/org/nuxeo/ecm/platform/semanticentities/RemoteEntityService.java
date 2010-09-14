@@ -68,7 +68,7 @@ public interface RemoteEntityService {
      * The suggestion backend should order the results by a mix of keyword
      * relevance and popularity.
      */
-    List<RemoteEntitySuggestion> suggestRemoteEntity(String keywords,
+    List<RemoteEntity> suggestRemoteEntity(String keywords,
             String type, int maxSuggestions) throws IOException;
 
 }

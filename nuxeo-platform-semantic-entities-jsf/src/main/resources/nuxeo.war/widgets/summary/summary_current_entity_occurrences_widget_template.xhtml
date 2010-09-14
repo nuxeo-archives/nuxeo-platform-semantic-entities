@@ -43,7 +43,8 @@
   <h:inputText id="documentSuggestionKeywords" styleClass="dataInputText" />
   <rich:suggestionbox
     suggestionAction="#{semanticEntitiesActions.suggestDocuments}"
-    var="doc" for="documentSuggestionKeywords" nothingLabel="No matching document"
+    var="doc" for="documentSuggestionKeywords"
+    nothingLabel="${messages['label.results.noMatchingDocument']}"
     ajaxSingle="true">
     <a4j:support event="onselect" reRender="occurrencesPanel"
       action="#{semanticEntitiesActions.addNewOccurrenceRelation}"
