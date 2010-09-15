@@ -52,7 +52,7 @@
     nothingLabel="${messages['label.results.noMatchingEntity']}"
     ajaxSingle="true">
     <a4j:support event="onselect" reRender="documentViewPanel"
-      action="#{semanticEntitiesActions.addNewOccurrenceRelation}"
+      action="#{semanticEntitiesActions.addRemoteEntityLinkAndSync}"
       ajaxSingle="true">
       <f:setPropertyActionListener value="#{entitySuggestion.uri}"
        target="#{semanticEntitiesActions.selectedEntitySuggestionUri}" />

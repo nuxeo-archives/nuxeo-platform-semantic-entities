@@ -7,6 +7,20 @@
     <xs:list itemType="xs:string" />
   </xs:simpleType>
 
+  <xs:complexType name="remoteEntity">
+    <xs:sequence>
+      <xs:element name="uri" type="xs:string" />
+      <xs:element name="label" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="remoteEntities">
+    <xs:sequence>
+      <xs:element name="item" type="nxs:remoteEntity"
+        minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
   <!--
     alternative names to aggregated from occurrences for better fulltext
     lookup, the canonical name of the entity is to be stored in the
@@ -30,10 +44,10 @@
   <xs:element name="depiction" type="nxs:content" />
 
   <!--
-    URIs of linked resources referring to the same real life entity.
-    Should be serialized as owl:sameAs in RDF
+    URI and user friendly label of linked resources referring to the
+    same real life entity. Should be serialized as owl:sameAs in RDF
   -->
-  <xs:element name="sameas" type="nxs:simpleStringList" />
+  <xs:element name="sameas" type="nxs:remoteEntities" />
 
   <!--
     URIs of ontological classes of the entity (instances of owl:Class)

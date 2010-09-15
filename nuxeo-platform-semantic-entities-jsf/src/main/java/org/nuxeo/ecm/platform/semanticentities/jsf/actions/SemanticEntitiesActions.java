@@ -16,6 +16,7 @@
  */
 package org.nuxeo.ecm.platform.semanticentities.jsf.actions;
 
+import java.net.URI;
 import java.util.List;
 
 import org.jboss.seam.ScopeType;
@@ -31,6 +32,8 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
+import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
+import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.ecm.platform.ui.web.api.NavigationContext;
 import org.nuxeo.ecm.webapp.helpers.EventNames;
 import org.nuxeo.runtime.api.Framework;
@@ -52,6 +55,12 @@ public class SemanticEntitiesActions {
     protected List<DocumentModel> documentSuggestions;
 
     protected LocalEntityService leService;
+
+    protected boolean isRemoteEntitySearchDisplayed = false;
+
+    protected URI selectedEntitySuggestionUri;
+
+    protected String selectedEntitySuggestionLabel;
 
     protected LocalEntityService getLocalEntityService() throws Exception {
         if (leService == null) {
@@ -126,7 +135,50 @@ public class SemanticEntitiesActions {
         invalidateEntityOccurrenceProvider();
     }
 
+    /*
+     * Ajax callbacks for remote entity linking and syncing
+     */
+
+    public void showSuggestRemoteEntitySearch() {
+        isRemoteEntitySearchDisplayed = true;
+    }
+
+    public boolean getShowSuggestRemoteEntitySearch() {
+        return isRemoteEntitySearchDisplayed;
+    }
+
+    public void setSelectedEntitySuggestionUri(String uri) {
+        selectedEntitySuggestionUri = URI.create(uri);
+    }
+
+    public void setSelectedEntitySuggestionLabel(String label) {
+        selectedEntitySuggestionLabel = label;
+    }
+
+    public void addRemoteEntityLinkAndSync() throws Exception {
+        if (selectedEntitySuggestionLabel == null
+                || selectedEntitySuggestionUri == null) {
+            // TODO: display some user friendly warning
+            return;
+        }
+        RemoteEntity re = new RemoteEntity(selectedEntitySuggestionLabel,
+                selectedEntitySuggestionUri);
+        DocumentModel doc = navigationContext.getChangeableDocument();
+        re.addToEntities(doc, "entity:sameas");
+
+        RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
+        remoteEntityService.dereferenceInto(doc, re.uri, false);
+
+        documentManager.saveDocument(doc);
+        documentManager.save();
+    }
+
     @Observer(value = EventNames.USER_ALL_DOCUMENT_TYPES_SELECTION_CHANGED, create = false, inject = false)
+    public void onDocumentNavigation() {
+        isRemoteEntitySearchDisplayed = false;
+        invalidateEntityOccurrenceProvider();
+    }
+
     public void invalidateEntityOccurrenceProvider() {
         Contexts.removeFromAllContexts("entityOccurrenceProvider");
     }
