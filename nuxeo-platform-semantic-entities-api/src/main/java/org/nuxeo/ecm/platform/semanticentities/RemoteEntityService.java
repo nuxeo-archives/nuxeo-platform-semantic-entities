@@ -23,7 +23,24 @@ import java.util.List;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 
+/**
+ * Service to suggest by name, lookup and fetch data by URI from entities
+ * definitions hosted on remote HTTP servers using the Linked Data philosophy.
+ *
+ * See {@link http://en.wikipedia.org/wiki/Linked_Data }.
+ */
 public interface RemoteEntityService {
+
+    /**
+     * @return true if at least one remote source is registered
+     */
+    boolean hasRegisteredRemoteSources();
+
+    /**
+     * @return true if one of the registered remote sources can handle the
+     *         provided URI
+     */
+    boolean canDereference(URI remoteEntity);
 
     /**
      * Create a document model holding the dereferenced structure date from an
@@ -68,7 +85,7 @@ public interface RemoteEntityService {
      * The suggestion backend should order the results by a mix of keyword
      * relevance and popularity.
      */
-    List<RemoteEntity> suggestRemoteEntity(String keywords,
-            String type, int maxSuggestions) throws IOException;
+    List<RemoteEntity> suggestRemoteEntity(String keywords, String type,
+            int maxSuggestions) throws IOException;
 
 }
