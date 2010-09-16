@@ -146,9 +146,10 @@ public class SemanticEntitiesActions {
      * Ajax callbacks for remote entity linking and syncing
      */
 
-    @Factory(scope = ScopeType.EVENT, value = "currentEntitySameAss")
-    public void getCurrentEntitySameAs() {
-
+    @Factory(scope = ScopeType.EVENT, value = "currentEntitySameAs")
+    public List<RemoteEntity> getCurrentEntitySameAs() throws ClientException {
+        return RemoteEntity.fromDocument(
+                navigationContext.getCurrentDocument(), ENTITY_SAMEAS);
     }
 
     public void showSuggestRemoteEntitySearch() {
@@ -190,7 +191,9 @@ public class SemanticEntitiesActions {
             boolean fullSync) throws Exception, DereferencingException,
             ClientException {
         RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
-        remoteEntityService.dereferenceInto(doc, uri, fullSync);
+        if (remoteEntityService.canDereference(uri)) {
+            remoteEntityService.dereferenceInto(doc, uri, fullSync);
+        }
         documentManager.saveDocument(doc);
         documentManager.save();
     }
