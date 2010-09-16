@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.ecm.platform.semanticentities.RemoteEntityService">
+
+  <implementation class="org.nuxeo.ecm.platform.semanticentities.service.RemoteEntityServiceImpl" />
+
+  <service>
+    <provide interface="org.nuxeo.ecm.platform.semanticentities.RemoteEntityService" />
+  </service>
+  
+  <documentation>
+    The RemoteEntityService service provides a generic way to register linked data
+    sources to lookup up and download attributes of entity definitions from a remote
+    server such as DBpedia for instance.
+  </documentation>
+
+  <extension-point name="remoteSources">
+    <documentation>
+      The service accepts the registration of parameterized remote sources connectors:
+
+      <code>
+        <remoteSource name="dbpedia" uriPrefix="http://dbpedia.org/"
+          class="org.nuxeo.ecm.platform.semanticentities.sources.DBpediaEntitySource"
+          enabled="true">
+          <typeMapping default="Entity">
+         	<type name="Person">http://dbpedia.org/ontology/Person</type>
+         	<type name="Organization">http://dbpedia.org/ontology/Organization</type>
+         	<type name="Place">http://dbpedia.org/ontology/Place</type>
+          </typeMapping>
+          <propertyMapping>
+            <field name=""></field>
+          </propertyMapping>
+        </remoteSource>
+      </code>
+    </documentation>
+
+    <object class="org.nuxeo.ecm.platform.semanticentities.service.RemoteSourceDescriptor" />
+  </extension-point>
+
+</component>
