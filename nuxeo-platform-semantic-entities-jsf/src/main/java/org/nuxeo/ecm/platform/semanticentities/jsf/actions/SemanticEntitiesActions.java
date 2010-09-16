@@ -16,8 +16,11 @@
  */
 package org.nuxeo.ecm.platform.semanticentities.jsf.actions;
 
+import java.io.Serializable;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.jboss.seam.ScopeType;
 import org.jboss.seam.annotations.Factory;
@@ -31,6 +34,8 @@ import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.PageProvider;
+import org.nuxeo.ecm.core.api.model.PropertyException;
+import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
@@ -41,6 +46,8 @@ import org.nuxeo.runtime.api.Framework;
 @Name("semanticEntitiesActions")
 @Scope(ScopeType.CONVERSATION)
 public class SemanticEntitiesActions {
+
+    public static final String ENTITY_SAMEAS = "entity:sameas";
 
     @In(create = true)
     protected NavigationContext navigationContext;
@@ -139,6 +146,11 @@ public class SemanticEntitiesActions {
      * Ajax callbacks for remote entity linking and syncing
      */
 
+    @Factory(scope = ScopeType.EVENT, value = "currentEntitySameAss")
+    public void getCurrentEntitySameAs() {
+
+    }
+
     public void showSuggestRemoteEntitySearch() {
         isRemoteEntitySearchDisplayed = true;
     }
@@ -164,11 +176,38 @@ public class SemanticEntitiesActions {
         RemoteEntity re = new RemoteEntity(selectedEntitySuggestionLabel,
                 selectedEntitySuggestionUri);
         DocumentModel doc = navigationContext.getChangeableDocument();
-        re.addToEntities(doc, "entity:sameas");
+        re.addToEntities(doc, ENTITY_SAMEAS);
 
+        syncAndSaveDocument(doc, re.uri, false);
+    }
+
+    public void syncWithSameAsLink(String uri) throws Exception {
+        syncAndSaveDocument(navigationContext.getChangeableDocument(),
+                URI.create(uri), true);
+    }
+
+    protected void syncAndSaveDocument(DocumentModel doc, URI uri,
+            boolean fullSync) throws Exception, DereferencingException,
+            ClientException {
         RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
-        remoteEntityService.dereferenceInto(doc, re.uri, false);
+        remoteEntityService.dereferenceInto(doc, uri, fullSync);
+        documentManager.saveDocument(doc);
+        documentManager.save();
+    }
 
+    @SuppressWarnings("unchecked")
+    public void removeSameAsLink(String uri) throws PropertyException,
+            ClientException {
+        DocumentModel doc = navigationContext.getChangeableDocument();
+        List<Map<String, String>> oldRemoteEntities = doc.getProperty(
+                ENTITY_SAMEAS).getValue(List.class);
+        List<Map<String, String>> newRemoteEntities = new ArrayList<Map<String, String>>();
+        for (Map<String, String> entity : oldRemoteEntities) {
+            if (!uri.equals(entity.get("uri"))) {
+                newRemoteEntities.add(entity);
+            }
+        }
+        doc.setPropertyValue(ENTITY_SAMEAS, (Serializable) newRemoteEntities);
         documentManager.saveDocument(doc);
         documentManager.save();
     }

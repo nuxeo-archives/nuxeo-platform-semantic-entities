@@ -22,15 +22,17 @@
       </h:outputLink>
     </nxu:column>
     <nxu:column>
-      <h:commandLink id="syncWithSameAsLink" action="#{semanticEntitiesActions.syncSameAs(remoteEntity.uri)}"
+      <a4j:commandLink id="syncWithSameAsLink"
+        reRender="remoteEntitySuggestionPanel"
+        action="#{semanticEntitiesActions.syncWithSameAsLink(remoteEntity.uri)}"
         rendered="#{documentManager.hasPermission(currentDocument.ref, 'WRITE_PROPERTIES')}">
         <h:graphicImage value="/img/refresh.png" />
-      </h:commandLink>
+      </a4j:commandLink>
     </nxu:column>
     <nxu:column>
       <a4j:commandLink id="removeSameAsLink"
         immediate="true"
-        reRender="remoteEntitySuggestionPanel"
+        reRender="documentViewPanel"
         action="#{semanticEntitiesActions.removeSameAsLink(remoteEntity.uri)}"
         rendered="#{documentManager.hasPermission(currentDocument.ref, 'WRITE_PROPERTIES')}">
         <h:graphicImage value="/icons/action_delete_mini.gif" />
