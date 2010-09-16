@@ -21,7 +21,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -93,6 +95,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         Framework.getLocalService(EventService.class).waitForAsyncCompletion();
     }
 
+    @SuppressWarnings("unchecked")
     public void makeSomeEntities() throws ClientException {
         DocumentModel container = service.getEntityContainer(session);
         assertNotNull(container);
@@ -107,9 +110,11 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
                         + " was an English rock musician, singer-songwriter, author, and peace"
                         + " activist who gained worldwide fame as one of the founding members of"
                         + " The Beatles.");
-        john.setPropertyValue(
-                "entity:sameas",
-                (Serializable) Arrays.asList("http://dbpedia.org/resource/John_Lennon"));
+        Map<String, String> remoteEntity = new HashMap<String, String>();
+        remoteEntity.put("uri", "http://dbpedia.org/resource/John_Lennon");
+        remoteEntity.put("label", "John Lennon");
+        john.setPropertyValue("entity:sameas",
+                (Serializable) Arrays.asList(remoteEntity));
         john.setPropertyValue(
                 "entity:types",
                 (Serializable) Arrays.asList("http://dbpedia.org/ontology/MusicalArtist"));
@@ -133,9 +138,11 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
                 "The Beatles were an English rock band, formed in Liverpool in 1960"
                         + " and one of the most commercially successful and critically acclaimed"
                         + " acts in the history of popular music.");
-        beatles.setPropertyValue(
-                "entity:sameas",
-                (Serializable) Arrays.asList("http://dbpedia.org/resource/The_Beatles"));
+
+        remoteEntity.put("uri", "http://dbpedia.org/resource/The_Beatles");
+        remoteEntity.put("label", "The Beatles");
+        beatles.setPropertyValue("entity:sameas",
+                (Serializable) Arrays.asList(remoteEntity));
         beatles.setPropertyValue(
                 "entity:types",
                 (Serializable) Arrays.asList("http://dbpedia.org/ontology/Band"));
@@ -149,9 +156,11 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
                 "Liverpool is a city and metropolitan borough of Merseyside, England, along"
                         + " the eastern side of the Mersey Estuary. It was founded as a borough"
                         + " in 1207 and was granted city status in 1880.");
-        liverpool.setPropertyValue(
-                "entity:sameas",
-                (Serializable) Arrays.asList("http://dbpedia.org/resource/Liverpool"));
+
+        remoteEntity.put("uri", "http://dbpedia.org/resource/Liverpool");
+        remoteEntity.put("label", "Liverpool");
+        liverpool.setPropertyValue("entity:sameas",
+                (Serializable) Arrays.asList(remoteEntity));
         liverpool.setPropertyValue(
                 "entity:types",
                 (Serializable) Arrays.asList("http://dbpedia.org/ontology/City"));
