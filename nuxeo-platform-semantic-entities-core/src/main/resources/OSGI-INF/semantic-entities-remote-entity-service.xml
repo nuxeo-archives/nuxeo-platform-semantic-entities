@@ -23,7 +23,7 @@
           enabled="true">
           <typeMapping default="Entity">
          	<type name="Person">http://dbpedia.org/ontology/Person</type>
-         	<type name="Organization">http://dbpedia.org/ontology/Organization</type>
+         	<type name="Organization">http://dbpedia.org/ontology/Organisation</type>
          	<type name="Place">http://dbpedia.org/ontology/Place</type>
           </typeMapping>
           <propertyMapping>
@@ -33,7 +33,30 @@
       </code>
     </documentation>
 
-    <object class="org.nuxeo.ecm.platform.semanticentities.service.RemoteSourceDescriptor" />
+    <object class="org.nuxeo.ecm.platform.semanticentities.service.RemoteEntitySourceDescriptor" />
   </extension-point>
+
+  <extension target="org.nuxeo.ecm.platform.semanticentities.RemoteEntityService"
+    point="remoteSources">
+
+    <documentation>
+      Default remote source for the DBpedia knowledge base.
+    </documentation>
+
+    <remoteSource name="dbpedia" uriPrefix="http://dbpedia.org/"
+      class="org.nuxeo.ecm.platform.semanticentities.sources.DBpediaEntitySource"
+      enabled="true">
+      <typeMapping default="Entity">
+        <type name="Person">http://dbpedia.org/ontology/Person</type>
+        <type name="Organization">http://dbpedia.org/ontology/Organisation</type>
+        <type name="Place">http://dbpedia.org/ontology/Place</type>
+      </typeMapping>
+      <propertyMapping>
+        <field name="person:birthDate">http://dbpedia.org/ontology/birthDate</field>
+        <field name="person:deathDate">http://dbpedia.org/ontology/deathDate</field>
+      </propertyMapping>
+    </remoteSource>
+
+  </extension>
 
 </component>

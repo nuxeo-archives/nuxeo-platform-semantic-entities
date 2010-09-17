@@ -56,7 +56,7 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
             activeSources = new LinkedHashMap<String, ParameterizedRemoteEntitySource>();
             for (RemoteEntitySourceDescriptor descriptor : registeredSourceDescriptors) {
                 String name = descriptor.getName();
-                if (activeSources.containsKey(name) && !descriptor.isEnabled()) {
+                if (!descriptor.isEnabled() && activeSources.containsKey(name)) {
                     activeSources.remove(name);
                 } else {
                     activeSources.put(name, descriptor.getEntitySource());
