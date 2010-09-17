@@ -31,8 +31,10 @@ import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntitySource;
 
 /**
- * Reference implementation for the RemoteEntityService component. Can be used
- * to register remote entity sources for linked data dereferencing.
+ * {@inheritDoc}
+ *
+ * Default implementation for the RemoteEntityService component. Can be used to
+ * register remote entity sources for linked data dereferencing.
  */
 public class RemoteEntityServiceImpl implements RemoteEntityService {
 
@@ -50,9 +52,8 @@ public class RemoteEntityServiceImpl implements RemoteEntityService {
         return activeSources;
     }
 
-
     protected RemoteEntitySource getSourceFor(URI remoteEntity) {
-        for (RemoteEntitySource source: getActiveSources()) {
+        for (RemoteEntitySource source : getActiveSources()) {
             if (source.canDereference(remoteEntity)) {
                 return source;
             }
@@ -62,7 +63,11 @@ public class RemoteEntityServiceImpl implements RemoteEntityService {
 
     @Override
     public boolean canSuggestRemoteEntity() {
-        // TODO Auto-generated method stub
+        for (RemoteEntitySource source : getActiveSources()) {
+            if (source.canSuggestRemoteEntity()) {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -71,26 +76,36 @@ public class RemoteEntityServiceImpl implements RemoteEntityService {
         return getSourceFor(remoteEntity) != null;
     }
 
-
     @Override
     public DocumentModel dereference(CoreSession session, URI remoteEntity)
             throws DereferencingException {
-        // TODO Auto-generated method stub
-        return null;
+        return getSourceFor(remoteEntity).dereference(session, remoteEntity);
     }
 
     @Override
     public void dereferenceInto(DocumentModel localEntity, URI remoteEntity,
             boolean override) throws DereferencingException {
-        // TODO Auto-generated method stub
-
+        getSourceFor(remoteEntity).dereferenceInto(localEntity, remoteEntity,
+                override);
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * This implementation aggregates all the suggestions of the sources that
+     * can perform suggestions. Hence the number of aggregate suggestions might
+     * be larger than {@literal maxSuggestions}
+     */
     @Override
     public List<RemoteEntity> suggestRemoteEntity(String keywords, String type,
             int maxSuggestions) throws IOException {
-        // TODO Auto-generated method stub
-        return null;
+        List<RemoteEntity> suggestions = new ArrayList<RemoteEntity>();
+        for (RemoteEntitySource source : getActiveSources()) {
+            if (source.canSuggestRemoteEntity()) {
+                suggestions.addAll(source.suggestRemoteEntity(keywords, type,
+                        maxSuggestions));
+            }
+        }
+        return suggestions;
     }
-
 }
