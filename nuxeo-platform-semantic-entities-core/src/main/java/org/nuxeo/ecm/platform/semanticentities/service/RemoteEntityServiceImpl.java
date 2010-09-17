@@ -19,6 +19,8 @@ package org.nuxeo.ecm.platform.semanticentities.service;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -29,6 +31,8 @@ import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntitySource;
+import org.nuxeo.runtime.model.DefaultComponent;
+import org.nuxeo.runtime.model.Extension;
 
 /**
  * {@inheritDoc}
@@ -36,24 +40,34 @@ import org.nuxeo.ecm.platform.semanticentities.RemoteEntitySource;
  * Default implementation for the RemoteEntityService component. Can be used to
  * register remote entity sources for linked data dereferencing.
  */
-public class RemoteEntityServiceImpl implements RemoteEntityService {
+public class RemoteEntityServiceImpl extends DefaultComponent implements
+        RemoteEntityService {
 
-    public static final Log log = LogFactory.getLog(RemoteEntityServiceImpl.class);
+    private static final Log log = LogFactory.getLog(RemoteEntityServiceImpl.class);
 
     public static final String REMOTESOURCES_XP_NAME = "remoteSources";
 
-    public List<ParameterizedRemoteEntitySource> activeSources;
+    protected final List<RemoteEntitySourceDescriptor> registeredSourceDescriptors = new ArrayList<RemoteEntitySourceDescriptor>();
 
-    protected List<ParameterizedRemoteEntitySource> getActiveSources() {
+    protected HashMap<String, ParameterizedRemoteEntitySource> activeSources;
+
+    protected HashMap<String, ParameterizedRemoteEntitySource> getActiveSources() {
         if (activeSources == null) {
-            activeSources = new ArrayList<ParameterizedRemoteEntitySource>();
-            // TODO: merge registered and enabled resources here
+            activeSources = new LinkedHashMap<String, ParameterizedRemoteEntitySource>();
+            for (RemoteEntitySourceDescriptor descriptor : registeredSourceDescriptors) {
+                String name = descriptor.getName();
+                if (activeSources.containsKey(name) && !descriptor.isEnabled()) {
+                    activeSources.remove(name);
+                } else {
+                    activeSources.put(name, descriptor.getEntitySource());
+                }
+            }
         }
         return activeSources;
     }
 
     protected RemoteEntitySource getSourceFor(URI remoteEntity) {
-        for (RemoteEntitySource source : getActiveSources()) {
+        for (RemoteEntitySource source : getActiveSources().values()) {
             if (source.canDereference(remoteEntity)) {
                 return source;
             }
@@ -61,9 +75,66 @@ public class RemoteEntityServiceImpl implements RemoteEntityService {
         return null;
     }
 
+    /*
+     * Extension point contribution API
+     */
+
+    @Override
+    public void registerExtension(Extension extension) throws Exception {
+        if (extension.getExtensionPoint().equals(REMOTESOURCES_XP_NAME)) {
+            Object[] contribs = extension.getContributions();
+            for (Object contrib : contribs) {
+                if (contrib instanceof RemoteEntitySourceDescriptor) {
+                    registerRemoteEntitySourceDescriptor(
+                            (RemoteEntitySourceDescriptor) contrib, extension);
+                }
+            }
+        }
+    }
+
+    protected void registerRemoteEntitySourceDescriptor(
+            RemoteEntitySourceDescriptor descriptor, Extension extension)
+            throws InstantiationException, IllegalAccessException,
+            ClassNotFoundException {
+        descriptor.initializeInContext(extension.getContext());
+        registeredSourceDescriptors.add(descriptor);
+        // invalidate the cache of activeSources
+        activeSources = null;
+    }
+
+    @Override
+    public void unregisterExtension(Extension extension) throws Exception {
+        if (extension.getExtensionPoint().equals(REMOTESOURCES_XP_NAME)) {
+            Object[] contribs = extension.getContributions();
+            for (Object contrib : contribs) {
+                if (contrib instanceof RemoteEntitySourceDescriptor) {
+                    unregisterRemoteEntitySourceDescriptor(
+                            (RemoteEntitySourceDescriptor) contrib, extension);
+                }
+            }
+        }
+    }
+
+    protected void unregisterRemoteEntitySourceDescriptor(
+            RemoteEntitySourceDescriptor descriptor, Extension extension) {
+        int index = registeredSourceDescriptors.lastIndexOf(descriptor);
+        if (index != -1) {
+            registeredSourceDescriptors.remove(index);
+            activeSources = null;
+        } else {
+            log.warn(String.format(
+                    "no registered remote source under name '%s'",
+                    descriptor.getName()));
+        }
+    }
+
+    /*
+     * API for the RemoteEntityService interface
+     */
+
     @Override
     public boolean canSuggestRemoteEntity() {
-        for (RemoteEntitySource source : getActiveSources()) {
+        for (RemoteEntitySource source : getActiveSources().values()) {
             if (source.canSuggestRemoteEntity()) {
                 return true;
             }
@@ -100,7 +171,7 @@ public class RemoteEntityServiceImpl implements RemoteEntityService {
     public List<RemoteEntity> suggestRemoteEntity(String keywords, String type,
             int maxSuggestions) throws IOException {
         List<RemoteEntity> suggestions = new ArrayList<RemoteEntity>();
-        for (RemoteEntitySource source : getActiveSources()) {
+        for (RemoteEntitySource source : getActiveSources().values()) {
             if (source.canSuggestRemoteEntity()) {
                 suggestions.addAll(source.suggestRemoteEntity(keywords, type,
                         maxSuggestions));
