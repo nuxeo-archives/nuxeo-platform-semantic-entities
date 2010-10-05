@@ -16,7 +16,12 @@
  */
 package org.nuxeo.ecm.platform.semanticentities.service;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.nuxeo.common.xmap.annotation.XNode;
+import org.nuxeo.common.xmap.annotation.XNodeMap;
 import org.nuxeo.common.xmap.annotation.XObject;
 import org.nuxeo.runtime.model.RuntimeContext;
 
@@ -35,8 +40,28 @@ public class RemoteEntitySourceDescriptor {
     @XNode("@enabled")
     protected boolean enabled = false;
 
+    @XNode("typeMapping@default")
+    protected String defaultType;
+
     protected ParameterizedRemoteEntitySource source;
 
+    @XNodeMap(value = "typeMapping/type", key = "@name", type = HashMap.class, componentType = String.class)
+    protected Map<String, String> mappedTypes = Collections.emptyMap();
+
+    @XNodeMap(value = "propertyMapping/field", key = "@name", type = HashMap.class, componentType = String.class)
+    protected Map<String, String> mappedProperties = Collections.emptyMap();
+
+    public String getDefaultType() {
+        return defaultType;
+    }
+
+    public Map<String, String> getMappedTypes() {
+        return mappedTypes;
+    }
+
+    public Map<String, String> getMappedProperties() {
+        return mappedProperties;
+    }
 
     public String getName() {
         return name;

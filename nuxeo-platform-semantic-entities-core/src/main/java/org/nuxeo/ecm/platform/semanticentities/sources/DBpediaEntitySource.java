@@ -82,9 +82,22 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
     public List<RemoteEntity> suggestRemoteEntity(String keywords, String type,
             int maxSuggestions) throws IOException {
 
-        // TODO: handle type mapping here
+        if (type == null) {
+            type = descriptor.getDefaultType();
+        }
 
-        InputStream bodyStream = fetchSuggestions(keywords, type,
+        String mappedType = descriptor.getMappedTypes().get(type);
+        if (mappedType == null) {
+            throw new IllegalArgumentException(String.format(
+                    "Type '%s' is not mapped to any DBpedia class", type));
+        } else {
+            int lastSlashIndex = mappedType.lastIndexOf("/");
+            if (lastSlashIndex != -1) {
+                mappedType = mappedType.substring(lastSlashIndex + 1);
+            }
+        }
+
+        InputStream bodyStream = fetchSuggestions(keywords, mappedType,
                 maxSuggestions);
         if (bodyStream == null) {
             throw new IOException(

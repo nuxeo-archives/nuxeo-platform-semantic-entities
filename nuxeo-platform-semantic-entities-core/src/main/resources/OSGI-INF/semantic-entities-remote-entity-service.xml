@@ -25,9 +25,11 @@
          	<type name="Person">http://dbpedia.org/ontology/Person</type>
          	<type name="Organization">http://dbpedia.org/ontology/Organisation</type>
          	<type name="Place">http://dbpedia.org/ontology/Place</type>
+            <type name="Entity">http://dbpedia.org/ontology/Thing</type>
           </typeMapping>
           <propertyMapping>
-            <field name=""></field>
+            <field name="person:birthDate">http://dbpedia.org/ontology/birthDate</field>
+            <field name="person:deathDate">http://dbpedia.org/ontology/deathDate</field>
           </propertyMapping>
         </remoteSource>
       </code>
@@ -50,6 +52,7 @@
         <type name="Person">http://dbpedia.org/ontology/Person</type>
         <type name="Organization">http://dbpedia.org/ontology/Organisation</type>
         <type name="Place">http://dbpedia.org/ontology/Place</type>
+        <type name="Entity">http://dbpedia.org/ontology/Thing</type>
       </typeMapping>
       <propertyMapping>
         <field name="person:birthDate">http://dbpedia.org/ontology/birthDate</field>

@@ -44,8 +44,8 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         // deploy offline mock dbpedia source to override the default source
         // that needs an internet connection: comment the following contrib to
         // test again the real DBpedia server
-        deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
-                "OSGI-INF/test-semantic-entities-remote-entity-contrib.xml");
+        // deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
+        // "OSGI-INF/test-semantic-entities-remote-entity-contrib.xml");
 
         // initialize the session field
         openSession();
@@ -65,6 +65,25 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals("Barack Obama", suggested.label);
         assertEquals(URI.create("http://dbpedia.org/resource/Barack_Obama"),
                 suggested.uri);
+
+        // this should also work for a null type
+        suggestions = service.suggestRemoteEntity(
+                "the 44th president of the United States", null, 3);
+        assertNotNull(suggestions);
+        assertEquals(1, suggestions.size());
+
+        suggested = suggestions.get(0);
+        assertEquals("Barack Obama", suggested.label);
+        assertEquals(URI.create("http://dbpedia.org/resource/Barack_Obama"),
+                suggested.uri);
+
+        // however no organization should match this name
+        suggestions = service.suggestRemoteEntity(
+                "the 44th president of the United States", "Place", 3);
+        assertNotNull(suggestions);
+        // XXX: the QueryClass is apparently no implemented on the
+        // lookup.dbpedia.org service, hence the restriction does not work
+        assertEquals(1, suggestions.size());
     }
 
 }
