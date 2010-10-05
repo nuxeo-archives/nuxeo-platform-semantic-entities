@@ -44,8 +44,8 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         // deploy offline mock dbpedia source to override the default source
         // that needs an internet connection: comment the following contrib to
         // test again the real DBpedia server
-        // deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
-        // "OSGI-INF/test-semantic-entities-remote-entity-contrib.xml");
+        deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
+                "OSGI-INF/test-semantic-entities-remote-entity-contrib.xml");
 
         // initialize the session field
         openSession();
