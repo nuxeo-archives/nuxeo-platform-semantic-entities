@@ -17,14 +17,37 @@
 package org.nuxeo.ecm.platform.semanticentities.sources;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.FactoryConfigurationError;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.service.ParameterizedRemoteEntitySource;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  * Implementation of the RemoteEntitySource interface that is able to suggest
@@ -33,10 +56,15 @@ import org.nuxeo.ecm.platform.semanticentities.service.ParameterizedRemoteEntity
  */
 public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
 
+    private static final Log log = LogFactory.getLog(DBpediaEntitySource.class);
+
+    protected static final String SUGGESTION_URL_PATTERN = "http://lookup.dbpedia.org/api/search.asmx/KeywordSearch?QueryString=%s&QueryClass=%s&MaxHits=%d";
+
+    private static final String RESULT_NODE_XPATH = "//Result";
+
     @Override
     public boolean canSuggestRemoteEntity() {
-        // TODO: implement the version that can
-        return false;
+        return true;
     }
 
     @Override
@@ -53,7 +81,76 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
     @Override
     public List<RemoteEntity> suggestRemoteEntity(String keywords, String type,
             int maxSuggestions) throws IOException {
-        return null;
+
+        // TODO: handle type mapping here
+
+        InputStream bodyStream = fetchSuggestions(keywords, type,
+                maxSuggestions);
+        if (bodyStream == null) {
+            throw new IOException(
+                    String.format(
+                            "Unable to fetch suggestion response for '%s' with type '%s'",
+                            keywords, type));
+        }
+
+        List<RemoteEntity> suggestions = new ArrayList<RemoteEntity>();
+        try {
+            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            Document document = builder.parse(bodyStream);
+            XPath xpath = XPathFactory.newInstance().newXPath();
+            NodeList resultNodes = (NodeList) xpath.evaluate(RESULT_NODE_XPATH,
+                    document, XPathConstants.NODESET);
+            for (int i = 0; i < resultNodes.getLength(); i++) {
+                Node resultNode = resultNodes.item(i);
+                NodeList nodes = resultNode.getChildNodes();
+                String label = null;
+                URI uri = null;
+                for (int j = 0; j < nodes.getLength(); j++) {
+                    Node node = nodes.item(j);
+                    if ("Label".equals(node.getNodeName())) {
+                        label = node.getFirstChild().getNodeValue();
+                    } else if ("URI".equals(node.getNodeName())) {
+                        uri = URI.create(node.getFirstChild().getNodeValue());
+                    }
+                }
+                if (label != null && uri != null) {
+                    suggestions.add(new RemoteEntity(label, uri));
+                }
+            }
+        } catch (ParserConfigurationException e) {
+            log.error(e, e);
+            return Collections.emptyList();
+        } catch (FactoryConfigurationError e) {
+            log.error(e, e);
+            return Collections.emptyList();
+        } catch (XPathExpressionException e) {
+            log.error(e, e);
+            return Collections.emptyList();
+        } catch (SAXException e) {
+            throw new IOException(String.format(
+                    "Invalid suggestion response for '%s' with type '%s'",
+                    keywords, type), e);
+        } finally {
+            bodyStream.close();
+        }
+        return suggestions;
     }
 
+    /*
+     * submethod to be overridden in mock object for the tests
+     */
+    protected InputStream fetchSuggestions(String keywords, String type,
+            int maxSuggestions) throws UnsupportedEncodingException,
+            MalformedURLException, IOException {
+        String escapedKeywords = URLEncoder.encode(keywords, "UTF-8");
+        String escapedType = URLEncoder.encode(type, "UTF-8");
+
+        String query = String.format(SUGGESTION_URL_PATTERN, escapedKeywords,
+                escapedType, maxSuggestions);
+
+        URL url = new URL(query);
+        URLConnection connection = url.openConnection();
+        connection.addRequestProperty("Accept", "application/xml");
+        return connection.getInputStream();
+    }
 }

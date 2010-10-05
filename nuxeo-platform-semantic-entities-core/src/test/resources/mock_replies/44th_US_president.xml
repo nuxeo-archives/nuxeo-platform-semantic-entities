@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ArrayOfResult xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://lookup.dbpedia.org/">
+  <Result>
+    <Label>Barack Obama</Label>
+    <Description>Barack Hussein Obama II (born August 4, 1961) is the 44th and current President of the United States. The first African American to hold the office, he previously served as the junior United States Senator from Illinois from January 2005 until he resigned after his election to the presidency in November 2008. Obama is a graduate of Columbia University and Harvard Law School, where he was the president of the Harvard Law Review.</Description>
+    <URI>http://dbpedia.org/resource/Barack_Obama</URI>
+    <Classes>
+      <Class>
+        <Label>Person</Label>
+        <URI>http://dbpedia.org/ontology/Person</URI>
+      </Class>
+      <Class>
+        <Label>Politician</Label>
+        <URI>http://dbpedia.org/ontology/Politician</URI>
+      </Class>
+      <Class>
+        <Label>President</Label>
+        <URI>http://dbpedia.org/ontology/President</URI>
+      </Class>
+    </Classes>
+    <Templates />
+    <Categories>
+      <Category>
+        <Label>1961 births</Label>
+        <URI>http://dbpedia.org/resource/Category:1961_births</URI>
+      </Category>
+      <Category>
+        <Label>21st-century national presidents in North America</Label>
+        <URI>http://dbpedia.org/resource/Category:21st-century_national_presidents_in_North_America</URI>
+      </Category>
+      <Category>
+        <Label>African American academics</Label>
+        <URI>http://dbpedia.org/resource/Category:African_American_academics</URI>
+      </Category>
+      <Category>
+        <Label>African American history</Label>
+        <URI>http://dbpedia.org/resource/Category:African_American_history</URI>
+      </Category>
+      <Category>
+        <Label>African American lawyers</Label>
+        <URI>http://dbpedia.org/resource/Category:African_American_lawyers</URI>
+      </Category>
+      <Category>
+        <Label>African American memoirists</Label>
+        <URI>http://dbpedia.org/resource/Category:African_American_memoirists</URI>
+      </Category>
+      <Category>
+        <Label>African American politicians</Label>
+        <URI>http://dbpedia.org/resource/Category:African_American_politicians</URI>
+      </Category>
+      <Category>
+        <Label>African American United States presidential candidates</Label>
+        <URI>http://dbpedia.org/resource/Category:African_American_United_States_presidential_candidates</URI>
+      </Category>
+      <Category>
+        <Label>African American United States Senators</Label>
+        <URI>http://dbpedia.org/resource/Category:African_American_United_States_Senators</URI>
+      </Category>
+      <Category>
+        <Label>American civil rights lawyers</Label>
+        <URI>http://dbpedia.org/resource/Category:American_civil_rights_lawyers</URI>
+      </Category>
+      <Category>
+        <Label>American legal academics</Label>
+        <URI>http://dbpedia.org/resource/Category:American_legal_academics</URI>
+      </Category>
+      <Category>
+        <Label>American political writers</Label>
+        <URI>http://dbpedia.org/resource/Category:American_political_writers</URI>
+      </Category>
+      <Category>
+        <Label>Audio book narrators</Label>
+        <URI>http://dbpedia.org/resource/Category:Audio_book_narrators</URI>
+      </Category>
+      <Category>
+        <Label>Barack Obama</Label>
+        <URI>http://dbpedia.org/resource/Category:Barack_Obama</URI>
+      </Category>
+      <Category>
+        <Label>Columbia University alumni</Label>
+        <URI>http://dbpedia.org/resource/Category:Columbia_University_alumni</URI>
+      </Category>
+      <Category>
+        <Label>Community organizers</Label>
+        <URI>http://dbpedia.org/resource/Category:Community_organizers</URI>
+      </Category>
+      <Category>
+        <Label>Current national leaders</Label>
+        <URI>http://dbpedia.org/resource/Category:Current_national_leaders</URI>
+      </Category>
+      <Category>
+        <Label>Democratic Party (United States) politicians</Label>
+        <URI>http://dbpedia.org/resource/Category:Democratic_Party_(United_States)_politicians</URI>
+      </Category>
+      <Category>
+        <Label>Democratic Party (United States) presidential nominees</Label>
+        <URI>http://dbpedia.org/resource/Category:Democratic_Party_(United_States)_presidential_nominees</URI>
+      </Category>
+      <Category>
+        <Label>English Americans</Label>
+        <URI>http://dbpedia.org/resource/Category:English_Americans</URI>
+      </Category>
+      <Category>
+        <Label>Grammy Award winners</Label>
+        <URI>http://dbpedia.org/resource/Category:Grammy_Award_winners</URI>
+      </Category>
+      <Category>
+        <Label>Harvard Law School alumni</Label>
+        <URI>http://dbpedia.org/resource/Category:Harvard_Law_School_alumni</URI>
+      </Category>
+      <Category>
+        <Label>Illinois Democrats</Label>
+        <URI>http://dbpedia.org/resource/Category:Illinois_Democrats</URI>
+      </Category>
+      <Category>
+        <Label>Illinois lawyers</Label>
+        <URI>http://dbpedia.org/resource/Category:Illinois_lawyers</URI>
+      </Category>
+      <Category>
+        <Label>Illinois State Senators</Label>
+        <URI>http://dbpedia.org/resource/Category:Illinois_State_Senators</URI>
+      </Category>
+      <Category>
+        <Label>Kenyan-Americans</Label>
+        <URI>http://dbpedia.org/resource/Category:Kenyan-Americans</URI>
+      </Category>
+      <Category>
+        <Label>Living people</Label>
+        <URI>http://dbpedia.org/resource/Category:Living_people</URI>
+      </Category>
+      <Category>
+        <Label>Luo people</Label>
+        <URI>http://dbpedia.org/resource/Category:Luo_people</URI>
+      </Category>
+      <Category>
+        <Label>Occidental College alumni</Label>
+        <URI>http://dbpedia.org/resource/Category:Occidental_College_alumni</URI>
+      </Category>
+      <Category>
+        <Label>People from Chicago, Illinois</Label>
+        <URI>http://dbpedia.org/resource/Category:People_from_Chicago,_Illinois</URI>
+      </Category>
+      <Category>
+        <Label>People from Honolulu, Hawaii</Label>
+        <URI>http://dbpedia.org/resource/Category:People_from_Honolulu,_Hawaii</URI>
+      </Category>
+      <Category>
+        <Label>Politicians from Chicago, Illinois</Label>
+        <URI>http://dbpedia.org/resource/Category:Politicians_from_Chicago,_Illinois</URI>
+      </Category>
+      <Category>
+        <Label>Presidents of the United States</Label>
+        <URI>http://dbpedia.org/resource/Category:Presidents_of_the_United_States</URI>
+      </Category>
+      <Category>
+        <Label>Punahou School alumni</Label>
+        <URI>http://dbpedia.org/resource/Category:Punahou_School_alumni</URI>
+      </Category>
+      <Category>
+        <Label>Renewable-energy promoters</Label>
+        <URI>http://dbpedia.org/resource/Category:Renewable-energy_promoters</URI>
+      </Category>
+      <Category>
+        <Label>Time magazine Persons of the Year</Label>
+        <URI>http://dbpedia.org/resource/Category:Time_magazine_Persons_of_the_Year</URI>
+      </Category>
+      <Category>
+        <Label>United Church of Christ members</Label>
+        <URI>http://dbpedia.org/resource/Category:United_Church_of_Christ_members</URI>
+      </Category>
+      <Category>
+        <Label>United States presidential candidates, 2008</Label>
+        <URI>http://dbpedia.org/resource/Category:United_States_presidential_candidates,_2008</URI>
+      </Category>
+      <Category>
+        <Label>United States Senators from Illinois</Label>
+        <URI>http://dbpedia.org/resource/Category:United_States_Senators_from_Illinois</URI>
+      </Category>
+      <Category>
+        <Label>University of Chicago faculty</Label>
+        <URI>http://dbpedia.org/resource/Category:University_of_Chicago_faculty</URI>
+      </Category>
+      <Category>
+        <Label>University of Chicago Law School faculty</Label>
+        <URI>http://dbpedia.org/resource/Category:University_of_Chicago_Law_School_faculty</URI>
+      </Category>
+      <Category>
+        <Label>Writers from Chicago, Illinois</Label>
+        <URI>http://dbpedia.org/resource/Category:Writers_from_Chicago,_Illinois</URI>
+      </Category>
+    </Categories>
+    <Redirects>44th President of the United States</Redirects>
+    <Refcount>25</Refcount>
+  </Result>
+</ArrayOfResult>

@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Nuxeo Platform Semantic Entities Core - Tests
+Bundle-SymbolicName: org.nuxeo.ecm.platform.semanticentities.core.tests
+Bundle-Localization: plugin
+Bundle-Vendor: Nuxeo
+Bundle-Category: runtime
+Require-Bundle: org.nuxeo.ecm.platform.semanticentities.core
+Nuxeo-Component: OSGI-INF/test-semantic-entities-remote-entity-contrib.xml

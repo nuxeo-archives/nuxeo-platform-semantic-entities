@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.ecm.platform.semanticentities.testRemoteSource">
+
+  <extension target="org.nuxeo.ecm.platform.semanticentities.RemoteEntityService"
+    point="remoteSources">
+
+    <documentation>
+      Mock offline remote source for the DBpedia knowledge base.
+    </documentation>
+
+    <remoteSource name="dbpedia" uriPrefix="http://dbpedia.org/"
+      class="org.nuxeo.ecm.platform.semanticentities.sources.MockDBpediaEntitySource"
+      enabled="true">
+      <typeMapping default="Entity">
+        <type name="Person">http://dbpedia.org/ontology/Person</type>
+        <type name="Organization">http://dbpedia.org/ontology/Organisation</type>
+        <type name="Place">http://dbpedia.org/ontology/Place</type>
+      </typeMapping>
+      <propertyMapping>
+        <field name="person:birthDate">http://dbpedia.org/ontology/birthDate</field>
+        <field name="person:deathDate">http://dbpedia.org/ontology/deathDate</field>
+      </propertyMapping>
+    </remoteSource>
+
+  </extension>
+
+</component>
