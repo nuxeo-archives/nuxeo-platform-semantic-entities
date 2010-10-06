@@ -41,7 +41,7 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         // semantic entities types
         deployBundle("org.nuxeo.ecm.platform.semanticentities.core");
 
-        // deploy offline mock dbpedia source to override the default source
+        // deploy off-line mock DBpedia source to override the default source
         // that needs an internet connection: comment the following contrib to
         // test again the real DBpedia server
         deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",

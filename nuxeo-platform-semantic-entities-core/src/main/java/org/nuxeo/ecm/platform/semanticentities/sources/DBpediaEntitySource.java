@@ -126,6 +126,9 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                         uri = URI.create(node.getFirstChild().getNodeValue());
                     }
                 }
+                // TODO: add a post filtering of the result to check the
+                // ontology class of the suggestion as the lookup service does
+                // not do the filtering on the server side (known bug)
                 if (label != null && uri != null) {
                     suggestions.add(new RemoteEntity(label, uri));
                 }
@@ -158,6 +161,7 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
         String escapedKeywords = URLEncoder.encode(keywords, "UTF-8");
         String escapedType = URLEncoder.encode(type, "UTF-8");
 
+        // XXX: the escapedType value is not taken into account by the service
         String query = String.format(SUGGESTION_URL_PATTERN, escapedKeywords,
                 escapedType, maxSuggestions);
 
