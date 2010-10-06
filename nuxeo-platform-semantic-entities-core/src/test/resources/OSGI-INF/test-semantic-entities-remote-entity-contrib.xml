@@ -18,6 +18,7 @@
         <type name="Entity">http://www.w3.org/2002/07/owl#Thing</type>
       </typeMapping>
       <propertyMapping>
+        <field name="dc:title">http://www.w3.org/2000/01/rdf-schema#label</field>
         <field name="person:birthDate">http://dbpedia.org/ontology/birthDate</field>
         <field name="person:deathDate">http://dbpedia.org/ontology/deathDate</field>
       </propertyMapping>

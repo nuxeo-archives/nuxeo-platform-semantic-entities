@@ -18,6 +18,7 @@ package org.nuxeo.ecm.platform.semanticentities.sources;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -27,6 +28,8 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.Map.Entry;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -39,8 +42,12 @@ import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.model.Property;
+import org.nuxeo.ecm.core.api.model.PropertyException;
+import org.nuxeo.ecm.core.schema.types.Type;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.service.ParameterizedRemoteEntitySource;
@@ -49,9 +56,13 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.NodeIterator;
+import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.RDFReader;
+import com.hp.hpl.jena.rdf.model.Resource;
 
 /**
  * Implementation of the RemoteEntitySource interface that is able to suggest
@@ -107,7 +118,9 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
             RDFReader reader = rdfModel.getReader();
             reader.read(rdfModel, bodyStream, format);
 
-            // TODO: map the RDF payload to the document model properties
+            // TODO: check the type matching
+
+            syncProperties(remoteEntity, rdfModel, localEntity, override);
 
         } catch (MalformedURLException e) {
             throw new DereferencingException(e);
@@ -122,6 +135,71 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                 }
             }
         }
+    }
+
+    protected void syncProperties(URI remoteEntity, Model rdfModel,
+            DocumentModel localEntity, boolean override)
+            throws DereferencingException {
+        Set<Entry<String, String>> mapping = descriptor.getMappedProperties().entrySet();
+        Resource resource = rdfModel.getResource(remoteEntity.toString());
+        for (Entry<String, String> mappedProperty : mapping) {
+            String localPropertyName = mappedProperty.getKey();
+            com.hp.hpl.jena.rdf.model.Property remoteProperty = rdfModel.getProperty(mappedProperty.getValue());
+
+            try {
+                Property localProperty = localEntity.getProperty(localPropertyName);
+                NodeIterator it = rdfModel.listObjectsOfProperty(resource,
+                        remoteProperty);
+                if (localProperty.getType().isListType()) {
+                    // only synchronize string lists right now
+                    List<String> newValues = new ArrayList<String>(
+                            localProperty.getValue(List.class));
+                    if (override) {
+                        newValues.clear();
+                    }
+                    while (it.hasNext()) {
+                        RDFNode node = it.nextNode();
+                        String value = null;
+                        if (node.isLiteral()) {
+                            value = ((Literal) node.as(Literal.class)).getString();
+                        } else if (node.isURIResource()) {
+                            value = ((Resource) node.as(Resource.class)).getURI();
+                        } else {
+                            continue;
+                        }
+                        if (value != null && !newValues.contains(value)) {
+                            newValues.add(value);
+                        }
+                    }
+                    localEntity.setPropertyValue(localPropertyName,
+                            (Serializable) newValues);
+                } else {
+                    if (localProperty.getValue() == null || override) {
+                        while (it.hasNext()) {
+                            RDFNode node = it.nextNode();
+                            if (node.isLiteral()) {
+                                Literal literal = ((Literal) node.as(Literal.class));
+                                // XXX: make the requested language configurable
+                                String lang = literal.getLanguage();
+                                if (lang == null || lang.equals("")
+                                        || lang.equals("en")) {
+                                    Type type = localProperty.getType();
+                                    Object value = type.decode(literal.getString());
+                                    localEntity.setPropertyValue(
+                                            localPropertyName,
+                                            (Serializable) value);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (PropertyException e) {
+                // ignore missing properties
+            } catch (ClientException e) {
+                throw new DereferencingException(e);
+            }
+        }
+
     }
 
     /*

@@ -19,6 +19,7 @@ package org.nuxeo.ecm.platform.semanticentities.service;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Calendar;
 import java.util.List;
 
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -94,9 +95,14 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     public void testDerefenceRemoteEntity() throws Exception {
-        DocumentModel targetDoc = session.createDocumentModel("Person");
-        service.dereferenceInto(targetDoc,
+        DocumentModel barackDoc = session.createDocumentModel("Person");
+        service.dereferenceInto(barackDoc,
                 URI.create("http://dbpedia.org/resource/Barack_Obama"), true);
+
+        assertEquals("Barack Obama", barackDoc.getTitle());
+
+        Calendar birthDate = barackDoc.getProperty("person:birthDate").getValue(Calendar.class);
+        assertEquals("Fri Aug 04 01:00:00 CET 1961", birthDate.getTime().toString());
 
         // TODO: test the mapped properties
     }
