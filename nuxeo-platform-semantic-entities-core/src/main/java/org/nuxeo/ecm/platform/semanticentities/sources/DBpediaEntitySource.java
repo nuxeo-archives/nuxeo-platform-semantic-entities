@@ -49,6 +49,10 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.RDFReader;
+
 /**
  * Implementation of the RemoteEntitySource interface that is able to suggest
  * DBpedia entities by name using the http://lookup.dbpedia.org RESTful service
@@ -58,9 +62,13 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
 
     private static final Log log = LogFactory.getLog(DBpediaEntitySource.class);
 
-    protected static final String SUGGESTION_URL_PATTERN = "http://lookup.dbpedia.org/api/search.asmx/KeywordSearch?QueryString=%s&QueryClass=%s&MaxHits=%d";
+    protected static final String SPARQL_URL_PATTERN = "%s?query=%s&format=%s";
 
-    private static final String RESULT_NODE_XPATH = "//Result";
+    protected String SUGGESTION_URL_PATTERN = "http://lookup.dbpedia.org/api/search.asmx/KeywordSearch?QueryString=%s&QueryClass=%s&MaxHits=%d";
+
+    protected String SPARQL_ENDPOINT = "http://dbpedia.org/sparql";
+
+    protected String RESULT_NODE_XPATH = "//Result";
 
     @Override
     public boolean canSuggestRemoteEntity() {
@@ -76,6 +84,54 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
     @Override
     public void dereferenceInto(DocumentModel localEntity, URI remoteEntity,
             boolean override) throws DereferencingException {
+        StringBuilder sparqlQuery = new StringBuilder();
+        sparqlQuery.append("CONSTRUCT { <");
+        sparqlQuery.append(remoteEntity);
+        sparqlQuery.append("> ?p ?o } WHERE { <");
+        sparqlQuery.append(remoteEntity);
+        sparqlQuery.append("> ?p ?o }");
+
+        InputStream bodyStream = null;
+        try {
+            String encodedQuery = URLEncoder.encode(sparqlQuery.toString(),
+                    "UTF-8");
+
+            String format = "application/rdf+xml";
+            String encodedFormat = URLEncoder.encode(format, "UTF-8");
+
+            URI sparqlURI = URI.create(String.format(SPARQL_URL_PATTERN,
+                    SPARQL_ENDPOINT, encodedQuery, encodedFormat));
+            bodyStream = fetchSparqlResults(sparqlURI, format);
+
+            Model rdfModel = ModelFactory.createDefaultModel();
+            RDFReader reader = rdfModel.getReader();
+            reader.read(rdfModel, bodyStream, format);
+
+            // TODO: map the RDF payload to the document model properties
+
+        } catch (MalformedURLException e) {
+            throw new DereferencingException(e);
+        } catch (IOException e) {
+            throw new DereferencingException(e);
+        } finally {
+            if (bodyStream != null) {
+                try {
+                    bodyStream.close();
+                } catch (IOException e) {
+                    log.error(e, e);
+                }
+            }
+        }
+    }
+
+    /*
+     * submethod to be overridden in mock object for the tests
+     */
+    protected InputStream fetchSparqlResults(URI sparqlURI, String format)
+            throws MalformedURLException, IOException {
+        URLConnection connection = sparqlURI.toURL().openConnection();
+        connection.addRequestProperty("Accept", format);
+        return connection.getInputStream();
     }
 
     @Override

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
+import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
@@ -90,6 +91,14 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
     public void testCanDereferenceRemoteEntity() throws Exception {
         assertTrue(service.canDereference(URI.create("http://dbpedia.org/resource/London")));
         assertFalse(service.canDereference(URI.create("http://en.wikipedia.org/wiki/London")));
+    }
+
+    public void testDerefenceRemoteEntity() throws Exception {
+        DocumentModel targetDoc = session.createDocumentModel("Person");
+        service.dereferenceInto(targetDoc,
+                URI.create("http://dbpedia.org/resource/Barack_Obama"), true);
+
+        // TODO: test the mapped properties
     }
 
 }
