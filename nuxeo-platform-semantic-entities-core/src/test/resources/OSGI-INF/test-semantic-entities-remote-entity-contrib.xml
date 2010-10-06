@@ -8,7 +8,7 @@
       Mock offline remote source for the DBpedia knowledge base.
     </documentation>
 
-    <remoteSource name="dbpedia" uriPrefix="http://dbpedia.org/"
+    <remoteSource name="dbpedia" uriPrefix="http://dbpedia.org/resource/"
       class="org.nuxeo.ecm.platform.semanticentities.sources.MockDBpediaEntitySource"
       enabled="true">
       <typeMapping default="Entity">

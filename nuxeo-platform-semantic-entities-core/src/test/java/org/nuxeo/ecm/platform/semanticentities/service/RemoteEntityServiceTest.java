@@ -87,4 +87,9 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(1, suggestions.size());
     }
 
+    public void testCanDereferenceRemoteEntity() throws Exception {
+        assertTrue(service.canDereference(URI.create("http://dbpedia.org/resource/London")));
+        assertFalse(service.canDereference(URI.create("http://en.wikipedia.org/wiki/London")));
+    }
+
 }

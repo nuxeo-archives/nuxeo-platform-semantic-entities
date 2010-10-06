@@ -18,7 +18,7 @@
       The service accepts the registration of parameterized remote sources connectors:
 
       <code>
-        <remoteSource name="dbpedia" uriPrefix="http://dbpedia.org/"
+        <remoteSource name="dbpedia" uriPrefix="http://dbpedia.org/resource/"
           class="org.nuxeo.ecm.platform.semanticentities.sources.DBpediaEntitySource"
           enabled="true">
           <typeMapping default="Entity">
@@ -45,7 +45,7 @@
       Default remote source for the DBpedia knowledge base.
     </documentation>
 
-    <remoteSource name="dbpedia" uriPrefix="http://dbpedia.org/"
+    <remoteSource name="dbpedia" uriPrefix="http://dbpedia.org/resource/"
       class="org.nuxeo.ecm.platform.semanticentities.sources.DBpediaEntitySource"
       enabled="true">
       <typeMapping default="Entity">

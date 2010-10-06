@@ -22,7 +22,7 @@ public abstract class ParameterizedRemoteEntitySource implements
 
     @Override
     public boolean canDereference(URI remoteEntity) {
-        return descriptor.getUriPrefix().startsWith(remoteEntity.toString());
+        return remoteEntity.toString().startsWith(descriptor.getUriPrefix());
     }
 
 }
