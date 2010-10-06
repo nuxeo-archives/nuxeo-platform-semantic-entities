@@ -81,6 +81,7 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         suggestions = service.suggestRemoteEntity(
                 "the 44th president of the United States", "Place", 3);
         assertNotNull(suggestions);
+
         // XXX: the QueryClass is apparently no implemented on the
         // lookup.dbpedia.org service, hence the restriction does not work
         assertEquals(1, suggestions.size());
