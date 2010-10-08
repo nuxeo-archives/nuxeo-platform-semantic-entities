@@ -26,9 +26,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.Map.Entry;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -40,6 +42,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.ClientException;
@@ -70,6 +73,8 @@ import com.hp.hpl.jena.rdf.model.Resource;
  * and dereference DBpedia URIs using the official DBpedia sparql endpoint.
  */
 public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
+
+    public static final String RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 
     private static final Log log = LogFactory.getLog(DBpediaEntitySource.class);
 
@@ -118,9 +123,19 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
             RDFReader reader = rdfModel.getReader();
             reader.read(rdfModel, bodyStream, format);
 
-            // TODO: check the type matching
-
-            syncProperties(remoteEntity, rdfModel, localEntity, override);
+            // check that the remote entity has a type that is compatible with
+            // the local entity document model
+            Collection<String> possibleTypes = extractMappedTypesFromModel(
+                    remoteEntity, rdfModel);
+            if (!possibleTypes.contains(localEntity.getType())) {
+                throw new DereferencingException(String.format(
+                        "Remote entity '%s' can be mapped to types:"
+                                + " ('%s') but not to '%s'", remoteEntity,
+                        StringUtils.join(possibleTypes, "', '"),
+                        localEntity.getType()));
+            }
+            syncPropertiesFromModel(remoteEntity, rdfModel, localEntity,
+                    override);
 
         } catch (MalformedURLException e) {
             throw new DereferencingException(e);
@@ -137,7 +152,37 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
         }
     }
 
-    protected void syncProperties(URI remoteEntity, Model rdfModel,
+    /**
+     * @param remoteEntity URI of the remote entity
+     * @param rdfModel RDF model describing the remote entity
+     * @return list of local types that are compatible with the remote entity
+     *         according to the type mapping configuration for this source
+     */
+    protected Collection<String> extractMappedTypesFromModel(URI remoteEntity,
+            Model rdfModel) {
+        Resource resource = rdfModel.getResource(remoteEntity.toString());
+        com.hp.hpl.jena.rdf.model.Property type = rdfModel.getProperty(RDF_TYPE);
+
+        TreeSet<String> typeURIs = new TreeSet<String>();
+        TreeSet<String> mappedLocalTypes = new TreeSet<String>();
+        NodeIterator it = rdfModel.listObjectsOfProperty(resource, type);
+        while (it.hasNext()) {
+            RDFNode node = it.nextNode();
+            if (node.isURIResource()) {
+                typeURIs.add(((Resource) node.as(Resource.class)).getURI());
+            }
+        }
+        Set<Entry<String, String>> typeMapping = descriptor.getMappedTypes().entrySet();
+        for (Entry<String, String> typeMapEntry : typeMapping) {
+            if (typeURIs.contains(typeMapEntry.getValue())) {
+                mappedLocalTypes.add(typeMapEntry.getKey());
+            }
+        }
+        return mappedLocalTypes;
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void syncPropertiesFromModel(URI remoteEntity, Model rdfModel,
             DocumentModel localEntity, boolean override)
             throws DereferencingException {
         Set<Entry<String, String>> mapping = descriptor.getMappedProperties().entrySet();

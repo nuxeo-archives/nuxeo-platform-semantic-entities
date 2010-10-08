@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
+import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.runtime.api.Framework;
@@ -99,12 +100,42 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         service.dereferenceInto(barackDoc,
                 URI.create("http://dbpedia.org/resource/Barack_Obama"), true);
 
+        // the title and birth date are fetched from the remote entity
+        // description
         assertEquals("Barack Obama", barackDoc.getTitle());
 
-        Calendar birthDate = barackDoc.getProperty("person:birthDate").getValue(Calendar.class);
-        assertEquals("Fri Aug 04 01:00:00 CET 1961", birthDate.getTime().toString());
+        Calendar birthDate = barackDoc.getProperty("person:birthDate").getValue(
+                Calendar.class);
+        assertEquals("Fri Aug 04 01:00:00 CET 1961",
+                birthDate.getTime().toString());
 
-        // TODO: test the mapped properties
+        // check that further dereferencing with override == false does not
+        // erase local changes
+        barackDoc.setPropertyValue("dc:title", "B. Obama");
+        service.dereferenceInto(barackDoc,
+                URI.create("http://dbpedia.org/resource/Barack_Obama"), false);
+        assertEquals("B. Obama", barackDoc.getTitle());
+
+        // later dereferencing with override == true does not preserve local
+        // changes
+        service.dereferenceInto(barackDoc,
+                URI.create("http://dbpedia.org/resource/Barack_Obama"), true);
+        assertEquals("Barack Obama", barackDoc.getTitle());
     }
 
+    public void testDerefencingTypeConsistency() throws Exception {
+        DocumentModel barackDoc = session.createDocumentModel("Organization");
+        try {
+            service.dereferenceInto(barackDoc,
+                    URI.create("http://dbpedia.org/resource/Barack_Obama"),
+                    true);
+            fail("should have thrown DereferencingException");
+        } catch (DereferencingException e) {
+            assertEquals(
+                    "org.nuxeo.ecm.platform.semanticentities.DereferencingException:"
+                            + " Remote entity 'http://dbpedia.org/resource/Barack_Obama'"
+                            + " can be mapped to types: ('Entity', 'Person')"
+                            + " but not to 'Organization'", e.getMessage());
+        }
+    }
 }
