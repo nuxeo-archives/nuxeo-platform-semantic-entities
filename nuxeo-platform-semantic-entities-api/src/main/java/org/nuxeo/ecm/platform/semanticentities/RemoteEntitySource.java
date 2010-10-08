@@ -19,8 +19,8 @@ package org.nuxeo.ecm.platform.semanticentities;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.Set;
 
-import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 
 public interface RemoteEntitySource {
@@ -37,17 +37,15 @@ public interface RemoteEntitySource {
     boolean canDereference(URI remoteEntity);
 
     /**
-     * Create a document model holding the dereferenced structure date from an
-     * entity identified by a HTTP URI.
+     * Introspect the referenced entity to suggest which Nuxeo types can be used
+     * to dereference this entity.
      *
-     * @param session a CoreSession instance use to load an in memory
-     *            DocumentModel of the right type
      * @param remoteEntity the URI of the entity to dereference
-     * @return a document model holding the data (not persisted in the repo yet)
-     *         or null if the remote resource does not match any remote source
-     *         handler.
+     * @return an ordered set of Nuxeo Core type names that can be used to
+     *         dereference the entity into a local copy
+     * @throws DereferencingException
      */
-    DocumentModel dereference(CoreSession session, URI remoteEntity)
+    Set<String> getAdmissibleTypes(URI remoteEntity)
             throws DereferencingException;
 
     /**

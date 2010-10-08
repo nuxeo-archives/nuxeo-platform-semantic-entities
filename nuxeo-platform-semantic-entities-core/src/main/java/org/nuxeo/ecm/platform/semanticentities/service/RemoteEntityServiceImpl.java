@@ -22,10 +22,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
@@ -148,12 +149,6 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public DocumentModel dereference(CoreSession session, URI remoteEntity)
-            throws DereferencingException {
-        return getSourceFor(remoteEntity).dereference(session, remoteEntity);
-    }
-
-    @Override
     public void dereferenceInto(DocumentModel localEntity, URI remoteEntity,
             boolean override) throws DereferencingException {
         getSourceFor(remoteEntity).dereferenceInto(localEntity, remoteEntity,
@@ -178,5 +173,17 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
             }
         }
         return suggestions;
+    }
+
+    @Override
+    public Set<String> getAdmissibleTypes(URI remoteEntity)
+            throws DereferencingException {
+        Set<String> types = new TreeSet<String>();
+        for (RemoteEntitySource source : getActiveSources().values()) {
+            if (source.canDereference(remoteEntity)) {
+                types.addAll(source.getAdmissibleTypes(remoteEntity));
+            }
+        }
+        return types;
     }
 }

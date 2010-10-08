@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.commons.lang.StringUtils;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
@@ -30,6 +32,12 @@ import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.runtime.api.Framework;
 
 public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
+
+    protected static final URI WIKIPEDIA_LONDON_URI = URI.create("http://en.wikipedia.org/wiki/London");
+
+    protected static final URI DBPEDIA_LONDON_URI = URI.create("http://dbpedia.org/resource/London");
+
+    protected static final URI DBPEDIA_BARACK_OBAMA_URI = URI.create("http://dbpedia.org/resource/Barack_Obama");
 
     RemoteEntityService service;
 
@@ -66,8 +74,7 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
         RemoteEntity suggested = suggestions.get(0);
         assertEquals("Barack Obama", suggested.label);
-        assertEquals(URI.create("http://dbpedia.org/resource/Barack_Obama"),
-                suggested.uri);
+        assertEquals(DBPEDIA_BARACK_OBAMA_URI, suggested.uri);
 
         // this should also work for a null type
         suggestions = service.suggestRemoteEntity(
@@ -77,8 +84,7 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
         suggested = suggestions.get(0);
         assertEquals("Barack Obama", suggested.label);
-        assertEquals(URI.create("http://dbpedia.org/resource/Barack_Obama"),
-                suggested.uri);
+        assertEquals(DBPEDIA_BARACK_OBAMA_URI, suggested.uri);
 
         // however no organization should match this name
         suggestions = service.suggestRemoteEntity(
@@ -91,14 +97,23 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     public void testCanDereferenceRemoteEntity() throws Exception {
-        assertTrue(service.canDereference(URI.create("http://dbpedia.org/resource/London")));
-        assertFalse(service.canDereference(URI.create("http://en.wikipedia.org/wiki/London")));
+        assertTrue(service.canDereference(DBPEDIA_LONDON_URI));
+        assertFalse(service.canDereference(WIKIPEDIA_LONDON_URI));
+    }
+
+    public void testGetAdmissibleTypes() throws Exception {
+        Set<String> admissibleTypes = service.getAdmissibleTypes(DBPEDIA_BARACK_OBAMA_URI);
+        assertNotNull(admissibleTypes);
+        assertEquals("Entity, Person", StringUtils.join(admissibleTypes, ", "));
+
+        admissibleTypes = service.getAdmissibleTypes(WIKIPEDIA_LONDON_URI);
+        assertNotNull(admissibleTypes);
+        assertEquals(0, admissibleTypes.size());
     }
 
     public void testDerefenceRemoteEntity() throws Exception {
         DocumentModel barackDoc = session.createDocumentModel("Person");
-        service.dereferenceInto(barackDoc,
-                URI.create("http://dbpedia.org/resource/Barack_Obama"), true);
+        service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true);
 
         // the title and birth date are fetched from the remote entity
         // description
@@ -112,28 +127,23 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         // check that further dereferencing with override == false does not
         // erase local changes
         barackDoc.setPropertyValue("dc:title", "B. Obama");
-        service.dereferenceInto(barackDoc,
-                URI.create("http://dbpedia.org/resource/Barack_Obama"), false);
+        service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, false);
         assertEquals("B. Obama", barackDoc.getTitle());
 
         // later dereferencing with override == true does not preserve local
         // changes
-        service.dereferenceInto(barackDoc,
-                URI.create("http://dbpedia.org/resource/Barack_Obama"), true);
+        service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true);
         assertEquals("Barack Obama", barackDoc.getTitle());
     }
 
     public void testDerefencingTypeConsistency() throws Exception {
         DocumentModel barackDoc = session.createDocumentModel("Organization");
         try {
-            service.dereferenceInto(barackDoc,
-                    URI.create("http://dbpedia.org/resource/Barack_Obama"),
-                    true);
+            service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true);
             fail("should have thrown DereferencingException");
         } catch (DereferencingException e) {
             assertEquals(
-                    "org.nuxeo.ecm.platform.semanticentities.DereferencingException:"
-                            + " Remote entity 'http://dbpedia.org/resource/Barack_Obama'"
+                    "Remote entity 'http://dbpedia.org/resource/Barack_Obama'"
                             + " can be mapped to types: ('Entity', 'Person')"
                             + " but not to 'Organization'", e.getMessage());
         }
