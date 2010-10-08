@@ -127,8 +127,15 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         // check that further dereferencing with override == false does not
         // erase local changes
         barackDoc.setPropertyValue("dc:title", "B. Obama");
+        barackDoc.setPropertyValue("person:birthDate", null);
+
         service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, false);
+
         assertEquals("B. Obama", barackDoc.getTitle());
+        birthDate = barackDoc.getProperty("person:birthDate").getValue(
+                Calendar.class);
+        assertEquals("Fri Aug 04 01:00:00 CET 1961",
+                birthDate.getTime().toString());
 
         // later dereferencing with override == true does not preserve local
         // changes
