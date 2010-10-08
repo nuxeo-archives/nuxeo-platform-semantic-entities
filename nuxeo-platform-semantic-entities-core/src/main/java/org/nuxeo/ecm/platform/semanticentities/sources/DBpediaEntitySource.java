@@ -77,6 +77,8 @@ import com.hp.hpl.jena.rdf.model.Resource;
  */
 public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
 
+    public static final String OWL_THING = "http://www.w3.org/2002/07/owl#Thing";
+
     public static final String RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 
     private static final Log log = LogFactory.getLog(DBpediaEntitySource.class);
@@ -280,18 +282,21 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
         }
 
         String mappedType = descriptor.getMappedTypes().get(type);
+        String truncatedMappedType = mappedType;
         if (mappedType == null) {
             throw new IllegalArgumentException(String.format(
                     "Type '%s' is not mapped to any DBpedia class", type));
         } else {
             int lastSlashIndex = mappedType.lastIndexOf("/");
             if (lastSlashIndex != -1) {
-                mappedType = mappedType.substring(lastSlashIndex + 1);
+                truncatedMappedType = mappedType.substring(lastSlashIndex + 1);
             }
         }
 
-        InputStream bodyStream = fetchSuggestions(keywords, mappedType,
-                maxSuggestions);
+        // fetch more suggestions than requested since we will do type
+        // post-filtering afterwards
+        InputStream bodyStream = fetchSuggestions(keywords,
+                truncatedMappedType, maxSuggestions * 3);
         if (bodyStream == null) {
             throw new IOException(
                     String.format(
@@ -311,19 +316,30 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                 NodeList nodes = resultNode.getChildNodes();
                 String label = null;
                 URI uri = null;
+                boolean hasMathingType = OWL_THING.equals(mappedType);
                 for (int j = 0; j < nodes.getLength(); j++) {
                     Node node = nodes.item(j);
                     if ("Label".equals(node.getNodeName())) {
                         label = node.getFirstChild().getNodeValue();
                     } else if ("URI".equals(node.getNodeName())) {
                         uri = URI.create(node.getFirstChild().getNodeValue());
+                    } else if ("Classes".equals(node.getNodeName())) {
+                        NodeList typeNodes = (NodeList) xpath.evaluate(
+                                "Class/URI", node, XPathConstants.NODESET);
+                        for (int k = 0; k < typeNodes.getLength(); k++) {
+                            Node typeNode = typeNodes.item(k);
+                            if (mappedType.equals(typeNode.getFirstChild().getNodeValue())) {
+                                hasMathingType = true;
+                                break;
+                            }
+                        }
                     }
                 }
-                // TODO: add a post filtering of the result to check the
-                // ontology class of the suggestion as the lookup service does
-                // not do the filtering on the server side (known bug)
-                if (label != null && uri != null) {
+                if (hasMathingType && label != null && uri != null) {
                     suggestions.add(new RemoteEntity(label, uri));
+                    if (suggestions.size() >= maxSuggestions) {
+                        break;
+                    }
                 }
             }
         } catch (ParserConfigurationException e) {
