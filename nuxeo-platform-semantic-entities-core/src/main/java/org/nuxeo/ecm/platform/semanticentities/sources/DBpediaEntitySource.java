@@ -313,26 +313,24 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                     document, XPathConstants.NODESET);
             for (int i = 0; i < resultNodes.getLength(); i++) {
                 Node resultNode = resultNodes.item(i);
-                NodeList nodes = resultNode.getChildNodes();
                 String label = null;
                 URI uri = null;
                 boolean hasMathingType = OWL_THING.equals(mappedType);
-                for (int j = 0; j < nodes.getLength(); j++) {
-                    Node node = nodes.item(j);
-                    if ("Label".equals(node.getNodeName())) {
-                        label = node.getFirstChild().getNodeValue();
-                    } else if ("URI".equals(node.getNodeName())) {
-                        uri = URI.create(node.getFirstChild().getNodeValue());
-                    } else if ("Classes".equals(node.getNodeName())) {
-                        NodeList typeNodes = (NodeList) xpath.evaluate(
-                                "Class/URI", node, XPathConstants.NODESET);
-                        for (int k = 0; k < typeNodes.getLength(); k++) {
-                            Node typeNode = typeNodes.item(k);
-                            if (mappedType.equals(typeNode.getFirstChild().getNodeValue())) {
-                                hasMathingType = true;
-                                break;
-                            }
-                        }
+                Node labelNode = (Node) xpath.evaluate("Label/text()", resultNode, XPathConstants.NODE);
+                if (labelNode != null) {
+                    label = labelNode.getNodeValue();
+                }
+                Node uriNode = (Node) xpath.evaluate("URI/text()", resultNode, XPathConstants.NODE);
+                if (uriNode != null) {
+                    uri = URI.create(uriNode.getNodeValue());
+                }
+                NodeList typeNodes = (NodeList) xpath.evaluate(
+                        "Classes/Class/URI/text()", resultNode, XPathConstants.NODESET);
+                for (int k = 0; k < typeNodes.getLength(); k++) {
+                    Node typeNode = typeNodes.item(k);
+                    if (mappedType.equals(typeNode.getNodeValue())) {
+                        hasMathingType = true;
+                        break;
                     }
                 }
                 if (hasMathingType && label != null && uri != null) {
