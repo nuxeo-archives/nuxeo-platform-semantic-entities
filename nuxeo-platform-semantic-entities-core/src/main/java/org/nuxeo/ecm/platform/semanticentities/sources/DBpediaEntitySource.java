@@ -148,7 +148,7 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
 
             rdfModel = ModelFactory.createDefaultModel();
             RDFReader reader = rdfModel.getReader();
-            reader.read(rdfModel, bodyStream, format);
+            reader.read(rdfModel, bodyStream, null);
 
         } catch (MalformedURLException e) {
             throw new DereferencingException(e);
