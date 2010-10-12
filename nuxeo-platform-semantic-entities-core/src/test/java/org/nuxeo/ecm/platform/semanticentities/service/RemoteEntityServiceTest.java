@@ -118,6 +118,11 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         // description
         assertEquals("Barack Obama", barackDoc.getTitle());
 
+        String summary = barackDoc.getProperty("entity:summary").getValue(
+                String.class);
+        assertNotNull(summary);
+        assertTrue(summary.startsWith("Barack Hussein Obama II (born August 4, 1961) is the 44th"));
+
         Calendar birthDate = barackDoc.getProperty("person:birthDate").getValue(
                 Calendar.class);
         List<String> altnames = barackDoc.getProperty("entity:altnames").getValue(
