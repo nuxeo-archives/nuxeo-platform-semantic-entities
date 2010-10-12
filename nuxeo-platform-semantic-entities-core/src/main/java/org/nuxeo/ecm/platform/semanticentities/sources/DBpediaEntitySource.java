@@ -52,6 +52,7 @@ import org.nuxeo.ecm.core.api.impl.blob.StreamingBlob;
 import org.nuxeo.ecm.core.api.model.Property;
 import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.core.schema.types.Type;
+import org.nuxeo.ecm.core.schema.types.primitives.StringType;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.service.ParameterizedRemoteEntitySource;
@@ -207,16 +208,44 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
         Resource resource = rdfModel.getResource(remoteEntity.toString());
 
         // special handling for the entity:sameas property
+        List<String> samesas = new ArrayList<String>();
+        List<String> sameasDisplayLabel = new ArrayList<String>();
+        try {
+            Property sameasProp = localEntity.getProperty("entity:sameas");
+            if (sameasProp.getValue() != null) {
+                samesas.addAll(sameasProp.getValue(List.class));
+            }
+            Property sameasDisplayLabelProp = localEntity.getProperty("entity:sameasDisplayLabel");
+            if (sameasDisplayLabelProp.getValue() != null) {
+                sameasDisplayLabel.addAll(sameasDisplayLabelProp.getValue(List.class));
+            }
+            if (!samesas.contains(remoteEntity.toString())) {
+                samesas.add(remoteEntity.toString());
+                localEntity.setPropertyValue("entity:sameas",
+                        (Serializable) samesas);
+
+                String titlePropUri = descriptor.getMappedProperties().get(
+                        "dc:title");
+                // XXX: how to better handle missing label
+                String label = "Missing Label";
+                if (titlePropUri != null) {
+                    label = (String) readDecodedLiteral(rdfModel, resource,
+                            titlePropUri, StringType.INSTANCE, "en");
+                }
+                sameasDisplayLabel.add(label);
+                localEntity.setPropertyValue("entity:sameasDisplayLabel",
+                        (Serializable) sameasDisplayLabel);
+            }
+        } catch (Exception e) {
+            throw new DereferencingException(e);
+        }
 
         // generic handling of mapped properties
         for (Entry<String, String> mappedProperty : mapping) {
             String localPropertyName = mappedProperty.getKey();
-            com.hp.hpl.jena.rdf.model.Property remoteProperty = rdfModel.getProperty(mappedProperty.getValue());
-
+            String remotePropertyUri = mappedProperty.getValue();
             try {
                 Property localProperty = localEntity.getProperty(localPropertyName);
-                NodeIterator it = rdfModel.listObjectsOfProperty(resource,
-                        remoteProperty);
                 Type type = localProperty.getType();
                 if (type.isListType()) {
                     // only synchronize string lists right now
@@ -227,64 +256,21 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                     if (override) {
                         newValues.clear();
                     }
-                    while (it.hasNext()) {
-                        RDFNode node = it.nextNode();
-                        String value = null;
-                        if (node.isLiteral()) {
-                            value = ((Literal) node.as(Literal.class)).getString();
-                        } else if (node.isURIResource()) {
-                            value = ((Resource) node.as(Resource.class)).getURI();
-                        } else {
-                            continue;
-                        }
-                        if (value != null && !newValues.contains(value)) {
-                            newValues.add(value);
-                        }
-                    }
+                    newValues.addAll(readStringList(rdfModel, resource,
+                            remotePropertyUri));
                     localEntity.setPropertyValue(localPropertyName,
                             (Serializable) newValues);
                 } else {
                     if (localProperty.getValue() == null || override) {
-                        while (it.hasNext()) {
-                            RDFNode node = it.nextNode();
-                            if (node.isLiteral()) {
-                                Literal literal = ((Literal) node.as(Literal.class));
-                                // XXX: make the requested language configurable
-                                String lang = literal.getLanguage();
-                                if (lang == null || lang.equals("")
-                                        || lang.equals("en")) {
-                                    Object value = type.decode(literal.getString());
-                                    localEntity.setPropertyValue(
-                                            localPropertyName,
-                                            (Serializable) value);
-                                }
-                            } else if (node.isURIResource()
-                                    && type.isComplexType()
-                                    && "content".equals(type.getName())) {
-                                // download depictions or other kind of linked
-                                // resource
-                                String contentURI = ((Resource) node.as(Resource.class)).getURI();
-
-                                InputStream is = fetchResourceAsStream(
-                                        URI.create(contentURI), null);
-                                if (is == null) {
-                                    log.warn("failed to fetch resource: "
-                                            + contentURI);
-                                }
-                                try {
-                                    Blob blob = StreamingBlob.createFromStream(
-                                            is).persist();
-                                    int lastSlashIndex = contentURI.lastIndexOf('/');
-                                    if (lastSlashIndex != -1) {
-                                        blob.setFilename(contentURI.substring(lastSlashIndex + 1));
-                                    }
-                                    localEntity.setPropertyValue(
-                                            localPropertyName,
-                                            (Serializable) blob);
-                                } finally {
-                                    is.close();
-                                }
-                            }
+                        if (type.isComplexType()
+                                && "content".equals(type.getName())) {
+                            localEntity.setPropertyValue(localPropertyName,
+                                    (Serializable) readLinkedResource(rdfModel,
+                                            resource, remotePropertyUri));
+                        } else {
+                            localEntity.setPropertyValue(localPropertyName,
+                                    readDecodedLiteral(rdfModel, resource,
+                                            remotePropertyUri, type, "en"));
                         }
                     }
                 }
@@ -292,13 +278,92 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                 // ignore missing properties
             } catch (ClientException e) {
                 throw new DereferencingException(e);
-            } catch (MalformedURLException e) {
-                throw new DereferencingException(e);
-            } catch (IOException e) {
-                throw new DereferencingException(e);
             }
         }
+    }
 
+    protected Serializable readDecodedLiteral(Model rdfModel,
+            Resource resource, String remotePropertyUri, Type type,
+            String requestedLang) {
+        com.hp.hpl.jena.rdf.model.Property remoteProperty = rdfModel.getProperty(remotePropertyUri);
+        NodeIterator it = rdfModel.listObjectsOfProperty(resource,
+                remoteProperty);
+        while (it.hasNext()) {
+            RDFNode node = it.nextNode();
+            if (node.isLiteral()) {
+                Literal literal = ((Literal) node.as(Literal.class));
+                String lang = literal.getLanguage();
+                if (lang == null || lang.equals("")
+                        || lang.equals(requestedLang)) {
+                    return (Serializable) type.decode(literal.getString());
+                }
+            }
+        }
+        return null;
+    }
+
+    protected Blob readLinkedResource(Model rdfModel, Resource resource,
+            String remotePropertyUri) {
+        // download depictions or other kind of linked
+        // resources
+
+        com.hp.hpl.jena.rdf.model.Property remoteProperty = rdfModel.getProperty(remotePropertyUri);
+        NodeIterator it = rdfModel.listObjectsOfProperty(resource,
+                remoteProperty);
+        if (it.hasNext()) {
+            String contentURI = ((Resource) it.nextNode().as(Resource.class)).getURI();
+
+            InputStream is = null;
+            try {
+                is = fetchResourceAsStream(URI.create(contentURI), null);
+                if (is == null) {
+                    log.warn("failed to fetch resource: " + contentURI);
+                }
+                Blob blob = StreamingBlob.createFromStream(is).persist();
+                int lastSlashIndex = contentURI.lastIndexOf('/');
+                if (lastSlashIndex != -1) {
+                    blob.setFilename(contentURI.substring(lastSlashIndex + 1));
+                }
+                return blob;
+            } catch (IOException e) {
+                log.warn(e.getMessage());
+                return null;
+            } finally {
+                if (is != null) {
+                    try {
+                        is.close();
+                    } catch (IOException e) {
+                        log.error(e, e);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    protected List<String> readStringList(Model rdfModel, Resource resource,
+            String remotePropertyUri) {
+
+        com.hp.hpl.jena.rdf.model.Property remoteProperty = rdfModel.getProperty(remotePropertyUri);
+        NodeIterator it = rdfModel.listObjectsOfProperty(resource,
+                remoteProperty);
+
+        List<String> collectedValues = new ArrayList<String>();
+        while (it.hasNext()) {
+            RDFNode node = it.nextNode();
+            String value = null;
+            if (node.isLiteral()) {
+                value = ((Literal) node.as(Literal.class)).getString();
+            } else if (node.isURIResource()) {
+                value = ((Resource) node.as(Resource.class)).getURI();
+            } else {
+                continue;
+            }
+            if (value != null && !collectedValues.contains(value)) {
+                collectedValues.add(value);
+            }
+        }
+        return collectedValues;
     }
 
     @Override

@@ -146,9 +146,9 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
                 depiction.getFilename());
         assertEquals(14748, depiction.getLength());
 
-        // TODO: implement me!
-        // assertEquals(Arrays.asList(DBPEDIA_BARACK_OBAMA_URI),
-        // barackDoc.getPropertyValue("entity:sameas"));
+        List<String> sameas = barackDoc.getProperty("entity:sameas").getValue(
+                List.class);
+        assertTrue(sameas.contains(DBPEDIA_BARACK_OBAMA_URI.toString()));
 
         // check that further dereferencing with override == false does not
         // erase local changes
