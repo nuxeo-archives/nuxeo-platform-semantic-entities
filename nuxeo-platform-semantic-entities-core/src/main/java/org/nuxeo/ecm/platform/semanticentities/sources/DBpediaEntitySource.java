@@ -45,8 +45,10 @@ import javax.xml.xpath.XPathFactory;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.impl.blob.StreamingBlob;
 import org.nuxeo.ecm.core.api.model.Property;
 import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.core.schema.types.Type;
@@ -146,7 +148,7 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
 
             URI sparqlURI = URI.create(String.format(SPARQL_URL_PATTERN,
                     SPARQL_ENDPOINT, encodedQuery, encodedFormat));
-            bodyStream = fetchSparqlResults(sparqlURI, format);
+            bodyStream = fetchResourceAsStream(sparqlURI, format);
 
             rdfModel = ModelFactory.createDefaultModel();
             RDFReader reader = rdfModel.getReader();
@@ -203,6 +205,10 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
             throws DereferencingException {
         Set<Entry<String, String>> mapping = descriptor.getMappedProperties().entrySet();
         Resource resource = rdfModel.getResource(remoteEntity.toString());
+
+        // special handling for the entity:sameas property
+
+        // generic handling of mapped properties
         for (Entry<String, String> mappedProperty : mapping) {
             String localPropertyName = mappedProperty.getKey();
             com.hp.hpl.jena.rdf.model.Property remoteProperty = rdfModel.getProperty(mappedProperty.getValue());
@@ -211,10 +217,13 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                 Property localProperty = localEntity.getProperty(localPropertyName);
                 NodeIterator it = rdfModel.listObjectsOfProperty(resource,
                         remoteProperty);
-                if (localProperty.getType().isListType()) {
+                Type type = localProperty.getType();
+                if (type.isListType()) {
                     // only synchronize string lists right now
-                    List<String> newValues = new ArrayList<String>(
-                            localProperty.getValue(List.class));
+                    List<String> newValues = new ArrayList<String>();
+                    if (localProperty.getValue() != null) {
+                        newValues.addAll(localProperty.getValue(List.class));
+                    }
                     if (override) {
                         newValues.clear();
                     }
@@ -244,11 +253,36 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                                 String lang = literal.getLanguage();
                                 if (lang == null || lang.equals("")
                                         || lang.equals("en")) {
-                                    Type type = localProperty.getType();
                                     Object value = type.decode(literal.getString());
                                     localEntity.setPropertyValue(
                                             localPropertyName,
                                             (Serializable) value);
+                                }
+                            } else if (node.isURIResource()
+                                    && type.isComplexType()
+                                    && "content".equals(type.getName())) {
+                                // download depictions or other kind of linked
+                                // resource
+                                String contentURI = ((Resource) node.as(Resource.class)).getURI();
+
+                                InputStream is = fetchResourceAsStream(
+                                        URI.create(contentURI), null);
+                                if (is == null) {
+                                    log.warn("failed to fetch resource: "
+                                            + contentURI);
+                                }
+                                try {
+                                    Blob blob = StreamingBlob.createFromStream(
+                                            is).persist();
+                                    int lastSlashIndex = contentURI.lastIndexOf('/');
+                                    if (lastSlashIndex != -1) {
+                                        blob.setFilename(contentURI.substring(lastSlashIndex + 1));
+                                    }
+                                    localEntity.setPropertyValue(
+                                            localPropertyName,
+                                            (Serializable) blob);
+                                } finally {
+                                    is.close();
                                 }
                             }
                         }
@@ -258,19 +292,13 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                 // ignore missing properties
             } catch (ClientException e) {
                 throw new DereferencingException(e);
+            } catch (MalformedURLException e) {
+                throw new DereferencingException(e);
+            } catch (IOException e) {
+                throw new DereferencingException(e);
             }
         }
 
-    }
-
-    /*
-     * submethod to be overridden in mock object for the tests
-     */
-    protected InputStream fetchSparqlResults(URI sparqlURI, String format)
-            throws MalformedURLException, IOException {
-        URLConnection connection = sparqlURI.toURL().openConnection();
-        connection.addRequestProperty("Accept", format);
-        return connection.getInputStream();
     }
 
     @Override
@@ -316,16 +344,19 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                 String label = null;
                 URI uri = null;
                 boolean hasMathingType = OWL_THING.equals(mappedType);
-                Node labelNode = (Node) xpath.evaluate("Label/text()", resultNode, XPathConstants.NODE);
+                Node labelNode = (Node) xpath.evaluate("Label/text()",
+                        resultNode, XPathConstants.NODE);
                 if (labelNode != null) {
                     label = labelNode.getNodeValue();
                 }
-                Node uriNode = (Node) xpath.evaluate("URI/text()", resultNode, XPathConstants.NODE);
+                Node uriNode = (Node) xpath.evaluate("URI/text()", resultNode,
+                        XPathConstants.NODE);
                 if (uriNode != null) {
                     uri = URI.create(uriNode.getNodeValue());
                 }
                 NodeList typeNodes = (NodeList) xpath.evaluate(
-                        "Classes/Class/URI/text()", resultNode, XPathConstants.NODESET);
+                        "Classes/Class/URI/text()", resultNode,
+                        XPathConstants.NODESET);
                 for (int k = 0; k < typeNodes.getLength(); k++) {
                     Node typeNode = typeNodes.item(k);
                     if (mappedType.equals(typeNode.getNodeValue())) {
@@ -360,8 +391,16 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
     }
 
     /*
-     * submethod to be overridden in mock object for the tests
+     * submethods to be overridden in mock object for the tests
      */
+
+    protected InputStream fetchResourceAsStream(URI sparqlURI, String format)
+            throws MalformedURLException, IOException {
+        URLConnection connection = sparqlURI.toURL().openConnection();
+        connection.addRequestProperty("Accept", format);
+        return connection.getInputStream();
+    }
+
     protected InputStream fetchSuggestions(String keywords, String type,
             int maxSuggestions) throws UnsupportedEncodingException,
             MalformedURLException, IOException {

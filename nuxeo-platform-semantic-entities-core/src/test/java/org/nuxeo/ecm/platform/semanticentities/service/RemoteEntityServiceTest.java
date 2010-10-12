@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
+import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
@@ -108,6 +109,7 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(0, admissibleTypes.size());
     }
 
+    @SuppressWarnings("unchecked")
     public void testDerefenceRemoteEntity() throws Exception {
         DocumentModel barackDoc = session.createDocumentModel("Person");
         service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true);
@@ -118,8 +120,30 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
         Calendar birthDate = barackDoc.getProperty("person:birthDate").getValue(
                 Calendar.class);
+        List<String> altnames = barackDoc.getProperty("entity:altnames").getValue(
+                List.class);
+        assertEquals(4, altnames.size());
+        // Western spelling:
+        assertTrue(altnames.contains("Barack Obama"));
+        // Russian spelling:
+        assertTrue(altnames.contains("\u041e\u0431\u0430\u043c\u0430, \u0411\u0430\u0440\u0430\u043a"));
+        // Chinese spelling:
+        assertTrue(altnames.contains("\u8d1d\u62c9\u514b\u00b7\u5965\u5df4\u9a6c"));
+        // Japanese spelling:
+        assertTrue(altnames.contains("\u30d0\u30e9\u30af\u30fb\u30aa\u30d0\u30de"));
+
         assertEquals("Fri Aug 04 01:00:00 CET 1961",
                 birthDate.getTime().toString());
+
+        Blob depiction = barackDoc.getProperty("entity:depiction").getValue(
+                Blob.class);
+        assertEquals("200px-Official_portrait_of_Barack_Obama.jpg",
+                depiction.getFilename());
+        assertEquals(14748, depiction.getLength());
+
+        // TODO: implement me!
+        // assertEquals(Arrays.asList(DBPEDIA_BARACK_OBAMA_URI),
+        // barackDoc.getPropertyValue("entity:sameas"));
 
         // check that further dereferencing with override == false does not
         // erase local changes

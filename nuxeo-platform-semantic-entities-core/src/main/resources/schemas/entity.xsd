@@ -7,20 +7,6 @@
     <xs:list itemType="xs:string" />
   </xs:simpleType>
 
-  <xs:complexType name="remoteEntity">
-    <xs:sequence>
-      <xs:element name="uri" type="xs:string" />
-      <xs:element name="label" type="xs:string" />
-    </xs:sequence>
-  </xs:complexType>
-
-  <xs:complexType name="remoteEntities">
-    <xs:sequence>
-      <xs:element name="item" type="nxs:remoteEntity"
-        minOccurs="0" maxOccurs="unbounded" />
-    </xs:sequence>
-  </xs:complexType>
-
   <!--
     alternative names to aggregated from occurrences for better fulltext
     lookup, the canonical name of the entity is to be stored in the
@@ -44,10 +30,19 @@
   <xs:element name="depiction" type="nxs:content" />
 
   <!--
-    URI and user friendly label of linked resources referring to the
-    same real life entity. Should be serialized as owl:sameAs in RDF
+    URI of linked resources referring to the same real life entity.
+    Should be serialized as owl:sameAs in RDF
   -->
-  <xs:element name="sameas" type="nxs:remoteEntities" />
+  <xs:element name="sameas" type="nxs:simpleStringList" />
+  
+  <!--
+    User friendly label of linked resources referring to the
+    same real life entity. Should contain the labels for the matching
+    entities as referenced in the sameas field. We don't use a complex
+    property to store both URI and labels together since that would prevent
+    efficient search.
+  -->
+  <xs:element name="sameasDisplayLabel" type="nxs:simpleStringList" />
 
   <!--
     URIs of ontological classes of the entity (instances of owl:Class)
