@@ -17,6 +17,7 @@
 package org.nuxeo.ecm.platform.semanticentities.service;
 
 import java.io.Serializable;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -61,6 +62,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
 
     public static final String ENTITY_CONTAINER_TITLE = "%i18nEntities";
 
+    @Override
     public DocumentModel getEntityContainer(CoreSession session)
             throws ClientException {
         final PathRef ref = new PathRef(ENTITY_CONTAINER_PATH);
@@ -97,6 +99,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         return session.getDocument(ref);
     }
 
+    @Override
     public OccurrenceRelation addOccurrence(CoreSession session,
             DocumentRef docRef, DocumentRef entityRef, String quoteContext,
             int startPosInContext, int endPosInContext) throws ClientException {
@@ -105,6 +108,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         return addOccurrences(session, docRef, entityRef, Arrays.asList(info));
     }
 
+    @Override
     public OccurrenceRelation getOccurrenceRelation(CoreSession session,
             DocumentRef docRef, DocumentRef entityRef) throws ClientException {
         return getOccurrenceRelation(session, docRef, entityRef, false);
@@ -139,6 +143,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         }
     }
 
+    @Override
     public OccurrenceRelation addOccurrences(CoreSession session,
             DocumentRef docRef, DocumentRef entityRef,
             List<OccurrenceInfo> occurrences) throws ClientException {
@@ -212,6 +217,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         }
     }
 
+    @Override
     public PageProvider<DocumentModel> getRelatedDocuments(CoreSession session,
             DocumentRef entityRef, String documentType) throws ClientException {
         if (documentType == null) {
@@ -232,6 +238,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 "Doc.cmis:objectId", "relatedDocuments");
     }
 
+    @Override
     public PageProvider<DocumentModel> getRelatedEntities(CoreSession session,
             DocumentRef docRef, String entityType) throws ClientException {
         if (entityType == null) {
@@ -253,6 +260,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 "Ent.cmis:objectId", "relatedEntities");
     }
 
+    @Override
     public List<DocumentModel> suggestEntity(CoreSession session,
             String keywords, String type, int maxSuggestions)
             throws ClientException {
@@ -265,6 +273,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         return session.query(q);
     }
 
+    @Override
     public List<DocumentModel> suggestDocument(CoreSession session,
             String keywords, String type, int maxSuggestions) throws Exception {
         if (type == null) {
@@ -274,8 +283,8 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 "SELECT cmis:objectId, SCORE() relevance FROM %s "
                         + "WHERE CONTAINS('%s') AND cmis:objectTypeId NOT IN ('%s') "
                         + "ORDER BY relevance", type,
-                keywords.replace("'", " "), StringUtils.join(
-                        getEntityTypeNames(), "', '"));
+                keywords.replace("'", " "),
+                StringUtils.join(getEntityTypeNames(), "', '"));
         PageProvider<DocumentModel> provider = new CMISQLDocumentPageProvider(
                 session, query, "cmis:objectId", "suggestedDocuments");
         provider.setPageSize(maxSuggestions);
@@ -285,6 +294,27 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     public Set<String> getEntityTypeNames() throws Exception {
         return Framework.getService(SchemaManager.class).getDocumentTypeNamesExtending(
                 Constants.ENTITY_TYPE);
+    }
+
+    @Override
+    public DocumentModel getLinkedLocalEntity(CoreSession session,
+            URI remoteEntityURI) throws ClientException {
+        String query = String.format("SELECT cmis:objectId FROM cmis:document "
+                + "WHERE '%s' = ANY entity:sameas ORDER BY dc:created",
+                remoteEntityURI.toString());
+        PageProvider<DocumentModel> provider = new CMISQLDocumentPageProvider(
+                session, query, "cmis:objectId", "linkedEntities");
+        provider.setPageSize(1);
+        List<DocumentModel> currentPage = provider.getCurrentPage();
+        long count = provider.getResultsCount();
+        if (count == 0) {
+            return null;
+        } else if (count > 1) {
+            log.warn(String.format(
+                    "semantic inconsistency: found %d local entities linked to '%s'",
+                    count, remoteEntityURI));
+        }
+        return currentPage.get(0);
     }
 
 }

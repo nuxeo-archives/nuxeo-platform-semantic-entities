@@ -18,6 +18,7 @@
 package org.nuxeo.ecm.platform.semanticentities.service;
 
 import java.io.Serializable;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.GregorianCalendar;
@@ -107,7 +108,8 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
                         + " was an English rock musician, singer-songwriter, author, and peace"
                         + " activist who gained worldwide fame as one of the founding members of"
                         + " The Beatles.");
-        john.setPropertyValue("entity:sameas",
+        john.setPropertyValue(
+                "entity:sameas",
                 (Serializable) Arrays.asList("http://dbpedia.org/resource/John_Lennon"));
         john.setPropertyValue("entity:sameasDisplayLabel",
                 (Serializable) Arrays.asList("John Lennon"));
@@ -135,7 +137,8 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
                         + " and one of the most commercially successful and critically acclaimed"
                         + " acts in the history of popular music.");
 
-        beatles.setPropertyValue("entity:sameas",
+        beatles.setPropertyValue(
+                "entity:sameas",
                 (Serializable) Arrays.asList("http://dbpedia.org/resource/The_Beatles"));
         beatles.setPropertyValue("entity:sameasDisplayLabel",
                 (Serializable) Arrays.asList("The Beatles"));
@@ -153,7 +156,8 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
                         + " the eastern side of the Mersey Estuary. It was founded as a borough"
                         + " in 1207 and was granted city status in 1880.");
 
-        liverpool.setPropertyValue("entity:sameas",
+        liverpool.setPropertyValue(
+                "entity:sameas",
                 (Serializable) Arrays.asList("http://dbpedia.org/resource/Liverpool"));
         liverpool.setPropertyValue("entity:sameasDisplayLabel",
                 (Serializable) Arrays.asList("http://Liverpool"));
@@ -387,6 +391,23 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(2, suggestions.size());
         assertEquals(doc1.getRef(), suggestions.get(0).getRef());
         assertEquals(doc2.getRef(), suggestions.get(1).getRef());
+    }
+
+    public void testGetLinkedLocalEntity() throws Exception {
+        URI johnURI = URI.create("http://dbpedia.org/resource/John_Lennon");
+
+        // empty KB will not yield any match
+        DocumentModel linkedEntity = service.getLinkedLocalEntity(session,
+                johnURI);
+        assertNull(linkedEntity);
+
+        makeSomeEntities();
+
+        // the service can find john since it's properly linked
+        linkedEntity = service.getLinkedLocalEntity(session, johnURI);
+        assertNotNull(linkedEntity);
+        assertEquals(john.getRef(), linkedEntity.getRef());
+
     }
 
 }

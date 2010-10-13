@@ -16,6 +16,7 @@
  */
 package org.nuxeo.ecm.platform.semanticentities;
 
+import java.net.URI;
 import java.util.List;
 
 import org.nuxeo.ecm.core.api.ClientException;
@@ -142,5 +143,16 @@ public interface LocalEntityService {
      */
     PageProvider<DocumentModel> getRelatedDocuments(CoreSession session,
             DocumentRef entityRef, String documentType) throws ClientException;
+
+    /**
+     * Lookup the local repo to find a local entity that is linked to the given
+     * remote entity URI through a owl:sameAs relationship.
+     *
+     * @param remoteEntityURI the entity URI to lookup locally
+     * @return the matching local document model or null if none
+     * @throws ClientException in case of problem accessing the local repo
+     */
+    DocumentModel getLinkedLocalEntity(CoreSession session, URI remoteEntityURI)
+            throws ClientException;
 
 }
