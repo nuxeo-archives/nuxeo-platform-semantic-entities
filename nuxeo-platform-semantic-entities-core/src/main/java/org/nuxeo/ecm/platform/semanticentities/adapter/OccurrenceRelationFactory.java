@@ -21,7 +21,7 @@ import org.nuxeo.ecm.core.api.adapter.DocumentAdapterFactory;
 
 public class OccurrenceRelationFactory implements DocumentAdapterFactory {
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
     public Object getAdapter(DocumentModel doc, Class itf) {
         if (doc.hasSchema("occurrence")) {
             return new OccurrenceRelationImpl(doc);

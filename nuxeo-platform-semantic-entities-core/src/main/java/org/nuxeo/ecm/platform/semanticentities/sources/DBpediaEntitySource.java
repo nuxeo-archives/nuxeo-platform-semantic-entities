@@ -73,7 +73,7 @@ import com.hp.hpl.jena.rdf.model.Resource;
  * Implementation of the RemoteEntitySource interface that is able to suggest
  * DBpedia entities by name using the http://lookup.dbpedia.org RESTful service
  * and dereference DBpedia URIs using the official DBpedia sparql endpoint.
- *
+ * 
  * This implementation uses the SPARQL endpoint instead of HTTP GET based
  * queries since the virtuoso implementation arbitrarily truncates the entity
  * graph to around 2000 triples for entities with many properties.
@@ -261,14 +261,17 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                     localEntity.setPropertyValue(localPropertyName,
                             (Serializable) newValues);
                 } else {
-                    if (localProperty.getValue() == null || override) {
+                    if (localProperty.getValue() == null
+                            || "".equals(localProperty.getValue()) || override) {
                         if (type.isComplexType()
                                 && "content".equals(type.getName())) {
-                            localEntity.setPropertyValue(localPropertyName,
+                            localEntity.setPropertyValue(
+                                    localPropertyName,
                                     (Serializable) readLinkedResource(rdfModel,
                                             resource, remotePropertyUri));
                         } else {
-                            localEntity.setPropertyValue(localPropertyName,
+                            localEntity.setPropertyValue(
+                                    localPropertyName,
                                     readDecodedLiteral(rdfModel, resource,
                                             remotePropertyUri, type, "en"));
                         }

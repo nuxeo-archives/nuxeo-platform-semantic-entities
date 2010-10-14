@@ -16,12 +16,13 @@
  */
 package org.nuxeo.ecm.platform.semanticentities.jsf.actions;
 
-import java.io.Serializable;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jboss.seam.ScopeType;
 import org.jboss.seam.annotations.Factory;
 import org.jboss.seam.annotations.In;
@@ -47,7 +48,7 @@ import org.nuxeo.runtime.api.Framework;
 @Scope(ScopeType.CONVERSATION)
 public class SemanticEntitiesActions {
 
-    public static final String ENTITY_SAMEAS = "entity:sameas";
+    public static final Log log = LogFactory.getLog(SemanticEntitiesActions.class);
 
     @In(create = true)
     protected NavigationContext navigationContext;
@@ -148,8 +149,7 @@ public class SemanticEntitiesActions {
 
     @Factory(scope = ScopeType.EVENT, value = "currentEntitySameAs")
     public List<RemoteEntity> getCurrentEntitySameAs() throws ClientException {
-        return RemoteEntity.fromDocument(
-                navigationContext.getCurrentDocument(), ENTITY_SAMEAS);
+        return RemoteEntity.fromDocument(navigationContext.getCurrentDocument());
     }
 
     public void showSuggestRemoteEntitySearch() {
@@ -160,8 +160,27 @@ public class SemanticEntitiesActions {
         return isRemoteEntitySearchDisplayed;
     }
 
-    public void setSelectedEntitySuggestionUri(String uri) {
-        selectedEntitySuggestionUri = URI.create(uri);
+    public List<RemoteEntity> suggestRemoteEntity(Object input)
+            throws Exception {
+        String type = navigationContext.getCurrentDocument().getType();
+        String keywords = (String) input;
+        RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
+        List<RemoteEntity> filteredSuggestions = new ArrayList<RemoteEntity>();
+        try {
+            List<RemoteEntity> suggestions = remoteEntityService.suggestRemoteEntity(
+                    keywords, type, 5);
+            // TODO: filter out entities that already have a local entity synced
+            // to them
+            filteredSuggestions.addAll(suggestions);
+        } catch (IOException e) {
+            // TODO: report a nice user friendly error message
+            log.error(e, e);
+        }
+        return filteredSuggestions;
+    }
+
+    public void setSelectedEntitySuggestionUri(URI uri) {
+        selectedEntitySuggestionUri = uri;
     }
 
     public void setSelectedEntitySuggestionLabel(String label) {
@@ -177,8 +196,6 @@ public class SemanticEntitiesActions {
         RemoteEntity re = new RemoteEntity(selectedEntitySuggestionLabel,
                 selectedEntitySuggestionUri);
         DocumentModel doc = navigationContext.getChangeableDocument();
-        re.addToEntities(doc, ENTITY_SAMEAS);
-
         syncAndSaveDocument(doc, re.uri, false);
     }
 
@@ -198,19 +215,10 @@ public class SemanticEntitiesActions {
         documentManager.save();
     }
 
-    @SuppressWarnings("unchecked")
     public void removeSameAsLink(String uri) throws PropertyException,
             ClientException {
         DocumentModel doc = navigationContext.getChangeableDocument();
-        List<Map<String, String>> oldRemoteEntities = doc.getProperty(
-                ENTITY_SAMEAS).getValue(List.class);
-        List<Map<String, String>> newRemoteEntities = new ArrayList<Map<String, String>>();
-        for (Map<String, String> entity : oldRemoteEntities) {
-            if (!uri.equals(entity.get("uri"))) {
-                newRemoteEntities.add(entity);
-            }
-        }
-        doc.setPropertyValue(ENTITY_SAMEAS, (Serializable) newRemoteEntities);
+        // TODO: implement me!
         documentManager.saveDocument(doc);
         documentManager.save();
     }

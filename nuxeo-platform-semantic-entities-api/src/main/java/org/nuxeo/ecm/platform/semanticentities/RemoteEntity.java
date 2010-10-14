@@ -1,13 +1,12 @@
 package org.nuxeo.ecm.platform.semanticentities;
 
-import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.nuxeo.common.utils.StringUtils;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 
@@ -16,9 +15,11 @@ import org.nuxeo.ecm.core.api.DocumentModel;
  */
 public class RemoteEntity {
 
-    public static final String URI_PROPERTY = "uri";
+    public static final String SAMEAS_URI_PROPERTY = "entity:sameas";
 
-    public static final String LABEL_PROPERTY = "label";
+    public static final String SAMEAS_LABEL_PROPERTY = "entity:sameasDisplayLabel";
+
+    public static final Log log = LogFactory.getLog(RemoteEntity.class);
 
     public final String label;
 
@@ -35,58 +36,38 @@ public class RemoteEntity {
     }
 
     /**
-     * Convenience helper method to update a list of linked remote entities
-     * stored in a document model as a complex property without duplicating
-     * entries the same URI
-     *
-     * @param doc the document model to update
-     * @param entitiesPropertyName property holding a list of maps with keys
-     *            "label" and "uri"
-     * @throws ClientException
-     */
-    @SuppressWarnings("unchecked")
-    public void addToEntities(DocumentModel doc, String entitiesPropertyName)
-            throws ClientException {
-        List<Map<String, String>> entities = (List<Map<String, String>>) doc.getPropertyValue(entitiesPropertyName);
-        if (entities == null) {
-            entities = new ArrayList<Map<String, String>>();
-        }
-        String uriString = uri.toString();
-        boolean foundSameUri = false;
-        for (Map<String, String> oldEntity : entities) {
-            if (uriString.equals(oldEntity.get(URI_PROPERTY))) {
-                // update the label
-                oldEntity.put(LABEL_PROPERTY, label);
-                foundSameUri = true;
-                break;
-            }
-        }
-        if (!foundSameUri) {
-            Map<String, String> newEntity = new HashMap<String, String>();
-            newEntity.put(URI_PROPERTY, uriString);
-            newEntity.put(LABEL_PROPERTY, label);
-            entities.add(newEntity);
-        }
-        doc.setPropertyValue(entitiesPropertyName, (Serializable) entities);
-    }
-
-    /**
      * Static helper to turn a document complex property into a list of
      * RemoteEntity instances suitable to the UI layer.
      */
-    @SuppressWarnings("unchecked")
-    public static List<RemoteEntity> fromDocument(DocumentModel doc,
-            String entitiesPropertyName) throws ClientException {
-        List<Map<String, String>> entityValues = (List<Map<String, String>>) doc.getPropertyValue(entitiesPropertyName);
+    public static List<RemoteEntity> fromDocument(DocumentModel doc)
+            throws ClientException {
+        String[] entityURIs = doc.getProperty(SAMEAS_URI_PROPERTY).getValue(
+                String[].class);
+        String[] entityLabels = doc.getProperty(SAMEAS_LABEL_PROPERTY).getValue(
+                String[].class);
+
         List<RemoteEntity> entities = new ArrayList<RemoteEntity>();
-        if (entityValues == null) {
-            entityValues = Collections.emptyList();
+        if (entityURIs.length != entityLabels.length) {
+            log.warn(String.format(
+                    "inconsistent linked remote entities for local entity '%s': (%s) and (%s)",
+                    doc.getTitle(), StringUtils.join(entityURIs),
+                    StringUtils.join(entityLabels)));
+            return entities;
         }
-        for (Map<String, String> entityValue : entityValues) {
-            entities.add(new RemoteEntity(entityValue.get(LABEL_PROPERTY),
-                    entityValue.get(URI_PROPERTY)));
+        for (int i = 0; i < entities.size(); i++) {
+            entities.add(new RemoteEntity(entityLabels[i], entityURIs[i]));
         }
         return entities;
+    }
+
+    // getters are required by JSF-EL expression resolution
+
+    public String getLabel() {
+        return label;
+    }
+
+    public URI getUri() {
+        return uri;
     }
 
 }

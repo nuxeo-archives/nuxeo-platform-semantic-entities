@@ -6,7 +6,8 @@
 
     <layout name="entity_summary_layout">
       <templates>
-        <template mode="any">/layouts/layout_summary_template.xhtml</template>
+        <template mode="any">/layouts/layout_summary_template.xhtml
+        </template>
       </templates>
       <rows>
         <row>
@@ -17,23 +18,23 @@
         <row>
           <widget>summary_current_document_lc_and_version</widget>
           <widget>summary_current_document_actions</widget>
+          <widget>summary_current_entity_sync</widget>
           <widget>summary_current_document_comments</widget>
         </row>
         <row>
           <widget>summary_current_document_single_tasks</widget>
         </row>
       </rows>
-      <widget name="summary_current_entity_heading"
-        type="summary_current_entity_heading" />
-      <widget name="summary_current_entity_occurrences"
-        type="summary_current_entity_occurrences" />
-      <widget name="summary_current_entity_view"
-        type="summary_current_entity_view" />
+      <widget name="summary_current_entity_heading" type="summary_current_entity_heading" />
+      <widget name="summary_current_entity_occurrences" type="summary_current_entity_occurrences" />
+      <widget name="summary_current_entity_view" type="summary_current_entity_view" />
+      <widget name="summary_current_entity_sync" type="summary_current_entity_sync" />
     </layout>
 
     <layout name="entity_heading">
       <templates>
-        <template mode="any">/layouts/layout_default_template.xhtml</template>
+        <template mode="any">/layouts/layout_default_template.xhtml
+        </template>
       </templates>
       <rows>
         <row>
@@ -93,19 +94,20 @@
       </widget>
       <widget name="altnames" type="namelist">
         <widgetModes>
-          <mode value="view">#{nxu:test(empty layoutValue.entity.altnames, 'hidden', 'view')}</mode>
-	      <mode value="any">edit</mode>
-	    </widgetModes>
-	    <fields>
-	      <field>entity:altnames</field>
-	    </fields>
-	    <subWidgets>
-	      <widget name="altname" type="text">
-	        <fields>
-	          <field></field>
-	        </fields>
-	      </widget>
-	    </subWidgets>
+          <mode value="view">#{nxu:test(empty layoutValue.entity.altnames,
+            'hidden', 'view')}</mode>
+          <mode value="any">edit</mode>
+        </widgetModes>
+        <fields>
+          <field>entity:altnames</field>
+        </fields>
+        <subWidgets>
+          <widget name="altname" type="text">
+            <fields>
+              <field></field>
+            </fields>
+          </widget>
+        </subWidgets>
         <properties widgetMode="edit">
           <property name="styleClass">dataInputText</property>
         </properties>
@@ -125,7 +127,8 @@
 
     <layout name="person">
       <templates>
-        <template mode="any">/layouts/layout_default_template.xhtml</template>
+        <template mode="any">/layouts/layout_default_template.xhtml
+        </template>
       </templates>
       <rows>
         <row>
@@ -134,14 +137,14 @@
         <row>
           <widget>deathDate</widget>
         </row>
-        <!-- TODO add widgets for relationship with
-         common relationships with organizations (position)
-          and places (birthplace, residence)  -->
+        <!-- TODO add widgets for relationship with common relationships 
+          with organizations (position) and places (birthplace, residence) -->
       </rows>
       <widget name="birthDate" type="datetime">
-         <widgetModes>
+        <widgetModes>
           <mode value="view">
-            #{empty layoutValue.person.birthDate ? 'hidden' : 'view'}
+            #{empty layoutValue.person.birthDate ?
+            'hidden' : 'view'}
           </mode>
         </widgetModes>
         <fields>
@@ -152,9 +155,10 @@
         </properties>
       </widget>
       <widget name="deathDate" type="datetime">
-         <widgetModes>
+        <widgetModes>
           <mode value="view">
-            #{empty layoutValue.person.deathDate ? 'hidden' : 'view'}
+            #{empty layoutValue.person.deathDate ?
+            'hidden' : 'view'}
           </mode>
         </widgetModes>
         <fields>
@@ -168,7 +172,8 @@
 
     <layout name="place">
       <templates>
-        <template mode="any">/layouts/layout_default_template.xhtml</template>
+        <template mode="any">/layouts/layout_default_template.xhtml
+        </template>
       </templates>
       <rows>
         <row>
@@ -180,9 +185,10 @@
         <!-- TODO: replace those widgets with a world map -->
       </rows>
       <widget name="latitude" type="text">
-         <widgetModes>
+        <widgetModes>
           <mode value="view">
-            #{empty layoutValue.place.latitude ? 'hidden' : 'view'}
+            #{empty layoutValue.place.latitude ? 'hidden'
+            : 'view'}
           </mode>
         </widgetModes>
         <fields>
@@ -193,9 +199,10 @@
         </properties>
       </widget>
       <widget name="longitude" type="text">
-         <widgetModes>
+        <widgetModes>
           <mode value="view">
-            #{empty layoutValue.place.longitude ? 'hidden' : 'view'}
+            #{empty layoutValue.place.longitude ?
+            'hidden' : 'view'}
           </mode>
         </widgetModes>
         <fields>
@@ -209,7 +216,8 @@
 
     <layout name="organization">
       <templates>
-        <template mode="any">/layouts/layout_default_template.xhtml</template>
+        <template mode="any">/layouts/layout_default_template.xhtml
+        </template>
       </templates>
       <rows>
         <row>
@@ -218,14 +226,14 @@
         <row>
           <widget>dissolutionDate</widget>
         </row>
-        <!-- TODO add widgets for relationship with
-         common relationships with persons (founder, leader)
-          and places (headquartersLocation)  -->
+        <!-- TODO add widgets for relationship with common relationships 
+          with persons (founder, leader) and places (headquartersLocation) -->
       </rows>
       <widget name="inceptionDate" type="datetime">
-         <widgetModes>
+        <widgetModes>
           <mode value="view">
-            #{empty layoutValue.organization.inceptionDate ? 'hidden' : 'view'}
+            #{empty
+            layoutValue.organization.inceptionDate ? 'hidden' : 'view'}
           </mode>
         </widgetModes>
         <fields>
@@ -236,9 +244,11 @@
         </properties>
       </widget>
       <widget name="dissolutionDate" type="datetime">
-         <widgetModes>
+        <widgetModes>
           <mode value="view">
-            #{empty layoutValue.organization.dissolutionDate ? 'hidden' : 'view'}
+            #{empty
+            layoutValue.organization.dissolutionDate ? 'hidden' :
+            'view'}
           </mode>
         </widgetModes>
         <fields>
@@ -249,7 +259,7 @@
         </properties>
       </widget>
     </layout>
-    
+
     <layout name="entity_occurrence_listing">
       <templates>
         <template mode="any">
@@ -322,14 +332,19 @@
     <widgetType name="summary_current_entity_heading">
 
       <documentation>
-        This widget displays the heading common to all entities: depiction, entity type
-        and summary. The canonical name is expected to be displayed on above the entity
-        tabs hence not part of this summary widget.
+        This widget displays the heading common to all entities:
+        depiction, entity type
+        and summary. The canonical name is
+        expected to be displayed on above the entity
+        tabs hence not part
+        of this summary widget.
 
-        It requires the following variables to be present in the EL context:
+        It requires the following variables to be
+        present in the EL context:
         <ul>
           <li>currentDocument: the current document</li>
-          <li>currentDocumentType : the Type of the current document</li>
+          <li>currentDocumentType : the Type of the current document
+          </li>
         </ul>
       </documentation>
 
@@ -344,12 +359,15 @@
     <widgetType name="summary_current_entity_view">
 
       <documentation>
-        This widgets displays the view layouts of the currentDocument as an Entity
+        This widgets displays the view layouts of the currentDocument as
+        an Entity
 
-        It requires the following variables to be present in the EL context:
+        It requires the following variables to be present in
+        the EL context:
         <ul>
           <li>currentDocument: the current document</li>
-          <li>currentDocumentType : the Type of the current document</li>
+          <li>currentDocumentType : the Type of the current document
+          </li>
         </ul>
       </documentation>
 
@@ -364,14 +382,17 @@
     <widgetType name="summary_current_entity_occurrences">
 
       <documentation>
-        This widgets displays the list of documents linked to the currentDocument
+        This widgets displays the list of documents linked to the
+        currentDocument
         seen as an Entity.
 
-        It requires the following variables to be present in the EL context:
+        It requires the following
+        variables to be present in the EL context:
         <ul>
           <li>currentDocument: the current document</li>
-          <li>semanticEntitiesActions: the seam component able to perform
-           the relationships queries</li>
+          <li>semanticEntitiesActions: the seam component able to
+            perform
+            the relationships queries</li>
         </ul>
       </documentation>
 
@@ -383,14 +404,43 @@
       </property>
     </widgetType>
 
+    <widgetType name="summary_current_entity_sync">
+
+      <documentation>
+        This widgets displays the list of linked remote entities, the
+        ability
+        to link to new entities and to sync local data from
+        remote sources.
+
+        It requires the following variables to be present
+        in the EL context:
+        <ul>
+          <li>currentDocument: the current document</li>
+          <li>semanticEntitiesActions: the seam component able to
+            perform
+            the remote entity suggestion queries and synchronization
+            operation</li>
+        </ul>
+      </documentation>
+
+      <handler-class>
+        org.nuxeo.ecm.platform.forms.layout.facelets.plugins.TemplateWidgetTypeHandler
+      </handler-class>
+      <property name="template">
+        /widgets/summary/summary_current_entity_sync_widget_template.xhtml
+      </property>
+    </widgetType>
+
     <widgetType name="namelist">
       <documentation>
-        Template widget dedicated to displaying and editing list of names (short string list).
+        Template widget dedicated to displaying and editing
+        list of names (short string list).
       </documentation>
       <handler-class>
         org.nuxeo.ecm.platform.forms.layout.facelets.plugins.TemplateWidgetTypeHandler
       </handler-class>
-      <property name="template">/widgets/namelist_widget_template.xhtml</property>
+      <property name="template">/widgets/namelist_widget_template.xhtml
+      </property>
     </widgetType>
 
   </extension>
