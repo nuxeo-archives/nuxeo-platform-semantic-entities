@@ -3,6 +3,9 @@
   xmlns:rich="http://richfaces.org/rich" xmlns:a4j="http://richfaces.org/a4j"
   class="sameAsSync"> <a4j:outputPanel id="remoteEntitySuggestionPanel">
 
+  <h3 class="summaryTitle">#{messages['heading.remoteEntityLinks']}</h3>
+
+  <a4j:region id="statusRemoteEntitySameAsSync">
   <nxu:dataTable id="sameAsTable" value="#{currentEntitySameAs}"
     var="remoteEntity" rendered="#{not empty currentEntitySameAs}">
     <nxu:column>
@@ -25,15 +28,24 @@
     </nxu:column>
     <nxu:column>
       <a4j:commandLink id="removeSameAsLink" immediate="true"
-        reRender="documentViewPanel,remoteEntitySuggestionPanel"
+        reRender="remoteEntitySuggestionPanel"
         action="#{semanticEntitiesActions.removeSameAsLink(remoteEntity.uri)}"
         rendered="#{documentManager.hasPermission(currentDocument.ref, 'WRITE_PROPERTIES')}">
         <h:graphicImage value="/icons/action_delete_mini.gif" />
       </a4j:commandLink>
     </nxu:column>
+    <nxu:column>
+      <a4j:status for="statusRemoteEntitySameAsSync">
+        <f:facet name="start">
+          <h:graphicImage value="/img/standart_waiter.gif" />
+        </f:facet>
+      </a4j:status>
+    </nxu:column>
   </nxu:dataTable>
+  </a4j:region>
 
   <a4j:commandLink id="addSameAsLink" ajaxSingle="true"
+    rendered="#{empty currentEntitySameAs}"
     actionListener="#{semanticEntitiesActions.showSuggestRemoteEntitySearch}"
     reRender="remoteEntitySuggestionPanel">
     <h:graphicImage id="toggle_plus" url="/icons/action_add.gif" />
@@ -41,13 +53,14 @@
   </a4j:commandLink>
 
 
+  <a4j:region id="statusRemoteEntitySuggest">
   <f:subview rendered="#{semanticEntitiesActions.showSuggestRemoteEntitySearch}">
     <div>
       <h:inputText id="remoteEntitySuggestionKeywords"
         styleClass="dataInputText"
         onkeydown="if (event.keyCode == 13 || event.keyCode == 9) {return false;}">
       </h:inputText>
-      <a4j:status>
+      <a4j:status for="statusRemoteEntitySuggest">
         <f:facet name="start">
           <h:graphicImage value="/img/standart_waiter.gif" />
         </f:facet>
@@ -71,5 +84,6 @@
       </h:column>
     </rich:suggestionbox>
   </f:subview>
+  </a4j:region>
 
 </a4j:outputPanel> </span>
