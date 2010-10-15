@@ -42,6 +42,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -302,7 +303,11 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                 String lang = literal.getLanguage();
                 if (lang == null || lang.equals("")
                         || lang.equals(requestedLang)) {
-                    return (Serializable) type.decode(literal.getString());
+                    Serializable decoded = (Serializable) type.decode(literal.getString());
+                    if (decoded instanceof String) {
+                        decoded = StringEscapeUtils.unescapeHtml((String) decoded);
+                    }
+                    return decoded;
                 }
             }
         }
@@ -361,6 +366,7 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
             String value = null;
             if (node.isLiteral()) {
                 value = ((Literal) node.as(Literal.class)).getString();
+                value = StringEscapeUtils.unescapeHtml(value);
             } else if (node.isURIResource()) {
                 value = ((Resource) node.as(Resource.class)).getURI();
             } else {
