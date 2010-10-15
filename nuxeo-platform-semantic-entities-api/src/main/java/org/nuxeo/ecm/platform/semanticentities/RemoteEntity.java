@@ -54,7 +54,7 @@ public class RemoteEntity {
                     StringUtils.join(entityLabels)));
             return entities;
         }
-        for (int i = 0; i < entities.size(); i++) {
+        for (int i = 0; i < entityURIs.length; i++) {
             entities.add(new RemoteEntity(entityLabels[i], entityURIs[i]));
         }
         return entities;

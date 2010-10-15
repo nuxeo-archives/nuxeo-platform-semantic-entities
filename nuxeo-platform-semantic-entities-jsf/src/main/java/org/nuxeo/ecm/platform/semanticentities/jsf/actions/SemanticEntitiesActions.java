@@ -20,6 +20,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import javax.faces.application.FacesMessage;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,17 +33,18 @@ import org.jboss.seam.annotations.Name;
 import org.jboss.seam.annotations.Observer;
 import org.jboss.seam.annotations.Scope;
 import org.jboss.seam.contexts.Contexts;
+import org.jboss.seam.faces.FacesMessages;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.PageProvider;
-import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.ecm.platform.ui.web.api.NavigationContext;
+import org.nuxeo.ecm.webapp.helpers.EventManager;
 import org.nuxeo.ecm.webapp.helpers.EventNames;
 import org.nuxeo.runtime.api.Framework;
 
@@ -55,6 +59,12 @@ public class SemanticEntitiesActions {
 
     @In(required = false)
     protected CoreSession documentManager;
+
+    @In(create = true)
+    protected FacesMessages facesMessages;
+
+    @In(create = true)
+    protected Map<String, String> messages;
 
     protected String documentSuggestionKeywords;
 
@@ -197,6 +207,7 @@ public class SemanticEntitiesActions {
                 selectedEntitySuggestionUri);
         DocumentModel doc = navigationContext.getChangeableDocument();
         syncAndSaveDocument(doc, re.uri, false);
+        Contexts.removeFromAllContexts("currentEntitySameAs");
     }
 
     public void syncWithSameAsLink(String uri) throws Exception {
@@ -211,16 +222,19 @@ public class SemanticEntitiesActions {
         if (remoteEntityService.canDereference(uri)) {
             remoteEntityService.dereferenceInto(doc, uri, fullSync);
         }
-        documentManager.saveDocument(doc);
+        doc = documentManager.saveDocument(doc);
         documentManager.save();
+        notifyDocumentUpdated(doc);
     }
 
-    public void removeSameAsLink(String uri) throws PropertyException,
-            ClientException {
+    public void removeSameAsLink(String uri) throws Exception {
         DocumentModel doc = navigationContext.getChangeableDocument();
-        // TODO: implement me!
-        documentManager.saveDocument(doc);
+        RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
+        remoteEntityService.removeSameAsLink(doc, URI.create(uri));
+        doc = documentManager.saveDocument(doc);
         documentManager.save();
+        notifyDocumentUpdated(doc);
+        Contexts.removeFromAllContexts("currentEntitySameAs");
     }
 
     @Observer(value = EventNames.USER_ALL_DOCUMENT_TYPES_SELECTION_CHANGED, create = false, inject = false)
@@ -231,5 +245,13 @@ public class SemanticEntitiesActions {
 
     public void invalidateEntityOccurrenceProvider() {
         Contexts.removeFromAllContexts("entityOccurrenceProvider");
+    }
+
+    protected void notifyDocumentUpdated(DocumentModel doc)
+            throws ClientException {
+        navigationContext.invalidateCurrentDocument();
+        facesMessages.add(FacesMessage.SEVERITY_INFO,
+                messages.get("document_modified"), messages.get(doc.getType()));
+        EventManager.raiseEventsOnDocumentChange(doc);
     }
 }

@@ -16,6 +16,11 @@
  */
 package org.nuxeo.ecm.platform.semanticentities;
 
+import java.net.URI;
+
+import org.nuxeo.ecm.core.api.ClientException;
+import org.nuxeo.ecm.core.api.DocumentModel;
+
 /**
  * Service to suggest by name, lookup and fetch data by URI from entities
  * definitions hosted on remote HTTP servers using the Linked Data philosophy.
@@ -27,4 +32,11 @@ public interface RemoteEntityService extends RemoteEntitySource {
     // The service features methods that aggregate the same operations from
     // potentially many registered resources
 
+    /**
+     * Helper API to unlink a local entity from a remote entity identified by
+     * it's URI. It is the responsability of the caller to save the change in
+     * back to the repository if persistence is required.
+     */
+    void removeSameAsLink(DocumentModel localEntity, URI remoteEntityURI)
+            throws ClientException;
 }

@@ -27,6 +27,7 @@ import java.util.TreeSet;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
@@ -185,5 +186,35 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
             }
         }
         return types;
+    }
+
+    @Override
+    public void removeSameAsLink(DocumentModel doc, URI uriToRemove)
+            throws ClientException {
+        if (doc.getPropertyValue(RemoteEntity.SAMEAS_URI_PROPERTY) == null) {
+            return;
+        }
+        String uriAsString = uriToRemove.toString();
+        ArrayList<String> filteredURIs = new ArrayList<String>();
+        ArrayList<String> filteredLabels = new ArrayList<String>();
+        String[] oldURIs = doc.getProperty(RemoteEntity.SAMEAS_URI_PROPERTY).getValue(
+                String[].class);
+        String[] oldLabels = doc.getProperty(RemoteEntity.SAMEAS_LABEL_PROPERTY).getValue(
+                String[].class);
+
+        boolean changed = false;
+        for (int i = 0; i < oldURIs.length; i++) {
+            if (uriAsString.equals(oldURIs[i])) {
+                changed = true;
+            } else {
+                filteredURIs.add(oldURIs[i]);
+                filteredLabels.add(oldLabels[i]);
+            }
+        }
+        if (changed) {
+            doc.setPropertyValue(RemoteEntity.SAMEAS_URI_PROPERTY, filteredURIs);
+            doc.setPropertyValue(RemoteEntity.SAMEAS_LABEL_PROPERTY,
+                    filteredLabels);
+        }
     }
 }
