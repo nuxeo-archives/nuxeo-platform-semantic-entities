@@ -163,6 +163,11 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals("Fri Aug 04 01:00:00 CET 1961",
                 birthDate.getTime().toString());
 
+        // existing names are not re-added
+        altnames = barackDoc.getProperty("entity:altnames").getValue(
+                List.class);
+        assertEquals(4, altnames.size());
+
         // later dereferencing with override == true does not preserve local
         // changes
         service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true);
