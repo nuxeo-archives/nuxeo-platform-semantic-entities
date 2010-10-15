@@ -26,11 +26,17 @@ public class RemoteEntity {
     public final URI uri;
 
     public RemoteEntity(String label, URI uri) {
+        if (label == null || uri == null) {
+            throw new IllegalArgumentException("label and uri must not be null");
+        }
         this.label = label;
         this.uri = uri;
     }
 
     public RemoteEntity(String label, String uri) {
+        if (label == null || uri == null) {
+            throw new IllegalArgumentException("label and uri must not be null");
+        }
         this.label = label;
         this.uri = URI.create(uri);
     }
