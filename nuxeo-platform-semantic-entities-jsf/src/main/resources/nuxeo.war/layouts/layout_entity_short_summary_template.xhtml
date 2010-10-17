@@ -5,23 +5,22 @@
   xmlns:nxl="http://nuxeo.org/nxforms/layout"
   xmlns:nxu="http://nuxeo.org/nxweb/util"
   xmlns:nxd="http://nuxeo.org/nxweb/document"
+  xmlns:fn="http://java.sun.com/jsp/jstl/functions"
   id="#{layout.id}">
 
-<div class="entityDepictionContainer" style="float: left; margin: 0px 1em 1em 0px;">
+<div class="entityDepictionContainer" style="float: left; width: 62px; margin: 0px 1em 1em 0px;">
 <h:graphicImage
   url="#{nxd:fileUrl('downloadFile', value, 'entity:depiction', value.entity.depiction.filename)}?conversationId=#{conversation.id}"
   style="max-height: 60px; max-width: 60px; border: 1px solid darkGray; padding: 1px"
   rendered="#{value.hasSchema('entity') and !empty value.entity.depiction}"
   styleClass="entityDepiction" />
 </div>
-<div class="entitySummary" style="margin: 1em;">
-  <span title="#{value.entity.summary}">
-    <nxd:restDocumentLink document="#{value}">
-      #{nxd:titleOrId(value)}
-    </nxd:restDocumentLink>
-  </span>
+<div class="entityLink" style="margin: 1em;">
+  <nxd:restDocumentLink document="#{value}">
+    #{nxd:titleOrId(value)}
+  </nxd:restDocumentLink>
 </div>
-
+<p class="entityShortSummary">#{fn:substring(value.entity.summary, 0, 130)}[...]</p>
 <div style="clear: both"></div>
 
 </f:subview>
