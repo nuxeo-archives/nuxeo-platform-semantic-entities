@@ -122,6 +122,37 @@ public class SemanticEntitiesActions {
                 entity.getRef(), null);
     }
 
+    @Factory(scope = ScopeType.CONVERSATION, value = "relatedPeopleProvider")
+    public PageProvider<DocumentModel> getRelatedPeopleProvider()
+            throws ClientException, Exception {
+        return getRelatedEntitiesProvider(
+                navigationContext.getCurrentDocument(), "Person");
+    }
+
+    @Factory(scope = ScopeType.CONVERSATION, value = "relatedPlacesProvider")
+    public PageProvider<DocumentModel> getRelatedPlacesProvider()
+            throws ClientException, Exception {
+        return getRelatedEntitiesProvider(
+                navigationContext.getCurrentDocument(), "Place");
+    }
+
+    @Factory(scope = ScopeType.CONVERSATION, value = "relatedOrganizationsProvider")
+    public PageProvider<DocumentModel> getRelatedOrganizationsProvider()
+            throws ClientException, Exception {
+        return getRelatedEntitiesProvider(
+                navigationContext.getCurrentDocument(), "Organization");
+    }
+
+    /**
+     * Return the local entities that hold an occurrence to the given document.
+     */
+    public PageProvider<DocumentModel> getRelatedEntitiesProvider(
+            DocumentModel doc, String entityType) throws ClientException,
+            Exception {
+        return getLocalEntityService().getRelatedEntities(documentManager,
+                doc.getRef(), entityType);
+    }
+
     /*
      * Ajax callbacks for new occurrence relationship creation.
      */
@@ -150,7 +181,7 @@ public class SemanticEntitiesActions {
         getLocalEntityService().addOccurrences(documentManager,
                 new IdRef(selectedDocumentId),
                 navigationContext.getCurrentDocument().getRef(), null);
-        invalidateEntityOccurrenceProvider();
+        invalidateCurrentDocumentProviders();
     }
 
     /*
@@ -243,11 +274,14 @@ public class SemanticEntitiesActions {
     @Observer(value = EventNames.USER_ALL_DOCUMENT_TYPES_SELECTION_CHANGED, create = false, inject = false)
     public void onDocumentNavigation() {
         isRemoteEntitySearchDisplayed = false;
-        invalidateEntityOccurrenceProvider();
+        invalidateCurrentDocumentProviders();
     }
 
-    public void invalidateEntityOccurrenceProvider() {
+    public void invalidateCurrentDocumentProviders() {
         Contexts.removeFromAllContexts("entityOccurrenceProvider");
+        Contexts.removeFromAllContexts("relatedPlacesProvider");
+        Contexts.removeFromAllContexts("relatedPeopleProvider");
+        Contexts.removeFromAllContexts("relatedOrganizationProvider");
     }
 
     protected void notifyDocumentUpdated(DocumentModel doc)

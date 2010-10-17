@@ -1,0 +1,39 @@
+<div class="relation_block" xmlns:nxu="http://nuxeo.org/nxweb/util"
+  xmlns:f="http://java.sun.com/jsf/core"
+  xmlns:ui="http://java.sun.com/jsf/facelets"
+  xmlns:h="http://java.sun.com/jsf/html"
+  xmlns:nxdir="http://nuxeo.org/nxdirectory"
+  xmlns:c="http://java.sun.com/jstl/core"
+  xmlns:nxl="http://nuxeo.org/nxforms/layout">
+  
+  
+<!--
+ TODO: Temporary hack that overrides the relations place holder
+       to display the mentioned entities
+ TODO: Rewrite this as a generic widget that uses parameterized
+       content views (once the CMISQL-joins enabled provider is
+       factorized out of the project
+ -->
+
+<f:subview rendered="#{!empty relatedPeopleProvider.currentPage}">
+  <h3 class="summaryTitle">#{messages['heading.occurrencesOfPeople']}</h3>
+  <c:forEach var="entity" items="#{relatedPeopleProvider.currentPage}">
+    <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
+  </c:forEach>
+</f:subview>
+
+<f:subview rendered="#{!empty relatedOrganizationsProvider.currentPage}">
+  <h3 class="summaryTitle">#{messages['heading.occurrencesOfOrganizations']}</h3>
+  <c:forEach var="entity" items="#{relatedOrganizationsProvider.currentPage}">
+    <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
+  </c:forEach>
+</f:subview>
+
+<f:subview rendered="#{!empty relatedPlacesProvider.currentPage}">
+  <h3 class="summaryTitle">#{messages['heading.occurrencesOfPlaces']}</h3>
+  <c:forEach var="entity" items="#{relatedOrganizationsProvider.currentPage}">
+    <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
+  </c:forEach>
+</f:subview>
+
+</div>

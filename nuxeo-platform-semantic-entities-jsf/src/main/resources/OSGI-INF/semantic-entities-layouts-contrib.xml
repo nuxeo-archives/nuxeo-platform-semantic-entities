@@ -4,6 +4,14 @@
   <extension target="org.nuxeo.ecm.platform.forms.layout.WebLayoutManager"
     point="layouts">
 
+    <layout name="entity_short_summary_layout">
+      <templates>
+        <template mode="any">/layouts/layout_entity_short_summary_template.xhtml
+        </template>
+      </templates>
+      <!--TODO: make the list of widget customizable -->
+    </layout>
+
     <layout name="entity_summary_layout">
       <templates>
         <template mode="any">/layouts/layout_summary_template.xhtml
