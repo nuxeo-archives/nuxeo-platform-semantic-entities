@@ -43,6 +43,7 @@ import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
+import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
 import org.nuxeo.ecm.platform.ui.web.api.NavigationContext;
 import org.nuxeo.ecm.webapp.helpers.EventManager;
 import org.nuxeo.ecm.webapp.helpers.EventNames;
@@ -181,6 +182,18 @@ public class SemanticEntitiesActions {
         getLocalEntityService().addOccurrences(documentManager,
                 new IdRef(selectedDocumentId),
                 navigationContext.getCurrentDocument().getRef(), null);
+        invalidateCurrentDocumentProviders();
+    }
+
+    public void removeOccurrenceRelation(String docId, String entityId)
+            throws Exception {
+        // TODO: wrap exception in friendly JSF error messages
+        OccurrenceRelation rel = getLocalEntityService().getOccurrenceRelation(
+                documentManager, new IdRef(docId), new IdRef(entityId));
+        if (rel != null) {
+            documentManager.removeDocument(rel.getOccurrenceDocument().getRef());
+            documentManager.save();
+        }
         invalidateCurrentDocumentProviders();
     }
 

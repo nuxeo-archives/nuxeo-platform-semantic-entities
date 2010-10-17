@@ -4,8 +4,8 @@
   xmlns:h="http://java.sun.com/jsf/html"
   xmlns:nxdir="http://nuxeo.org/nxdirectory"
   xmlns:c="http://java.sun.com/jstl/core"
-  xmlns:nxl="http://nuxeo.org/nxforms/layout">
-  
+  xmlns:nxl="http://nuxeo.org/nxforms/layout"
+  xmlns:a4j="http://richfaces.org/a4j">
   
 <!--
  TODO: Temporary hack that overrides the relations place holder
@@ -14,7 +14,7 @@
        content views (once the CMISQL-joins enabled provider is
        factorized out of the project
  -->
-
+<a4j:outputPanel id="relatedEntitiesPanel">
 <f:subview rendered="#{!empty relatedPeopleProvider.currentPage}">
   <h3 class="summaryTitle">#{messages['heading.occurrencesOfPeople']}</h3>
   <c:forEach var="entity" items="#{relatedPeopleProvider.currentPage}">
@@ -35,5 +35,5 @@
     <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
   </c:forEach>
 </f:subview>
-
+</a4j:outputPanel>
 </div>
