@@ -1,66 +1,67 @@
-<div class="entity_heading_block"
-  xmlns:nxu="http://nuxeo.org/nxweb/util"
+<div class="entity_heading_block" xmlns:nxu="http://nuxeo.org/nxweb/util"
   xmlns:ui="http://java.sun.com/jsf/facelets"
-  xmlns:f="http://java.sun.com/jsf/core"
-  xmlns:h="http://java.sun.com/jsf/html"
+  xmlns:f="http://java.sun.com/jsf/core" xmlns:h="http://java.sun.com/jsf/html"
   xmlns:c="http://java.sun.com/jstl/core"
   xmlns:nxh="http://nuxeo.org/nxweb/html"
   xmlns:nxl="http://nuxeo.org/nxforms/layout"
   xmlns:nxd="http://nuxeo.org/nxweb/document"
-  xmlns:rich="http://richfaces.org/rich"
-  xmlns:a4j="http://richfaces.org/a4j">
+  xmlns:rich="http://richfaces.org/rich" xmlns:a4j="http://richfaces.org/a4j">
 
 
-  <a4j:region renderRegionOnly="true" id="occurrencesRegion">
+<a4j:region renderRegionOnly="true" id="occurrencesRegion">
   <a4j:outputPanel id="occurrencesPanel">
 
-  <h3 class="summaryTitle">#{messages['heading.entityOccurrences']}</h3>
+    <h3 class="summaryTitle">#{messages['heading.entityOccurrences']}</h3>
 
-  <nxu:set var="provider" value="#{entityOccurrenceProvider}" cache="true">
+    <nxu:set var="provider" value="#{entityOccurrenceProvider}" cache="true">
     #{provider.setSelectedEntries(documentsListsManager.getWorkingList('OCCURRENCES_SELECTION'))}
     <ui:decorate template="/incl/documents_layout_table.xhtml">
-      <ui:param name="documents" value="#{provider.currentSelectPage}" />
-      <ui:param name="listName" value="OCCURRENCES_SELECTION" />
-      <ui:param name="layoutName" value="entity_occurrence_listing" />
+        <ui:param name="documents" value="#{provider.currentSelectPage}" />
+        <ui:param name="listName" value="OCCURRENCES_SELECTION" />
+        <ui:param name="layoutName" value="entity_occurrence_listing" />
 
-      <ui:define name="empty_folder_label">
-        <h:outputText value="#{messages['label.content.noOccurrence']}"
-          rendered="#{documents.rowCount == 0 and not provider.hasError()}" />
-      </ui:define>
+        <ui:define name="empty_folder_label">
+          <h:outputText value="#{messages['label.content.noOccurrence']}"
+            rendered="#{documents.rowCount == 0 and not provider.hasError()}" />
+        </ui:define>
 
-      <ui:define name="error_message">
-        <c:if test="#{provider.hasError()}">
+        <ui:define name="error_message">
+          <c:if test="#{provider.hasError()}">
           #{provider.errorMessage}
         </c:if>
-      </ui:define>
+        </ui:define>
 
-    </ui:decorate>
-  </nxu:set>
+      </ui:decorate>
+    </nxu:set>
 
-  <h3 class="summaryTitle">#{messages['heading.entityAddANewOccurrence']}</h3>
-  <h:form id="addNewOccurrenceForm">
+    <h:form id="addNewOccurrenceForm">
+      <table class="dataInput">
+        <tbody>
+          <tr>
+            <td class="iconColumn" style="vertical-align: top;"></td>
+            <td class="labelColumn">#{messages['heading.entityAddANewOccurrence']}</td>
+            <td class="fieldColumn"><h:inputText
+              id="documentSuggestionKeywords" styleClass="dataInputText" /> <rich:suggestionbox
+              suggestionAction="#{semanticEntitiesActions.suggestDocuments}"
+              var="doc" for="documentSuggestionKeywords"
+              nothingLabel="${messages['label.results.noMatchingDocument']}"
+              ajaxSingle="true">
+              <a4j:support event="onselect" reRender="occurrencesPanel"
+                action="#{semanticEntitiesActions.addNewOccurrenceRelation}"
+                ajaxSingle="true">
+                <f:setPropertyActionListener value="#{doc.id}"
+                  target="#{semanticEntitiesActions.selectedDocumentId}" />
+              </a4j:support>
+              <h:column>
+                <h:outputText value="#{doc.title}" />
+              </h:column>
+            </rich:suggestionbox></td>
+          </tr>
 
-  <h:inputText id="documentSuggestionKeywords" styleClass="dataInputText" />
-  <rich:suggestionbox
-    suggestionAction="#{semanticEntitiesActions.suggestDocuments}"
-    var="doc" for="documentSuggestionKeywords"
-    nothingLabel="${messages['label.results.noMatchingDocument']}"
-    ajaxSingle="true">
-    <a4j:support event="onselect" reRender="occurrencesPanel"
-      action="#{semanticEntitiesActions.addNewOccurrenceRelation}"
-      ajaxSingle="true">
-      <f:setPropertyActionListener value="#{doc.id}"
-       target="#{semanticEntitiesActions.selectedDocumentId}" />
-    </a4j:support>
-    <h:column>
-      <h:outputText value="#{doc.title}" />
-    </h:column>
-  </rich:suggestionbox>
-
-  </h:form>
+        </tbody>
+      </table>
+    </h:form>
 
   </a4j:outputPanel>
-  </a4j:region>
-
-  <br/>
+</a4j:region>
 </div>
