@@ -206,7 +206,10 @@ public class SemanticEntitiesActions {
         RemoteEntity re = new RemoteEntity(selectedEntitySuggestionLabel,
                 selectedEntitySuggestionUri);
         DocumentModel doc = navigationContext.getChangeableDocument();
-        syncAndSaveDocument(doc, re.uri, false);
+
+        // TODO: once the UI allows to set multiple links to several remote
+        // sources we should set override back to false
+        syncAndSaveDocument(doc, re.uri, true);
         Contexts.removeFromAllContexts("currentEntitySameAs");
     }
 
