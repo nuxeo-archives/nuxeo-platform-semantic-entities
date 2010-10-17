@@ -281,7 +281,7 @@ public class SemanticEntitiesActions {
         Contexts.removeFromAllContexts("entityOccurrenceProvider");
         Contexts.removeFromAllContexts("relatedPlacesProvider");
         Contexts.removeFromAllContexts("relatedPeopleProvider");
-        Contexts.removeFromAllContexts("relatedOrganizationProvider");
+        Contexts.removeFromAllContexts("relatedOrganizationsProvider");
     }
 
     protected void notifyDocumentUpdated(DocumentModel doc)
