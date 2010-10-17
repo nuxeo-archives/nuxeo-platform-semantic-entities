@@ -304,4 +304,14 @@ public class SemanticEntitiesActions {
                 messages.get("document_modified"), messages.get(doc.getType()));
         EventManager.raiseEventsOnDocumentChange(doc);
     }
+
+    // TODO: move this to a JSF function
+    public String ellipsis(String content, int maxSize) {
+        if (content == null) {
+            return "";
+        } else if (content.length() > maxSize) {
+            return content.substring(0, maxSize) + "[...]";
+        }
+        return content;
+    }
 }

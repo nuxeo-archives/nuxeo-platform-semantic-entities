@@ -9,7 +9,7 @@
   xmlns:a4j="http://richfaces.org/a4j"
   id="#{layout.id}">
 
-<div class="entityDepictionContainer" style="float: left; width: 62px; margin: 0px 1em 1em 0px;">
+<div class="entityDepictionContainer" style="float: left; width: 64px;">
 <h:graphicImage
   url="#{nxd:fileUrl('downloadFile', value, 'entity:depiction', value.entity.depiction.filename)}?conversationId=#{conversation.id}"
   style="max-height: 60px; max-width: 60px; border: 1px solid darkGray; padding: 1px"
@@ -24,12 +24,14 @@
     <h:graphicImage value="/icons/action_delete_mini.gif" />
   </a4j:commandLink>
 </div>
-<div class="entityLink">
+<div style="margin: 0 0 0 70px; padding: 0, 0, 0, 1em">
+<p class="entityLink">
   <nxd:restDocumentLink document="#{value}">
     #{nxd:titleOrId(value)}
   </nxd:restDocumentLink>
+</p>
+<p class="entityShortSummary">#{semanticEntitiesActions.ellipsis(value.entity.summary, 130)}</p>
 </div>
-<p class="entityShortSummary">#{fn:substring(value.entity.summary, 0, 130)}[...]</p>
-<div style="clear: both"></div>
+<div style="clear: both; padding: 0.5em;"></div>
 
 </f:subview>
