@@ -295,7 +295,7 @@ public class SemanticEntitiesActions {
         Contexts.removeFromAllContexts("currentEntitySameAs");
     }
 
-    @Observer(value = EventNames.USER_ALL_DOCUMENT_TYPES_SELECTION_CHANGED, create = false, inject = false)
+    @Observer(value = EventNames.USER_ALL_DOCUMENT_TYPES_SELECTION_CHANGED, create = false)
     public void onDocumentNavigation() {
         selectedDocumentId = null;
         selectedEntityId = null;
