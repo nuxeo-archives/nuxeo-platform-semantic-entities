@@ -5,7 +5,8 @@
   xmlns:nxdir="http://nuxeo.org/nxdirectory"
   xmlns:c="http://java.sun.com/jstl/core"
   xmlns:nxl="http://nuxeo.org/nxforms/layout"
-  xmlns:a4j="http://richfaces.org/a4j">
+  xmlns:a4j="http://richfaces.org/a4j"
+  xmlns:rich="http://richfaces.org/rich">
   
 <!--
  TODO: Temporary hack that overrides the relations place holder
@@ -31,9 +32,29 @@
 
 <f:subview rendered="#{!empty relatedPlacesProvider.currentPage}">
   <h3 class="summaryTitle">#{messages['heading.occurrencesOfPlaces']}</h3>
-  <c:forEach var="entity" items="#{relatedOrganizationsProvider.currentPage}">
+  <c:forEach var="entity" items="#{relatedPlacesProvider.currentPage}">
     <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
   </c:forEach>
 </f:subview>
+
+<h3 class="summaryTitle">#{messages['heading.linkToEntity']}</h3>
+<h:form>
+  <h:inputText id="entitySuggestionKeywords" styleClass="dataInputText" />
+  <rich:suggestionbox
+    suggestionAction="#{semanticEntitiesActions.suggestLocalEntities}" var="entity"
+    for="entitySuggestionKeywords"
+    nothingLabel="${messages['label.results.noMatchingDocument']}"
+    ajaxSingle="true">
+    <a4j:support event="onselect" reRender="relatedEntitiesPanel"
+      action="#{semanticEntitiesActions.addNewOccurrenceRelation}"
+      ajaxSingle="true">
+      <f:setPropertyActionListener value="#{entity.id}"
+        target="#{semanticEntitiesActions.selectedEntityId}" />
+    </a4j:support>
+    <h:column>
+      #{entity.title} (#{entity.type})
+    </h:column>
+  </rich:suggestionbox>
+</h:form>
 </a4j:outputPanel>
 </div>

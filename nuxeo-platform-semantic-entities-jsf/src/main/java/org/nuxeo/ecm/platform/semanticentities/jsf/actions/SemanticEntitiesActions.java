@@ -71,6 +71,8 @@ public class SemanticEntitiesActions {
 
     protected String selectedDocumentId;
 
+    protected String selectedEntityId;
+
     protected List<DocumentModel> documentSuggestions;
 
     protected LocalEntityService leService;
@@ -158,14 +160,6 @@ public class SemanticEntitiesActions {
      * Ajax callbacks for new occurrence relationship creation.
      */
 
-    public String getDocumentSuggestionKeywords() {
-        return documentSuggestionKeywords;
-    }
-
-    public void setDocumentSuggestionKeywords(String documentSuggestionKeywords) {
-        this.documentSuggestionKeywords = documentSuggestionKeywords;
-    }
-
     public List<DocumentModel> suggestDocuments(Object keywords)
             throws Exception {
         // TODO: wrap exception in friendly JSF error messages
@@ -177,11 +171,28 @@ public class SemanticEntitiesActions {
         this.selectedDocumentId = selectedDocumentId;
     }
 
+    public List<DocumentModel> suggestLocalEntities(Object keywords)
+            throws Exception {
+        // TODO: wrap exception in friendly JSF error messages
+        return getLocalEntityService().suggestEntity(documentManager,
+                keywords.toString(), null, 10);
+    }
+
+    public void setSelectedEntityId(String selectedEntityId) {
+        this.selectedEntityId = selectedEntityId;
+    }
+
     public void addNewOccurrenceRelation() throws Exception {
         // TODO: wrap exception in friendly JSF error messages
-        getLocalEntityService().addOccurrences(documentManager,
-                new IdRef(selectedDocumentId),
-                navigationContext.getCurrentDocument().getRef(), null);
+        if (selectedDocumentId != null) {
+            getLocalEntityService().addOccurrences(documentManager,
+                    new IdRef(selectedDocumentId),
+                    navigationContext.getCurrentDocument().getRef(), null);
+        } else if (selectedEntityId != null) {
+            getLocalEntityService().addOccurrences(documentManager,
+                    navigationContext.getCurrentDocument().getRef(),
+                    new IdRef(selectedEntityId), null);
+        }
         invalidateCurrentDocumentProviders();
     }
 
@@ -286,6 +297,8 @@ public class SemanticEntitiesActions {
 
     @Observer(value = EventNames.USER_ALL_DOCUMENT_TYPES_SELECTION_CHANGED, create = false, inject = false)
     public void onDocumentNavigation() {
+        selectedDocumentId = null;
+        selectedEntityId = null;
         isRemoteEntitySearchDisplayed = false;
         invalidateCurrentDocumentProviders();
     }
