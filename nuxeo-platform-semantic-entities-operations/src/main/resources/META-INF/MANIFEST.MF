@@ -5,4 +5,6 @@ Bundle-SymbolicName: org.nuxeo.ecm.platform.semanticentities.operations
 Bundle-Localization: plugin
 Bundle-Vendor: Nuxeo
 Bundle-Category: runtime
-Require-Bundle: org.nuxeo.ecm.core.api
+Require-Bundle: org.nuxeo.ecm.core.api,
+  org.nuxeo.ecm.platform.semanticentities.core
+Nuxeo-Component: OSGI-INF/semantic-entities-core-listener-contrib.xml

@@ -18,6 +18,7 @@ package org.nuxeo.ecm.platform.semanticentities;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Set;
 
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
@@ -31,7 +32,7 @@ import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
  * Service to handle semantic entities linked to document in the local
  * repository. Data to seed those entities can come from remote sources by using
  * RemoteEntityService instead.
- *
+ * 
  * @author ogrisel
  */
 public interface LocalEntityService {
@@ -39,11 +40,11 @@ public interface LocalEntityService {
     /**
      * The entity container is a singleton container document where to create
      * the entities.
-     *
+     * 
      * It is useful to have this has a container document to be able to use the
      * regular ACL system of the Nuxeo repository to tell which group of users
      * has the right to create, edit or browse entities.
-     *
+     * 
      * @return the DocumentModel of type EntityContainer (create it if missing)
      *         or null if the user does not have the permission to see it
      */
@@ -52,7 +53,7 @@ public interface LocalEntityService {
 
     /**
      * Helper method to suggest entities by keyword match on names.
-     *
+     * 
      * @param keywords keywords to match the entity names
      * @param type the Nuxeo type name of entity to match (or null)
      * @param maxSuggestions maximum number of entities to suggest
@@ -63,7 +64,7 @@ public interface LocalEntityService {
 
     /**
      * Helper method to suggest documents by keyword match on fulltext content.
-     *
+     * 
      * @param keywords keywords to match the document names
      * @param type the Nuxeo type name of documents to match (or null)
      * @param maxSuggestions maximum number of entities to suggest
@@ -79,7 +80,7 @@ public interface LocalEntityService {
      * a quoteContext String that contains the surrounding sentences and the
      * position of the expression referring to the entity is relative to this
      * context.
-     *
+     * 
      * @param session active session to the repository holding the document and
      *            entities
      * @param docRef the id of the document referring to the entity
@@ -97,7 +98,7 @@ public interface LocalEntityService {
     /**
      * Add several occurrences of the same entity in to a given document
      * (occurring in several text snippets).
-     *
+     * 
      * @param session active session to the repository holding the document and
      *            entities
      * @param docRef the id of the document referring to the entity
@@ -112,7 +113,7 @@ public interface LocalEntityService {
     /**
      * Find the occurrence relation instance linking a document to an entity.
      * Return null if no such relation exist in the repository.
-     *
+     * 
      * @param session the repository session where the document is stored
      * @param documentRef the reference of the source document
      * @param entityRef the reference of the targeted entity
@@ -124,7 +125,7 @@ public interface LocalEntityService {
 
     /**
      * Find entities of a given type related to a given document.
-     *
+     * 
      * @param session the repository session where the document is stored
      * @param docRef the reference of the document to seach entities for
      * @param entityType the Nuxeo type of entities to lookup (can be null)
@@ -135,7 +136,7 @@ public interface LocalEntityService {
 
     /**
      * Find entities of a given type related to a given document.
-     *
+     * 
      * @param session the repository session where the document is stored
      * @param entityRef the reference of the entities to search documents for
      * @param documentType the Nuxeo type of documents to lookup (can be null)
@@ -147,12 +148,18 @@ public interface LocalEntityService {
     /**
      * Lookup the local repo to find a local entity that is linked to the given
      * remote entity URI through a owl:sameAs relationship.
-     *
+     * 
      * @param remoteEntityURI the entity URI to lookup locally
      * @return the matching local document model or null if none
      * @throws ClientException in case of problem accessing the local repo
      */
     DocumentModel getLinkedLocalEntity(CoreSession session, URI remoteEntityURI)
             throws ClientException;
+
+    /**
+     * @return the document type names deriving from the Entity type
+     * @throws Exception thrown if the TypeManager is not available
+     */
+    public Set<String> getEntityTypeNames() throws Exception;
 
 }

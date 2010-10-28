@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.ecm.platform.semanticentities.listeners">
+  <extension target="org.nuxeo.ecm.core.event.EventServiceComponent"
+    point="listener">
+    <documentation>
+      Simple core even listener to call a semantic
+      annotation service to find entity occurrences in documents -->
+    </documentation>
+
+    <listener name="semanticentities" async="true" postCommit="true"
+      class="org.nuxeo.ecm.platform.semanticentities.listener.SemanticEntitiesCoreListener"
+      priority="510">
+    </listener>
+
+  </extension>
+
+</component>
