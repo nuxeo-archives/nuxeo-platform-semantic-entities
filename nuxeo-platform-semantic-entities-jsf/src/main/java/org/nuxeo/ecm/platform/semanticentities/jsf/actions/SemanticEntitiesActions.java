@@ -173,7 +173,7 @@ public class SemanticEntitiesActions {
     public List<DocumentModel> suggestLocalEntities(Object keywords)
             throws Exception {
         // TODO: wrap exception in friendly JSF error messages
-        return getLocalEntityService().suggestEntity(documentManager,
+        return getLocalEntityService().suggestLocalEntity(documentManager,
                 keywords.toString(), null, 10);
     }
 

@@ -20,6 +20,8 @@ import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -38,7 +40,10 @@ import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.core.api.UnrestrictedSessionRunner;
 import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
+import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
+import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
+import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceInfo;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
 import org.nuxeo.runtime.api.Framework;
@@ -261,7 +266,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public List<DocumentModel> suggestEntity(CoreSession session,
+    public List<DocumentModel> suggestLocalEntity(CoreSession session,
             String keywords, String type, int maxSuggestions)
             throws ClientException {
         if (type == null) {
@@ -271,6 +276,61 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 + " ORDER BY entity:popularity DESC, dc:title" + " LIMIT %d",
                 type, keywords.replace("'", "\'"), maxSuggestions);
         return session.query(q);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public List<EntitySuggestion> suggestEntity(CoreSession session,
+            String keywords, String type, int maxSuggestions)
+            throws ClientException {
+        // lookup remote entities
+        List<RemoteEntity> remoteEntities = Collections.emptyList();
+        try {
+            RemoteEntityService reService = Framework.getService(RemoteEntityService.class);
+            if (reService.canSuggestRemoteEntity()) {
+                remoteEntities = reService.suggestRemoteEntity(keywords, type,
+                        maxSuggestions);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        // lookup local entities
+        List<DocumentModel> localEntities = suggestLocalEntity(session,
+                keywords, type, maxSuggestions);
+        List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
+        double invScoreLocal = 10.0;
+        Set<RemoteEntity> mergedRemoteEntities = new HashSet<RemoteEntity>();
+        for (DocumentModel localEntity : localEntities) {
+            EntitySuggestion suggestion = new EntitySuggestion(localEntity).withScore(1 / invScoreLocal);
+            suggestions.add(suggestion);
+            List<String> sameas = localEntity.getProperty("entity:sameas").getValue(
+                    List.class);
+            if (sameas == null) {
+                sameas = Collections.emptyList();
+            }
+            double invScoreRemote = 5.0;
+            for (RemoteEntity remoteEntity : remoteEntities) {
+                if (sameas.contains(remoteEntity.getUri().toString())) {
+                    suggestion.remoteEntityUris.add(remoteEntity.uri.toString());
+                    suggestion.score += 1 / invScoreRemote;
+                    mergedRemoteEntities.add(remoteEntity);
+                }
+                invScoreRemote += 1.0;
+            }
+            invScoreLocal += 1.0;
+        }
+        Collections.sort(suggestions);
+        Collections.reverse(suggestions);
+
+        remoteEntities.removeAll(mergedRemoteEntities);
+        double invScoreRemote = 5.0;
+        for (RemoteEntity remoteEntity : remoteEntities) {
+            EntitySuggestion suggestion = new EntitySuggestion(
+                    remoteEntity.label, remoteEntity.uri.toString(), type).withScore(1 / invScoreRemote);
+            suggestions.add(suggestion);
+            invScoreRemote += 1.0;
+        }
+        return suggestions;
     }
 
     @Override
@@ -291,6 +351,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         return provider.getCurrentPage();
     }
 
+    @Override
     public Set<String> getEntityTypeNames() throws Exception {
         return Framework.getService(SchemaManager.class).getDocumentTypeNamesExtending(
                 Constants.ENTITY_TYPE);

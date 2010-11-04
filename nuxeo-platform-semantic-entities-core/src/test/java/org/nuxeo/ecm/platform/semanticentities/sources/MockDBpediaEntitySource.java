@@ -29,8 +29,13 @@ public class MockDBpediaEntitySource extends DBpediaEntitySource {
     @Override
     protected InputStream fetchSuggestions(String keywords, String type,
             int maxSuggestions) throws IOException {
-        return getClass().getResourceAsStream(
-                "/mock_replies/44th_US_president.xml");
+        if (keywords.contains("Barack Obama") || keywords.contains("44th")) {
+            return getClass().getResourceAsStream(
+                    "/mock_replies/44th_US_president.xml");
+        } else {
+            throw new IllegalArgumentException("no mock suggestions for query "
+                    + keywords);
+        }
     }
 
 }

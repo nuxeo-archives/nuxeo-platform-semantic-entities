@@ -30,6 +30,7 @@ import org.nuxeo.ecm.core.api.PageProvider;
 import org.nuxeo.ecm.core.event.EventService;
 import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
+import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceInfo;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
@@ -303,16 +304,16 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals("Liverpool", ent1.getPropertyValue("dc:title"));
     }
 
-    public void testSuggestEntitiesEmptyKB() throws ClientException {
-        List<DocumentModel> suggestions = service.suggestEntity(session,
+    public void testSuggestLocalEntitiesEmptyKB() throws ClientException {
+        List<DocumentModel> suggestions = service.suggestLocalEntity(session,
                 "John", null, 3);
         assertTrue(suggestions.isEmpty());
     }
 
-    public void testSuggestEntities() throws ClientException {
+    public void testSuggestLocalEntities() throws ClientException {
         makeSomeEntities();
 
-        List<DocumentModel> suggestions = service.suggestEntity(session,
+        List<DocumentModel> suggestions = service.suggestLocalEntity(session,
                 "John", "Person", 3);
         assertEquals(2, suggestions.size());
         // by default the popularities are identical hence the ordering is
@@ -320,7 +321,8 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertTrue(suggestions.contains(johndoe));
         assertTrue(suggestions.contains(john));
 
-        suggestions = service.suggestEntity(session, "Lennon John", "Person", 3);
+        suggestions = service.suggestLocalEntity(session, "Lennon John",
+                "Person", 3);
         assertEquals(1, suggestions.size());
         assertEquals(john, suggestions.get(0));
 
@@ -329,10 +331,31 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
                 "John Lennon was born in Liverpool in 1940.", 0, 11);
 
         // Lennon is now the top person for the "John" query
-        suggestions = service.suggestEntity(session, "John", "Person", 3);
+        suggestions = service.suggestLocalEntity(session, "John", "Person", 3);
         assertEquals(2, suggestions.size());
         assertEquals(john, suggestions.get(0));
         assertEquals(johndoe, suggestions.get(1));
+    }
+
+    public void testSuggestEntities() throws Exception {
+        // deploy off-line mock DBpedia source to override the default source
+        // that needs an internet connection: comment the following contrib to
+        // test again the real DBpedia server
+        deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
+                "OSGI-INF/test-semantic-entities-remote-entity-contrib.xml");
+
+        // empty local KB, only remote source output
+        List<EntitySuggestion> suggestions = service.suggestEntity(session,
+                "Barack Obama", "Person", 3);
+        assertNotNull(suggestions);
+        assertEquals(suggestions.size(), 1);
+        EntitySuggestion firstGuess = suggestions.get(0);
+        assertEquals(firstGuess.label, "Barack Obama");
+        assertFalse(firstGuess.isLocal());
+
+        // TODO: more tests here
+
+
     }
 
     public void testGetOccurrenceRelation() throws Exception {
