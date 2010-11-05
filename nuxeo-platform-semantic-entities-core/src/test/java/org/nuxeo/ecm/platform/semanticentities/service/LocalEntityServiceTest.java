@@ -32,6 +32,7 @@ import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
+import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceInfo;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
 import org.nuxeo.runtime.api.Framework;
@@ -350,12 +351,32 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertNotNull(suggestions);
         assertEquals(suggestions.size(), 1);
         EntitySuggestion firstGuess = suggestions.get(0);
-        assertEquals(firstGuess.label, "Barack Obama");
+        assertEquals("Barack Obama", firstGuess.label);
         assertFalse(firstGuess.isLocal());
 
         // synchronize the remote entity as a local entity
+        // TODO: factorized out this code in LocalEntityService
+        RemoteEntityService reService = Framework.getService(RemoteEntityService.class);
+        DocumentModel entityContainer = service.getEntityContainer(session);
+        DocumentModel localEntity = session.createDocumentModel(
+                entityContainer.getPathAsString(), firstGuess.label,
+                firstGuess.type);
+        for (String remoteEntity : firstGuess.remoteEntityUris) {
+            reService.dereferenceInto(localEntity, URI.create(remoteEntity),
+                    false);
+        }
+        session.createDocument(localEntity);
+        session.save();
 
-
+        // perform the same suggestion query again: this time the result is
+        // local
+        suggestions = service.suggestEntity(session, "Barack Obama", "Person",
+                3);
+        assertNotNull(suggestions);
+        assertEquals(suggestions.size(), 1);
+        firstGuess = suggestions.get(0);
+        assertEquals("Barack Obama", firstGuess.label);
+        assertTrue(firstGuess.isLocal());
     }
 
     public void testGetOccurrenceRelation() throws Exception {

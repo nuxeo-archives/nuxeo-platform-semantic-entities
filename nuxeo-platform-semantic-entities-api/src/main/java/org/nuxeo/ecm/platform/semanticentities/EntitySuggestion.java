@@ -19,6 +19,7 @@ package org.nuxeo.ecm.platform.semanticentities;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 
 /**
@@ -38,8 +39,9 @@ public class EntitySuggestion implements Comparable<EntitySuggestion> {
 
     public double score = 0.0;
 
-    public EntitySuggestion(DocumentModel localEntity) {
+    public EntitySuggestion(DocumentModel localEntity) throws ClientException {
         this.localEntity = localEntity;
+        this.label = localEntity.getTitle();
         this.type = localEntity.getType();
     }
 

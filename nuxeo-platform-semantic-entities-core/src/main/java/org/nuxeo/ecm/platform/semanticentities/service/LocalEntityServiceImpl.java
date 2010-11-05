@@ -297,6 +297,11 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         // lookup local entities
         List<DocumentModel> localEntities = suggestLocalEntity(session,
                 keywords, type, maxSuggestions);
+
+        // TODO: rewrite the following to perform local checks of remote
+        // entities in the complete local DB and not just the partial suggested
+        // results
+
         List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
         double invScoreLocal = 10.0;
         Set<RemoteEntity> mergedRemoteEntities = new HashSet<RemoteEntity>();
