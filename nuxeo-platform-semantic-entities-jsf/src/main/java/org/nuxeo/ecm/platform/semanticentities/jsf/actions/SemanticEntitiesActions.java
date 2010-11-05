@@ -39,6 +39,7 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
+import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
@@ -70,7 +71,7 @@ public class SemanticEntitiesActions {
 
     protected String selectedDocumentId;
 
-    protected String selectedEntityId;
+    protected EntitySuggestion selectedEntitySuggestion;
 
     protected List<DocumentModel> documentSuggestions;
 
@@ -170,15 +171,15 @@ public class SemanticEntitiesActions {
         this.selectedDocumentId = selectedDocumentId;
     }
 
-    public List<DocumentModel> suggestLocalEntities(Object keywords)
+    public List<EntitySuggestion> suggestEntities(Object keywords)
             throws Exception {
         // TODO: wrap exception in friendly JSF error messages
-        return getLocalEntityService().suggestLocalEntity(documentManager,
-                keywords.toString(), null, 10);
+        return getLocalEntityService().suggestEntity(documentManager,
+                keywords.toString(), null, 5);
     }
 
-    public void setSelectedEntityId(String selectedEntityId) {
-        this.selectedEntityId = selectedEntityId;
+    public void setSelectedSuggestion(EntitySuggestion suggestion) {
+        this.selectedEntitySuggestion = suggestion;
     }
 
     public void addNewOccurrenceRelation() throws Exception {
@@ -187,10 +188,12 @@ public class SemanticEntitiesActions {
             getLocalEntityService().addOccurrences(documentManager,
                     new IdRef(selectedDocumentId),
                     navigationContext.getCurrentDocument().getRef(), null);
-        } else if (selectedEntityId != null) {
-            getLocalEntityService().addOccurrences(documentManager,
+        } else if (selectedEntitySuggestion != null) {
+            DocumentModel localEntity = leService.asLocalEntity(
+                    documentManager, selectedEntitySuggestion);
+            leService.addOccurrences(documentManager,
                     navigationContext.getCurrentDocument().getRef(),
-                    new IdRef(selectedEntityId), null);
+                    localEntity.getRef(), null);
         }
         invalidateCurrentDocumentProviders();
     }
@@ -297,7 +300,7 @@ public class SemanticEntitiesActions {
     @Observer(value = EventNames.USER_ALL_DOCUMENT_TYPES_SELECTION_CHANGED, create = false)
     public void onDocumentNavigation() {
         selectedDocumentId = null;
-        selectedEntityId = null;
+        selectedEntitySuggestion = null;
         isRemoteEntitySearchDisplayed = false;
         invalidateCurrentDocumentProviders();
     }

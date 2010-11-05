@@ -41,15 +41,15 @@
 <h:form>
   <h:inputText id="entitySuggestionKeywords" styleClass="dataInputText" />
   <rich:suggestionbox
-    suggestionAction="#{semanticEntitiesActions.suggestLocalEntities}" var="entity"
+    suggestionAction="#{semanticEntitiesActions.suggestEntities}" var="suggestion"
     for="entitySuggestionKeywords"
     nothingLabel="${messages['label.results.noMatchingDocument']}"
     ajaxSingle="true">
     <a4j:support event="onselect" reRender="relatedEntitiesPanel"
       action="#{semanticEntitiesActions.addNewOccurrenceRelation}"
       ajaxSingle="true">
-      <f:setPropertyActionListener value="#{entity.id}"
-        target="#{semanticEntitiesActions.selectedEntityId}" />
+      <f:setPropertyActionListener value="#{suggestion}"
+        target="#{semanticEntitiesActions.selectedSuggestion}" />
     </a4j:support>
     <h:column>
       #{entity.title} (#{entity.type})
