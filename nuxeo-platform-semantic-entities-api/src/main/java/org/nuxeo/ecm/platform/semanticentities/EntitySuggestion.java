@@ -21,8 +21,6 @@ import java.util.Set;
 
 import org.nuxeo.ecm.core.api.DocumentModel;
 
-import com.sun.org.apache.bcel.internal.generic.INSTANCEOF;
-
 /**
  * Data transfer object for the name lookup API of the LocalEntityService: it is
  * represent both local entities (DocumentModel) and remote entities that don't

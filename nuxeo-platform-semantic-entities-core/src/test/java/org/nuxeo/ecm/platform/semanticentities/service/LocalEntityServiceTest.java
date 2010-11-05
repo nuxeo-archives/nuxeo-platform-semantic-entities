@@ -26,9 +26,9 @@ import java.util.List;
 
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.core.api.PageProvider;
 import org.nuxeo.ecm.core.event.EventService;
 import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
+import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
@@ -353,7 +353,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(firstGuess.label, "Barack Obama");
         assertFalse(firstGuess.isLocal());
 
-        // TODO: more tests here
+        // synchronize the remote entity as a local entity
 
 
     }

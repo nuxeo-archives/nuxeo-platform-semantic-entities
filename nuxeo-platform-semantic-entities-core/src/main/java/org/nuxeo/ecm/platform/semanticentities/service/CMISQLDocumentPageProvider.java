@@ -25,17 +25,17 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.nuxeo.ecm.core.api.AbstractPageProvider;
 import org.nuxeo.ecm.core.api.ClientRuntimeException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.IterableQueryResult;
-import org.nuxeo.ecm.core.api.PageProvider;
 import org.nuxeo.ecm.core.chemistry.impl.CMISQLQueryMaker;
 import org.nuxeo.ecm.core.chemistry.impl.NuxeoConnection;
 import org.nuxeo.ecm.core.chemistry.impl.NuxeoRepository;
+import org.nuxeo.ecm.platform.query.api.AbstractPageProvider;
+import org.nuxeo.ecm.platform.query.api.PageProvider;
 
 /**
  * Simple PageProvider implementation that uses the CMISQL api to be able to
