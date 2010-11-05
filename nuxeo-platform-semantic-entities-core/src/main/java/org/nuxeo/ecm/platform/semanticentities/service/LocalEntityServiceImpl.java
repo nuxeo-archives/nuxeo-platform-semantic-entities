@@ -16,6 +16,7 @@
  */
 package org.nuxeo.ecm.platform.semanticentities.service;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
@@ -381,6 +382,32 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                     count, remoteEntityURI));
         }
         return currentPage.get(0);
+    }
+
+    @Override
+    public DocumentModel asLocalEntity(CoreSession session,
+            EntitySuggestion suggestion) throws ClientException, IOException {
+        if (suggestion.isLocal()) {
+            return suggestion.localEntity;
+        }
+
+        RemoteEntityService reService;
+        try {
+            reService = Framework.getService(RemoteEntityService.class);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        DocumentModel entityContainer = getEntityContainer(session);
+        DocumentModel localEntity = session.createDocumentModel(
+                entityContainer.getPathAsString(), suggestion.label,
+                suggestion.type);
+        for (String remoteEntity : suggestion.remoteEntityUris) {
+            reService.dereferenceInto(localEntity, URI.create(remoteEntity),
+                    false);
+        }
+        localEntity = session.createDocument(localEntity);
+        session.save();
+        return localEntity;
     }
 
 }

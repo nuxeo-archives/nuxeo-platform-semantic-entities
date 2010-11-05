@@ -16,6 +16,7 @@
  */
 package org.nuxeo.ecm.platform.semanticentities;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
@@ -176,5 +177,13 @@ public interface LocalEntityService {
      * @throws Exception thrown if the TypeManager is not available
      */
     public Set<String> getEntityTypeNames() throws Exception;
+
+    /**
+     * Ensure that the suggestion is local. If not, use the remote entity
+     * service to dereference it into a new local entity using the provided core
+     * session.
+     */
+    DocumentModel asLocalEntity(CoreSession session, EntitySuggestion suggestion)
+            throws ClientException, IOException;
 
 }

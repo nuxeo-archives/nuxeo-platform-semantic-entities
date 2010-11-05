@@ -45,6 +45,7 @@ public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
 
     private RemoteEntityService reService;
 
+    @Override
     public void setUp() throws Exception {
         super.setUp();
         // necessary for the fulltext indexer and text extraction for analysis

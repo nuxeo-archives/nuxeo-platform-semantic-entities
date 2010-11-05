@@ -36,6 +36,7 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
         this.doc = doc;
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public List<OccurrenceInfo> getOccurrences() throws ClientException {
         List<OccurrenceInfo> occurrences = new ArrayList<OccurrenceInfo>();
@@ -51,6 +52,7 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
         return occurrences;
     }
 
+    @Override
     public void addOccurrences(List<OccurrenceInfo> occurrences) throws ClientException {
         Set<OccurrenceInfo> dedupedOccurrences = new LinkedHashSet<OccurrenceInfo>(
                 getOccurrences());
@@ -62,6 +64,7 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
         doc.setPropertyValue("occurrence:quotes", (Serializable) quotes);
     }
 
+    @Override
     public void setOccurrences(List<OccurrenceInfo> occurrences)
             throws ClientException {
         List<Map<String, Serializable>> newQuotes = new ArrayList<Map<String, Serializable>>();
@@ -74,6 +77,7 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
         doc.setPropertyValue("occurrence:quotes", (Serializable) newQuotes);
     }
 
+    @Override
     public DocumentRef getSourceDocumentRef() throws ClientException {
         Object source = doc.getPropertyValue("relation:source");
         if (source != null) {
@@ -82,6 +86,7 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
         return null;
     }
 
+    @Override
     public DocumentRef getTargetEntityRef() throws ClientException {
         Object target = doc.getPropertyValue("relation:target");
         if (target != null) {
@@ -90,6 +95,7 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
         return null;
     }
 
+    @Override
     public DocumentModel getOccurrenceDocument() {
         return doc;
     }
