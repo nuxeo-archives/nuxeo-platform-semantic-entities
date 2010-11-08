@@ -64,7 +64,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         deployBundle("org.nuxeo.ecm.platform.semanticentities.core");
 
         // CMIS query maker
-        deployBundle("org.nuxeo.ecm.core.chemistry.impl");
+        deployBundle("org.nuxeo.ecm.core.opencmis.impl");
 
         // initialize the session field
         openSession();

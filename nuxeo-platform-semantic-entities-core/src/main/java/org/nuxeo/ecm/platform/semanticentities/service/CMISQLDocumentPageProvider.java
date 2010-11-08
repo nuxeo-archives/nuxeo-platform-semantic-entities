@@ -25,15 +25,17 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.ClientRuntimeException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.IterableQueryResult;
-import org.nuxeo.ecm.core.chemistry.impl.CMISQLQueryMaker;
-import org.nuxeo.ecm.core.chemistry.impl.NuxeoConnection;
-import org.nuxeo.ecm.core.chemistry.impl.NuxeoRepository;
+import org.nuxeo.ecm.core.opencmis.impl.server.CMISQLQueryMaker;
+import org.nuxeo.ecm.core.opencmis.impl.server.NuxeoCmisService;
+import org.nuxeo.ecm.core.opencmis.impl.server.NuxeoRepository;
+
 import org.nuxeo.ecm.platform.query.api.AbstractPageProvider;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 
@@ -59,11 +61,14 @@ public class CMISQLDocumentPageProvider extends
 
     protected final String docIdColumnName;
 
+    protected final String rootDocId;
+
     protected List<DocumentModel> currentPageDocumentModels;
 
     public CMISQLDocumentPageProvider(CoreSession session, String query,
-            String docIdColumnName, String providerName) {
+            String docIdColumnName, String providerName) throws ClientException {
         this.session = session;
+        this.rootDocId = session.getRootDocument().getId();
         this.query = query;
         this.docIdColumnName = docIdColumnName;
         pageSize = 10;
@@ -77,11 +82,12 @@ public class CMISQLDocumentPageProvider extends
             IterableQueryResult result = null;
 
             NuxeoRepository rep = new NuxeoRepository(
-                    session.getRepositoryName());
-            NuxeoConnection conn = (NuxeoConnection) rep.getConnection(null);
+                    session.getRepositoryName(), rootDocId);
+            NuxeoCmisService cmisService = new NuxeoCmisService(rep, null,
+                    session);
             try {
                 result = session.queryAndFetch(query, CMISQLQueryMaker.TYPE,
-                        conn);
+                        cmisService);
                 resultsCount = result.size();
                 if (offset < resultsCount) {
                     result.skipTo(offset);
@@ -99,7 +105,7 @@ public class CMISQLDocumentPageProvider extends
             } catch (Exception e) {
                 throw new ClientRuntimeException(e);
             } finally {
-                conn.close();
+                cmisService.close();
                 if (result != null) {
                     result.close();
                 }

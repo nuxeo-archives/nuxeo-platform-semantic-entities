@@ -39,21 +39,26 @@
         <facet name="HiddenInNavigation" />
       -->
     </doctype>
-    
+
     <doctype name="Person" extends="Entity">
       <schema name="person"/>
     </doctype>
-    
+
     <doctype name="Place" extends="Entity">
       <schema name="place"/>
     </doctype>
-    
+
     <doctype name="Organization" extends="Entity">
       <schema name="organization"/>
     </doctype>
 
-    <doctype name="Occurrence" extends="Relation">
-      <!-- Relate a portion of text in a nuxeo document to a semantic entity -->
+    <doctype name="Occurrence" extends="Document">
+      <!-- Relate a portion of text in a nuxeo document to a semantic entity
+      In the future: should inherit from Relation instead of Document, but
+      we need to implement mappings for relations in nuxeo-opencmis first.
+      -->
+      <schema name="dublincore"/>
+      <schema name="relation"/>
       <schema name="occurrence"/>
       <!-- Do not use the HiddenInNavigation facet since it will break the CMIS
            join queries that explicitly remove types with this facet. We migh want

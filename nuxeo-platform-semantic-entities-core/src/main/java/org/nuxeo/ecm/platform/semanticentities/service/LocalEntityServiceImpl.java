@@ -38,6 +38,11 @@ import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.core.api.UnrestrictedSessionRunner;
+import org.nuxeo.ecm.core.api.security.ACE;
+import org.nuxeo.ecm.core.api.security.ACP;
+import org.nuxeo.ecm.core.api.security.SecurityConstants;
+import org.nuxeo.ecm.core.api.security.impl.ACLImpl;
+import org.nuxeo.ecm.core.api.security.impl.ACPImpl;
 import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
@@ -208,6 +213,15 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 // the entity
                 occRef = session.createDocument(
                         relation.getOccurrenceDocument()).getRef();
+
+                // remove ACL checks on relations
+                ACP openAcp = new ACPImpl();
+                ACLImpl acl = new ACLImpl("open", true);
+                acl.add(new ACE(SecurityConstants.EVERYONE,
+                        SecurityConstants.BROWSE, true));
+                openAcp.addACL(acl);
+                session.setACP(occRef, openAcp, true);
+
                 // update the popularity estimate
                 Long newPopularity = entity.getProperty("entity:popularity").getValue(
                         Long.class) + 1;
@@ -236,8 +250,8 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         }
         String query = String.format(
                 "SELECT Doc.cmis:objectId FROM %s Doc "
-                        + "JOIN Relation Rel ON Rel.relation:source = Doc.cmis:objectId "
-                        + "WHERE Rel.relation:target = '%s' "
+                        + "JOIN Occurrence Occ ON Occ.relation:source = Doc.cmis:objectId "
+                        + "WHERE Occ.relation:target = '%s' "
                         + "ORDER BY Doc.dc:modified DESC", documentType,
                 entityRef);
         return new CMISQLDocumentPageProvider(session, query,
@@ -259,8 +273,8 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         // order by number of incoming links instead?
         String query = String.format(
                 "SELECT Ent.cmis:objectId FROM %s Ent "
-                        + "JOIN Relation Rel ON Rel.relation:target = Ent.cmis:objectId "
-                        + "WHERE Rel.relation:source = '%s' "
+                        + "JOIN Occurrence Occ ON Occ.relation:target = Ent.cmis:objectId "
+                        + "WHERE Occ.relation:source = '%s' "
                         + "ORDER BY Ent.dc:title", entityType, docRef);
         return new CMISQLDocumentPageProvider(session, query,
                 "Ent.cmis:objectId", "relatedEntities");
@@ -366,7 +380,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     @Override
     public DocumentModel getLinkedLocalEntity(CoreSession session,
             URI remoteEntityURI) throws ClientException {
-        String query = String.format("SELECT cmis:objectId FROM cmis:document "
+        String query = String.format("SELECT cmis:objectId FROM Entity "
                 + "WHERE '%s' = ANY entity:sameas ORDER BY dc:created",
                 remoteEntityURI.toString());
         PageProvider<DocumentModel> provider = new CMISQLDocumentPageProvider(

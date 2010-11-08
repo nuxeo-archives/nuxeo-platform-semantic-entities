@@ -35,7 +35,7 @@
     </dependency>
     <dependency>
       <groupId>org.nuxeo.ecm.core</groupId>
-      <artifactId>nuxeo-chemistry-impl</artifactId>
+      <artifactId>nuxeo-opencmis-impl</artifactId>
     </dependency>
 
     <!--
