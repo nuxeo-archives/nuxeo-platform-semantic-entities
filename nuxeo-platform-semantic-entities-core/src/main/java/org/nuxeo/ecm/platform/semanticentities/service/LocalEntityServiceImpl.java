@@ -46,6 +46,7 @@ import org.nuxeo.ecm.core.api.security.impl.ACPImpl;
 import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
+import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
@@ -297,11 +298,12 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     @Override
     public List<EntitySuggestion> suggestEntity(CoreSession session,
             String keywords, String type, int maxSuggestions)
-            throws ClientException {
+            throws ClientException, DereferencingException {
         // lookup remote entities
         List<RemoteEntity> remoteEntities = Collections.emptyList();
+        RemoteEntityService reService;
         try {
-            RemoteEntityService reService = Framework.getService(RemoteEntityService.class);
+            reService = Framework.getService(RemoteEntityService.class);
             if (reService.canSuggestRemoteEntity()) {
                 remoteEntities = reService.suggestRemoteEntity(keywords, type,
                         maxSuggestions);
@@ -347,7 +349,19 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         for (RemoteEntity remoteEntity : remoteEntities) {
             EntitySuggestion suggestion = new EntitySuggestion(
                     remoteEntity.label, remoteEntity.uri.toString(), type).withScore(1 / invScoreRemote);
-            suggestions.add(suggestion);
+            // TODO: optimize me and change the source suggestion API to fetch
+            // admissible types up-front instead
+            Set<String> types = reService.getAdmissibleTypes(remoteEntity.uri);
+
+            // quick hack to filter out entities with overly generic types (such
+            // as Entity) or entities without any admissible local types
+            if (types.size() > 1 && types.contains(Constants.ENTITY_TYPE)) {
+                types.remove(Constants.ENTITY_TYPE);
+            }
+            if (types.size() > 0) {
+                suggestion.type = types.iterator().next();
+                suggestions.add(suggestion);
+            }
             invScoreRemote += 1.0;
         }
         return suggestions;
@@ -403,6 +417,10 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             EntitySuggestion suggestion) throws ClientException, IOException {
         if (suggestion.isLocal()) {
             return suggestion.localEntity;
+        } else if (suggestion.remoteEntityUris.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "The provided suggestion has neither local"
+                            + " entity nor emote entities links");
         }
 
         RemoteEntityService reService;
@@ -412,12 +430,14 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             throw new RuntimeException(e);
         }
         DocumentModel entityContainer = getEntityContainer(session);
+
         DocumentModel localEntity = session.createDocumentModel(
                 entityContainer.getPathAsString(), suggestion.label,
                 suggestion.type);
+
         for (String remoteEntity : suggestion.remoteEntityUris) {
-            reService.dereferenceInto(localEntity, URI.create(remoteEntity),
-                    false);
+            URI uri = URI.create(remoteEntity);
+            reService.dereferenceInto(localEntity, uri, false);
         }
         localEntity = session.createDocument(localEntity);
         session.save();

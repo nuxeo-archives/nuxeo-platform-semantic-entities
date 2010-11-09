@@ -38,7 +38,10 @@ public interface RemoteEntitySource {
 
     /**
      * Introspect the referenced entity to suggest which Nuxeo types can be used
-     * to dereference this entity.
+     * to dereference this entity. The first element of the list should be the
+     * type the user should expect in front facing label (e.g. the most
+     * specific). Hence the set implementation should imply unicity as all set
+     * but also preserver ordering (e.g. a LinkedHashSet for instance).
      *
      * @param remoteEntity the URI of the entity to dereference
      * @return an ordered set of Nuxeo Core type names that can be used to

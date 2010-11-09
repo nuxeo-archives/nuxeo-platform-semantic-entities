@@ -16,6 +16,7 @@
  */
 package org.nuxeo.ecm.platform.semanticentities;
 
+import java.io.Serializable;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -27,7 +28,10 @@ import org.nuxeo.ecm.core.api.DocumentModel;
  * represent both local entities (DocumentModel) and remote entities that don't
  * have a match in the local repo.
  */
-public class EntitySuggestion implements Comparable<EntitySuggestion> {
+public class EntitySuggestion implements Comparable<EntitySuggestion>,
+        Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     public String label;
 
@@ -63,5 +67,36 @@ public class EntitySuggestion implements Comparable<EntitySuggestion> {
     @Override
     public int compareTo(EntitySuggestion o) {
         return (int) Math.signum(score - o.score);
+    }
+
+    // public getters for Seam
+    public String getLabel() {
+        return label;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    /**
+     * @return the id of the local entity or null
+     */
+    public String getLocalId() {
+        if (isLocal()) {
+            return localEntity.getId();
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * @return the first registered remote URI or null
+     */
+    public String getRemoteURI() {
+        if (!remoteEntityUris.isEmpty()) {
+            return remoteEntityUris.iterator().next();
+        } else {
+            return null;
+        }
     }
 }

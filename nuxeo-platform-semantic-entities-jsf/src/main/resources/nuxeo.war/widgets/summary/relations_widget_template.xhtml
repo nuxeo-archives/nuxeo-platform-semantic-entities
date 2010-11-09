@@ -38,23 +38,26 @@
 </f:subview>
 
 <h3 class="summaryTitle">#{messages['heading.linkToEntity']}</h3>
-<h:form>
-  <h:inputText id="entitySuggestionKeywords" styleClass="dataInputText" />
+  <h:inputText id="entitySuggestionKeywords" styleClass="dataInputText"
+    onkeydown="if (event.keyCode == 13 || event.keyCode == 9) {return false;}" />
   <rich:suggestionbox
-    suggestionAction="#{semanticEntitiesActions.suggestEntities}" var="suggestion"
+    suggestionAction="#{semanticEntitiesActions.suggestEntities}" var="entitySuggestion"
     for="entitySuggestionKeywords"
-    nothingLabel="${messages['label.results.noMatchingDocument']}"
+    nothingLabel="${messages['label.results.noMatchingEntity']}"
     ajaxSingle="true">
     <a4j:support event="onselect" reRender="relatedEntitiesPanel"
       action="#{semanticEntitiesActions.addNewOccurrenceRelation}"
       ajaxSingle="true">
-      <f:setPropertyActionListener value="#{suggestion}"
+      <f:setPropertyActionListener value="#{entitySuggestion}"
         target="#{semanticEntitiesActions.selectedSuggestion}" />
     </a4j:support>
     <h:column>
-      #{entity.title} (#{entity.type})
+      #{entitySuggestion.label}
+      <f:subview rendered="#{!empty entitySuggestion.type}">
+        <h:outputText value=" - " />
+        <h:outputText value="#{entitySuggestion.type}"/>
+      </f:subview>
     </h:column>
   </rich:suggestionbox>
-</h:form>
 </a4j:outputPanel>
 </div>

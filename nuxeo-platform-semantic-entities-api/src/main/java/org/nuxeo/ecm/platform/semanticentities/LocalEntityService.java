@@ -64,7 +64,8 @@ public interface LocalEntityService {
      * @return a list of maximum maxSuggestions matching entities
      */
     List<EntitySuggestion> suggestEntity(CoreSession session, String keywords,
-            String type, int maxSuggestions) throws ClientException;
+            String type, int maxSuggestions) throws ClientException,
+            DereferencingException;
 
     /**
      * Helper method to suggest local entities by keyword match on names.
