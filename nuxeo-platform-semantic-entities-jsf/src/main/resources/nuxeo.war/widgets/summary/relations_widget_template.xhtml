@@ -40,6 +40,11 @@
 <h3 class="summaryTitle">#{messages['heading.linkToEntity']}</h3>
   <h:inputText id="entitySuggestionKeywords" styleClass="dataInputText"
     onkeydown="if (event.keyCode == 13 || event.keyCode == 9) {return false;}" />
+  <a4j:status>
+    <f:facet name="start">
+      <h:graphicImage value="/img/standart_waiter.gif" />
+    </f:facet>
+  </a4j:status>
   <rich:suggestionbox
     suggestionAction="#{semanticEntitiesActions.suggestEntities}" var="entitySuggestion"
     for="entitySuggestionKeywords"
