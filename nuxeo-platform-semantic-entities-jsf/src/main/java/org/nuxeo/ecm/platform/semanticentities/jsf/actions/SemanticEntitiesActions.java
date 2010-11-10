@@ -16,9 +16,9 @@
  */
 package org.nuxeo.ecm.platform.semanticentities.jsf.actions;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -160,52 +160,72 @@ public class SemanticEntitiesActions {
      * Ajax callbacks for new occurrence relationship creation.
      */
 
-    public List<DocumentModel> suggestDocuments(Object keywords)
-            throws Exception {
-        // TODO: wrap exception in friendly JSF error messages
-        return getLocalEntityService().suggestDocument(documentManager,
-                keywords.toString(), null, 10);
+    public List<DocumentModel> suggestDocuments(Object keywords) {
+        try {
+            return getLocalEntityService().suggestDocument(documentManager,
+                    keywords.toString(), null, 10);
+        } catch (Exception e) {
+            log.error(e, e);
+            facesMessages.add(StatusMessage.Severity.ERROR,
+                    messages.get("error.fetchingDocuments"));
+            return Collections.emptyList();
+        }
     }
 
     public void setSelectedDocumentId(String selectedDocumentId) {
         this.selectedDocumentId = selectedDocumentId;
     }
 
-    public List<EntitySuggestion> suggestEntities(Object keywords)
-            throws Exception {
-        // TODO: wrap exception in friendly JSF error messages
-        return getLocalEntityService().suggestEntity(documentManager,
-                keywords.toString(), null, 5);
+    public List<EntitySuggestion> suggestEntities(Object keywords) {
+        try {
+            return getLocalEntityService().suggestEntity(documentManager,
+                    keywords.toString(), null, 10);
+        } catch (Exception e) {
+            log.error(e, e);
+            facesMessages.add(StatusMessage.Severity.ERROR,
+                    messages.get("error.fetchingEntities"));
+            return Collections.emptyList();
+        }
     }
 
     public void setSelectedSuggestion(EntitySuggestion suggestion) {
         this.selectedEntitySuggestion = suggestion;
     }
 
-    public void addNewOccurrenceRelation() throws Exception {
-        // TODO: wrap exception in friendly JSF error messages
-        if (selectedDocumentId != null) {
-            getLocalEntityService().addOccurrences(documentManager,
-                    new IdRef(selectedDocumentId),
-                    navigationContext.getCurrentDocument().getRef(), null);
-        } else if (selectedEntitySuggestion != null) {
-            DocumentModel localEntity = leService.asLocalEntity(
-                    documentManager, selectedEntitySuggestion);
-            leService.addOccurrences(documentManager,
-                    navigationContext.getCurrentDocument().getRef(),
-                    localEntity.getRef(), null);
+    public void addNewOccurrenceRelation() {
+        try {
+            if (selectedDocumentId != null) {
+                getLocalEntityService().addOccurrences(documentManager,
+                        new IdRef(selectedDocumentId),
+                        navigationContext.getCurrentDocument().getRef(), null);
+            } else if (selectedEntitySuggestion != null) {
+                DocumentModel localEntity = leService.asLocalEntity(
+                        documentManager, selectedEntitySuggestion);
+                leService.addOccurrences(documentManager,
+                        navigationContext.getCurrentDocument().getRef(),
+                        localEntity.getRef(), null);
+            }
+        } catch (Exception e) {
+            log.error(e, e);
+            facesMessages.add(StatusMessage.Severity.ERROR,
+                    messages.get("error.addingRelation"));
         }
         invalidateCurrentDocumentProviders();
     }
 
-    public void removeOccurrenceRelation(String docId, String entityId)
-            throws Exception {
-        // TODO: wrap exception in friendly JSF error messages
-        OccurrenceRelation rel = getLocalEntityService().getOccurrenceRelation(
-                documentManager, new IdRef(docId), new IdRef(entityId));
-        if (rel != null) {
-            documentManager.removeDocument(rel.getOccurrenceDocument().getRef());
-            documentManager.save();
+    public void removeOccurrenceRelation(String docId, String entityId) {
+        OccurrenceRelation rel;
+        try {
+            rel = getLocalEntityService().getOccurrenceRelation(
+                    documentManager, new IdRef(docId), new IdRef(entityId));
+            if (rel != null) {
+                documentManager.removeDocument(rel.getOccurrenceDocument().getRef());
+                documentManager.save();
+            }
+        } catch (Exception e) {
+            log.error(e, e);
+            facesMessages.add(StatusMessage.Severity.ERROR,
+                    messages.get("error.removingRelation"));
         }
         invalidateCurrentDocumentProviders();
     }
@@ -215,8 +235,15 @@ public class SemanticEntitiesActions {
      */
 
     @Factory(scope = ScopeType.EVENT, value = "currentEntitySameAs")
-    public List<RemoteEntity> getCurrentEntitySameAs() throws ClientException {
-        return RemoteEntity.fromDocument(navigationContext.getCurrentDocument());
+    public List<RemoteEntity> getCurrentEntitySameAs() {
+        try {
+            return RemoteEntity.fromDocument(navigationContext.getCurrentDocument());
+        } catch (ClientException e) {
+            log.error(e, e);
+            facesMessages.add(StatusMessage.Severity.ERROR,
+                    messages.get("error.fetchingLocalLinkedEntities"));
+            return Collections.emptyList();
+        }
     }
 
     public void showSuggestRemoteEntitySearch() {
@@ -227,23 +254,24 @@ public class SemanticEntitiesActions {
         return isRemoteEntitySearchDisplayed;
     }
 
-    public List<RemoteEntity> suggestRemoteEntity(Object input)
-            throws Exception {
+    public List<RemoteEntity> suggestRemoteEntity(Object input) {
         String type = navigationContext.getCurrentDocument().getType();
         String keywords = (String) input;
-        RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
-        List<RemoteEntity> filteredSuggestions = new ArrayList<RemoteEntity>();
         try {
+            RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
+            List<RemoteEntity> filteredSuggestions = new ArrayList<RemoteEntity>();
             List<RemoteEntity> suggestions = remoteEntityService.suggestRemoteEntity(
                     keywords, type, 5);
             // TODO: filter out entities that already have a local entity synced
             // to them
             filteredSuggestions.addAll(suggestions);
-        } catch (IOException e) {
-            // TODO: report a nice user friendly error message
+            return filteredSuggestions;
+        } catch (Exception e) {
             log.error(e, e);
+            facesMessages.add(StatusMessage.Severity.ERROR,
+                    messages.get("error.fetchingRemoteEntities"));
+            return Collections.emptyList();
         }
-        return filteredSuggestions;
     }
 
     public void setSelectedEntitySuggestionUri(URI uri) {
@@ -254,7 +282,7 @@ public class SemanticEntitiesActions {
         selectedEntitySuggestionLabel = label;
     }
 
-    public void addRemoteEntityLinkAndSync() throws Exception {
+    public void addRemoteEntityLinkAndSync() {
         if (selectedEntitySuggestionLabel == null
                 || selectedEntitySuggestionUri == null) {
             // TODO: display some user friendly warning
@@ -263,16 +291,27 @@ public class SemanticEntitiesActions {
         RemoteEntity re = new RemoteEntity(selectedEntitySuggestionLabel,
                 selectedEntitySuggestionUri);
         DocumentModel doc = navigationContext.getChangeableDocument();
-
-        // TODO: once the UI allows to set multiple links to several remote
-        // sources we should set override back to false
-        syncAndSaveDocument(doc, re.uri, true);
+        try {
+            // TODO: once the UI allows to set multiple links to several remote
+            // sources we should set override back to false
+            syncAndSaveDocument(doc, re.uri, true);
+        } catch (Exception e) {
+            log.error(e, e);
+            facesMessages.add(StatusMessage.Severity.ERROR,
+                    messages.get("error.linkingToRemoteEntity"));
+        }
         Contexts.removeFromAllContexts("currentEntitySameAs");
     }
 
-    public void syncWithSameAsLink(String uri) throws Exception {
-        syncAndSaveDocument(navigationContext.getChangeableDocument(),
-                URI.create(uri), true);
+    public void syncWithSameAsLink(String uri) {
+        try {
+            syncAndSaveDocument(navigationContext.getChangeableDocument(),
+                    URI.create(uri), true);
+        } catch (Exception e) {
+            log.error(e, e);
+            facesMessages.add(StatusMessage.Severity.ERROR,
+                    messages.get("error.syncingWithRemoteEntity"));
+        }
     }
 
     protected void syncAndSaveDocument(DocumentModel doc, URI uri,
@@ -287,13 +326,19 @@ public class SemanticEntitiesActions {
         notifyDocumentUpdated(doc);
     }
 
-    public void removeSameAsLink(String uri) throws Exception {
-        DocumentModel doc = navigationContext.getChangeableDocument();
-        RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
-        remoteEntityService.removeSameAsLink(doc, URI.create(uri));
-        doc = documentManager.saveDocument(doc);
-        documentManager.save();
-        notifyDocumentUpdated(doc);
+    public void removeSameAsLink(String uri) {
+        try {
+            DocumentModel doc = navigationContext.getChangeableDocument();
+            RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
+            remoteEntityService.removeSameAsLink(doc, URI.create(uri));
+            doc = documentManager.saveDocument(doc);
+            documentManager.save();
+            notifyDocumentUpdated(doc);
+        } catch (Exception e) {
+            log.error(e, e);
+            facesMessages.add(StatusMessage.Severity.ERROR,
+                    messages.get("error.unlinkingRemoteEntity"));
+        }
         Contexts.removeFromAllContexts("currentEntitySameAs");
     }
 

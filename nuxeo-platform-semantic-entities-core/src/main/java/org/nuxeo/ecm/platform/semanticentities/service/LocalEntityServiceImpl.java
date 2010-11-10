@@ -59,7 +59,7 @@ import org.nuxeo.runtime.model.DefaultComponent;
 /**
  * Service to handle semantic entities linked to documents in the local
  * repository.
- *
+ * 
  * Relations between documents and entities are stored in the Nuxeo repository
  * and documents of type "Occurrence" which is a sub-type of the "Relation" core
  * type.
@@ -330,7 +330,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             if (sameas == null) {
                 sameas = Collections.emptyList();
             }
-            double invScoreRemote = 5.0;
+            double invScoreRemote = 2.0;
             for (RemoteEntity remoteEntity : remoteEntities) {
                 if (sameas.contains(remoteEntity.getUri().toString())) {
                     suggestion.remoteEntityUris.add(remoteEntity.uri.toString());
@@ -341,11 +341,9 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             }
             invScoreLocal += 1.0;
         }
-        Collections.sort(suggestions);
-        Collections.reverse(suggestions);
 
         remoteEntities.removeAll(mergedRemoteEntities);
-        double invScoreRemote = 5.0;
+        double invScoreRemote = 2.0;
         for (RemoteEntity remoteEntity : remoteEntities) {
             EntitySuggestion suggestion = new EntitySuggestion(
                     remoteEntity.label, remoteEntity.uri.toString(), type).withScore(1 / invScoreRemote);
@@ -364,6 +362,8 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             }
             invScoreRemote += 1.0;
         }
+        Collections.sort(suggestions);
+        Collections.reverse(suggestions);
         return suggestions;
     }
 

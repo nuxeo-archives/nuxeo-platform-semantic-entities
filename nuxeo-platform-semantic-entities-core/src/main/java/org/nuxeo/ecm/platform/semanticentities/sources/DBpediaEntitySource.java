@@ -318,7 +318,6 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
             String remotePropertyUri) {
         // download depictions or other kind of linked
         // resources
-
         com.hp.hpl.jena.rdf.model.Property remoteProperty = rdfModel.getProperty(remotePropertyUri);
         NodeIterator it = rdfModel.listObjectsOfProperty(resource,
                 remoteProperty);
@@ -330,6 +329,7 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                 is = fetchResourceAsStream(URI.create(contentURI), null);
                 if (is == null) {
                     log.warn("failed to fetch resource: " + contentURI);
+                    return null;
                 }
                 Blob blob = StreamingBlob.createFromStream(is).persist();
                 int lastSlashIndex = contentURI.lastIndexOf('/');
