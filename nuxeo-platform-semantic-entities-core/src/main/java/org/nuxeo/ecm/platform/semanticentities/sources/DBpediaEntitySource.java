@@ -28,6 +28,7 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -205,7 +206,8 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
     protected void syncPropertiesFromModel(URI remoteEntity, Model rdfModel,
             DocumentModel localEntity, boolean override)
             throws DereferencingException {
-        Set<Entry<String, String>> mapping = descriptor.getMappedProperties().entrySet();
+        Set<Entry<String, String>> mapping = new HashSet<Entry<String, String>>(
+                descriptor.getMappedProperties().entrySet());
         Resource resource = rdfModel.getResource(remoteEntity.toString());
 
         // special handling for the entity:sameas property
@@ -227,11 +229,12 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
 
                 String titlePropUri = descriptor.getMappedProperties().get(
                         "dc:title");
-                // XXX: how to better handle missing label
-                String label = "Missing Label";
+                String label = localEntity.getTitle();
+                label = label != null ? label : "Missing label";
                 if (titlePropUri != null) {
-                    label = (String) readDecodedLiteral(rdfModel, resource,
+                    String labelFromRDF = (String) readDecodedLiteral(rdfModel, resource,
                             titlePropUri, StringType.INSTANCE, "en");
+                    label = labelFromRDF != null ? labelFromRDF : label;
                 }
                 sameasDisplayLabel.add(label);
                 localEntity.setPropertyValue("entity:sameasDisplayLabel",
@@ -240,6 +243,10 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
         } catch (Exception e) {
             throw new DereferencingException(e);
         }
+
+        // as sameas has a special handling, remove it from the list of
+        // properties to synchronize the generic way
+        mapping.remove("entity:sameas");
 
         // generic handling of mapped properties
         for (Entry<String, String> mappedProperty : mapping) {

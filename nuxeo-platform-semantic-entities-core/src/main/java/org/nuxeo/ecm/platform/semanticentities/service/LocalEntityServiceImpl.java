@@ -59,7 +59,7 @@ import org.nuxeo.runtime.model.DefaultComponent;
 /**
  * Service to handle semantic entities linked to documents in the local
  * repository.
- * 
+ *
  * Relations between documents and entities are stored in the Nuxeo repository
  * and documents of type "Occurrence" which is a sub-type of the "Relation" core
  * type.
@@ -434,6 +434,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         DocumentModel localEntity = session.createDocumentModel(
                 entityContainer.getPathAsString(), suggestion.label,
                 suggestion.type);
+        localEntity.setPropertyValue("dc:title", suggestion.label);
 
         for (String remoteEntity : suggestion.remoteEntityUris) {
             URI uri = URI.create(remoteEntity);
