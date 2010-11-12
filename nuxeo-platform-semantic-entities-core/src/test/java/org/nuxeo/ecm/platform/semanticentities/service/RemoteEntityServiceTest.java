@@ -61,6 +61,9 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
         // initialize the session field
         openSession();
+        DocumentModel domain = session.createDocumentModel("/", "default-domain", "Folder");
+        session.createDocument(domain);
+        session.save();
 
         service = Framework.getService(RemoteEntityService.class);
         assertNotNull(service);

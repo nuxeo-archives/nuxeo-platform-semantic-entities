@@ -70,7 +70,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     public static final Log log = LogFactory.getLog(LocalEntityServiceImpl.class);
 
     // TODO: make me configurable in an extension point
-    public static final String ENTITY_CONTAINER_PATH = "/entities";
+    public static final String ENTITY_CONTAINER_PATH = "/default-domain/entities";
 
     public static final String ENTITY_CONTAINER_TITLE = "%i18nEntities";
 
