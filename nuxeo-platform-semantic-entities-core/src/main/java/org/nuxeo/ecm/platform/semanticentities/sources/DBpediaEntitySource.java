@@ -232,8 +232,8 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                 String label = localEntity.getTitle();
                 label = label != null ? label : "Missing label";
                 if (titlePropUri != null) {
-                    String labelFromRDF = (String) readDecodedLiteral(rdfModel, resource,
-                            titlePropUri, StringType.INSTANCE, "en");
+                    String labelFromRDF = (String) readDecodedLiteral(rdfModel,
+                            resource, titlePropUri, StringType.INSTANCE, "en");
                     label = labelFromRDF != null ? labelFromRDF : label;
                 }
                 sameasDisplayLabel.add(label);
@@ -273,8 +273,9 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                     localEntity.setPropertyValue(localPropertyName,
                             (Serializable) newValues);
                 } else {
-                    if (localProperty.getValue() == null
-                            || "".equals(localProperty.getValue()) || override) {
+                    if (!"/dc:title".equals(localProperty.getPath())
+                            && (localProperty.getValue() == null
+                                    || "".equals(localProperty.getValue()) || override)) {
                         if (type.isComplexType()
                                 && "content".equals(type.getName())) {
                             localEntity.setPropertyValue(
