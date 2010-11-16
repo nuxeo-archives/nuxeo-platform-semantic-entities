@@ -9,15 +9,13 @@
   xmlns:rich="http://richfaces.org/rich">
   
 <!--
- TODO: Temporary hack that overrides the relations place holder
-       to display the mentioned entities
  TODO: Rewrite this as a generic widget that uses parameterized
        content views (once the CMISQL-joins enabled provider is
        factorized out of the project
  -->
 <a4j:outputPanel id="relatedEntitiesPanel">
 
-<h3 class="summaryTitle">#{messages['heading.linkToEntity']}</h3>
+<h3 class="summaryTitle" style="padding-top: 0">#{messages['heading.linkToEntity']}</h3>
   <h:inputText id="entitySuggestionKeywords" styleClass="dataInputText"
     onkeydown="if (event.keyCode == 13 || event.keyCode == 9) {return false;}" />
   <a4j:status>
@@ -68,4 +66,5 @@
 </f:subview>
 
 </a4j:outputPanel>
+<br/>
 </div>
