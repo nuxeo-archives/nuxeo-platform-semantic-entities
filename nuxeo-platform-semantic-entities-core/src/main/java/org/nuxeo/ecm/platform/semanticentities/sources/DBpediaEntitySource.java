@@ -30,9 +30,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.Map.Entry;
+import java.util.WeakHashMap;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -47,6 +49,17 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.scheme.PlainSocketFactory;
+import org.apache.http.conn.scheme.Scheme;
+import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpParams;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -96,6 +109,30 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
 
     protected String RESULT_NODE_XPATH = "//Result";
 
+    protected Map<URI, Model> cachedModels = new WeakHashMap<URI, Model>();
+
+    protected HttpClient httpClient;
+
+    public DBpediaEntitySource() {
+        initHttpClient();
+    }
+
+    protected void initHttpClient() {
+        // Create and initialize a scheme registry
+        SchemeRegistry schemeRegistry = new SchemeRegistry();
+        schemeRegistry.register(new Scheme("http",
+                PlainSocketFactory.getSocketFactory(), 80));
+
+        // Create an HttpClient with the ThreadSafeClientConnManager.
+        // This connection manager must be used if more than one thread will
+        // be using the HttpClient.
+        HttpParams params = new BasicHttpParams();
+        ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(
+                params, schemeRegistry);
+
+        httpClient = new DefaultHttpClient(cm, params);
+    }
+
     @Override
     public boolean canSuggestRemoteEntity() {
         return true;
@@ -134,7 +171,12 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
 
     protected Model fetchRDFDescription(URI remoteEntity)
             throws DereferencingException {
-        Model rdfModel = null;
+
+        Model rdfModel = cachedModels.get(remoteEntity);
+        if (rdfModel != null) {
+            return rdfModel;
+        }
+
         InputStream bodyStream = null;
         try {
             StringBuilder sparqlQuery = new StringBuilder();
@@ -156,7 +198,10 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
             rdfModel = ModelFactory.createDefaultModel();
             RDFReader reader = rdfModel.getReader();
             reader.read(rdfModel, bodyStream, null);
-
+            if (cachedModels.size() > 1000) {
+                cachedModels.clear();
+            }
+            cachedModels.put(remoteEntity, rdfModel);
         } catch (MalformedURLException e) {
             throw new DereferencingException(e);
         } catch (IOException e) {
@@ -394,26 +439,17 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
     public List<RemoteEntity> suggestRemoteEntity(String keywords, String type,
             int maxSuggestions) throws IOException {
 
-        if (type == null) {
-            type = descriptor.getDefaultType();
-        }
-
-        String mappedType = descriptor.getMappedTypes().get(type);
-        String truncatedMappedType = mappedType;
-        if (mappedType == null) {
-            throw new IllegalArgumentException(String.format(
-                    "Type '%s' is not mapped to any DBpedia class", type));
+        Set<String> acceptedTypes = new TreeSet<String>();
+        if (type != null) {
+            acceptedTypes.add(descriptor.getMappedTypes().get(type));
         } else {
-            int lastSlashIndex = mappedType.lastIndexOf("/");
-            if (lastSlashIndex != -1) {
-                truncatedMappedType = mappedType.substring(lastSlashIndex + 1);
-            }
+            acceptedTypes.addAll(descriptor.getMappedTypes().values());
         }
 
         // fetch more suggestions than requested since we will do type
         // post-filtering afterwards
         InputStream bodyStream = fetchSuggestions(keywords,
-                truncatedMappedType, maxSuggestions * 3);
+                "Thing", maxSuggestions * 3);
         if (bodyStream == null) {
             throw new IOException(
                     String.format(
@@ -432,7 +468,7 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                 Node resultNode = resultNodes.item(i);
                 String label = null;
                 URI uri = null;
-                boolean hasMatchingType = OWL_THING.equals(mappedType);
+                boolean hasMatchingType = false;
                 Node labelNode = (Node) xpath.evaluate("Label/text()",
                         resultNode, XPathConstants.NODE);
                 if (labelNode != null) {
@@ -448,7 +484,7 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                         XPathConstants.NODESET);
                 for (int k = 0; k < typeNodes.getLength(); k++) {
                     Node typeNode = typeNodes.item(k);
-                    if (mappedType.equals(typeNode.getNodeValue())) {
+                    if (acceptedTypes.contains(typeNode.getNodeValue())) {
                         hasMatchingType = true;
                         break;
                     }
@@ -482,12 +518,28 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
     /*
      * submethods to be overridden in mock object for the tests
      */
-
     protected InputStream fetchResourceAsStream(URI sparqlURI, String format)
             throws MalformedURLException, IOException {
-        URLConnection connection = sparqlURI.toURL().openConnection();
-        connection.addRequestProperty("Accept", format);
-        return connection.getInputStream();
+        HttpGet get = new HttpGet(sparqlURI);
+        try {
+            get.setHeader("Accept", format);
+            HttpResponse response = httpClient.execute(get);
+            if (response.getStatusLine().getStatusCode() == 200) {
+                InputStream content = response.getEntity().getContent();
+                return content;
+            } else {
+                String errorMsg = String.format("Error resolving '%s' : ",
+                        sparqlURI);
+                errorMsg += response.getStatusLine().toString();
+                throw new IOException(errorMsg);
+            }
+        } catch (ClientProtocolException e) {
+            get.abort();
+            throw e;
+        } catch (IOException e) {
+            get.abort();
+            throw e;
+        }
     }
 
     protected InputStream fetchSuggestions(String keywords, String type,

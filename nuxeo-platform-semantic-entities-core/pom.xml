@@ -58,6 +58,12 @@
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging-api</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <!-- TODO: remove hardcoded version number -->
+      <version>4.0.3</version>
+    </dependency>
 
     <dependency>
       <groupId>org.nuxeo.ecm.core</groupId>
