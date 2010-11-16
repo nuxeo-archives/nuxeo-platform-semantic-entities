@@ -397,7 +397,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
 
             // quick hack to filter out entities with overly generic types (such
             // as Entity) or entities without any admissible local types
-            if (types.size() > 1 && types.contains(Constants.ENTITY_TYPE)) {
+            if (types.contains(Constants.ENTITY_TYPE)) {
                 types.remove(Constants.ENTITY_TYPE);
             }
             if (types.size() > 0) {

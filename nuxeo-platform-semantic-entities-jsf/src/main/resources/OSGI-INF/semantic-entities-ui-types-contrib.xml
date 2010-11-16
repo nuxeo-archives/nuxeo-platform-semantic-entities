@@ -35,8 +35,8 @@
     <type id="Person">
       <label>Person</label>
       <!-- TODO: find a dedicated icon -->
-      <icon>/icons/file.gif</icon>
-      <bigIcon>/icons/file_100.png</bigIcon>
+      <icon>/icons/Person.png</icon>
+      <bigIcon>/icons/Person_100.png</bigIcon>
       <category>SimpleDocument</category>
       <description>Person.description</description>
       <default-view>view_documents</default-view>
@@ -52,8 +52,8 @@
     <type id="Organization">
       <label>Organization</label>
       <!-- TODO: find a dedicated icon -->
-      <icon>/icons/file.gif</icon>
-      <bigIcon>/icons/file_100.png</bigIcon>
+      <icon>/icons/Organization.png</icon>
+      <bigIcon>/icons/Organization_100.png</bigIcon>
       <category>SimpleDocument</category>
       <description>Organization.description</description>
       <default-view>view_documents</default-view>
@@ -69,8 +69,8 @@
     <type id="Place">
       <label>Place</label>
       <!-- TODO: find a dedicated icon -->
-      <icon>/icons/file.gif</icon>
-      <bigIcon>/icons/file_100.png</bigIcon>
+      <icon>/icons/Place.png</icon>
+      <bigIcon>/icons/Place_100.png</bigIcon>
       <category>SimpleDocument</category>
       <description>Place.description</description>
       <default-view>view_documents</default-view>

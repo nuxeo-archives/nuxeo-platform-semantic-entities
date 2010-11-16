@@ -15,6 +15,11 @@
   style="max-height: 60px; max-width: 60px; border: 1px solid darkGray; padding: 1px"
   rendered="#{value.hasSchema('entity') and !empty value.entity.depiction}"
   styleClass="entityDepiction" />
+<h:graphicImage
+  url="/icons/#{value.type}_100.png"
+  style="max-height: 60px; max-width: 60px; border: 1px solid darkGray; padding: 1px"
+  rendered="#{value.hasSchema('entity') and empty value.entity.depiction}"
+  styleClass="entityDepiction" />
 </div>
 <div style="float: right">
   <a4j:commandLink immediate="true"
