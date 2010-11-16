@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
@@ -39,6 +40,7 @@ import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.core.api.UnrestrictedSessionRunner;
+import org.nuxeo.ecm.core.api.pathsegment.PathSegmentService;
 import org.nuxeo.ecm.core.api.security.ACE;
 import org.nuxeo.ecm.core.api.security.ACP;
 import org.nuxeo.ecm.core.api.security.SecurityConstants;
@@ -104,11 +106,10 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
 
                         // create the occurrence container
                         String parentPath = entityContainer.getPathAsString();
-                        String localId = "occurrences";
-                        DocumentRef occurrencesRef = new PathRef(parentPath
-                                + "/" + localId);
+
                         DocumentModel occurrenceContainer = session.createDocumentModel(
-                                parentPath, localId, "OccurrenceContainer");
+                                parentPath, "occurrences",
+                                "OccurrenceContainer");
                         occurrenceContainer = session.createDocument(occurrenceContainer);
 
                         // put a single ACL that will be inherited for all
@@ -118,7 +119,8 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                         acl.add(new ACE(SecurityConstants.EVERYONE,
                                 SecurityConstants.BROWSE, true));
                         openAcp.addACL(acl);
-                        session.setACP(occurrencesRef, openAcp, true);
+                        session.setACP(occurrenceContainer.getRef(), openAcp,
+                                true);
                         session.save();
                     }
                 }
@@ -175,7 +177,8 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 // are not behaving correctly concurrently
                 DocumentModel occ = session.createDocumentModel(
                         getOccurrenceContainer(session).getPathAsString(),
-                        null, Constants.OCCURRENCE_TYPE);
+                        "occurrence-" + UUID.randomUUID().toString(),
+                        Constants.OCCURRENCE_TYPE);
                 occ.setPropertyValue("relation:source", docRef.toString());
                 occ.setPropertyValue("relation:target", entityRef.toString());
                 return occ.getAdapter(OccurrenceRelation.class);
@@ -469,17 +472,19 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         }
 
         RemoteEntityService reService;
+        PathSegmentService psService;
         try {
             reService = Framework.getService(RemoteEntityService.class);
+            psService = Framework.getService(PathSegmentService.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
         DocumentModel entityContainer = getEntityContainer(session);
 
-        DocumentModel localEntity = session.createDocumentModel(
-                entityContainer.getPathAsString(), suggestion.label,
-                suggestion.type);
+        DocumentModel localEntity = session.createDocumentModel(suggestion.type);
         localEntity.setPropertyValue("dc:title", suggestion.label);
+        String pathSegment = psService.generatePathSegment(localEntity);
+        localEntity.setPathInfo(entityContainer.getPathAsString(), pathSegment);
 
         for (String remoteEntity : suggestion.remoteEntityUris) {
             URI uri = URI.create(remoteEntity);
