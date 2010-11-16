@@ -61,6 +61,9 @@ public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
 
         // initialize the session field
         openSession();
+        DocumentModel domain = session.createDocumentModel("/", "default-domain", "Folder");
+        session.createDocument(domain);
+        session.save();
 
         leService = Framework.getService(LocalEntityService.class);
         assertNotNull(leService);
@@ -167,13 +170,8 @@ public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
         return doc;
     }
 
-    public void testDummy() {
-        // junit needs at least one test
-    }
-
-    public void xxxtestOperationDirectCall() throws Exception {
+    public void testOperationDirectCall() throws Exception {
         DocumentModel doc = createSampleDocumentModel();
-
         // TODO: use a derived operation that mocks the service HTTP interaction
         OccurrenceExtractionOperation op = new OccurrenceExtractionOperation(
                 session);
@@ -195,12 +193,14 @@ public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
         assertEquals("Liverpool", firstPlaces.get(0).getTitle());
     }
 
-    public void xxxtestCoreEventListener() throws Exception {
+    public void testCoreEventListener() throws Exception {
         // TODO: deploy a the mock HTTP operation instead of the default core
         // event listener
         deployBundle("org.nuxeo.ecm.platform.semanticentities.operations");
 
         DocumentModel doc = createSampleDocumentModel();
+        Framework.getLocalService(EventService.class).waitForAsyncCompletion();
+
         PageProvider<DocumentModel> relatedPeople = leService.getRelatedEntities(
                 session, doc.getRef(), "Person");
         List<DocumentModel> firstPeople = relatedPeople.getCurrentPage();

@@ -16,13 +16,16 @@
       point="doctype">
 
     <doctype name="EntityContainer" extends="Folder">
-      <facet name="HiddenInNavigation" />
       <facet name="SuperSpace"/>
       <subtypes>
         <type>Person</type>
         <type>Place</type>
         <type>Organization</type>
       </subtypes>
+    </doctype>
+
+    <doctype name="OccurrenceContainer" extends="Folder">
+      <facet name="HiddenInNavigation" />
     </doctype>
 
     <doctype name="Entity" extends="Document">

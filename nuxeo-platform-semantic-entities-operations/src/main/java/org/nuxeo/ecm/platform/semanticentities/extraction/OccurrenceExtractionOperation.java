@@ -18,6 +18,7 @@ package org.nuxeo.ecm.platform.semanticentities.extraction;
  */
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -59,17 +60,22 @@ import org.nuxeo.ecm.core.api.blobholder.SimpleBlobHolder;
 import org.nuxeo.ecm.core.api.impl.DocumentModelListImpl;
 import org.nuxeo.ecm.core.api.impl.blob.StreamingBlob;
 import org.nuxeo.ecm.core.api.model.PropertyException;
+import org.nuxeo.ecm.core.api.pathsegment.PathSegmentService;
 import org.nuxeo.ecm.core.convert.api.ConversionService;
 import org.nuxeo.ecm.core.utils.BlobsExtractor;
+import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
+import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceInfo;
 import org.nuxeo.runtime.api.Framework;
 
+import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.ResIterator;
 import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.Statement;
 
 /**
  * Use a semantic engine to extract the occurrences of semantic entities from
@@ -85,7 +91,7 @@ import com.hp.hpl.jena.rdf.model.Resource;
  *
  * This pattern should work for semantic engines such as:
  * <ul>
- * <li>fise from the project http://iks-project.eu</li>
+ * <li>Stanbol from the project http://incubator.apache.org/stanbol</li>
  * <li>OpenCalais (untested)</li>
  * <li>Maybe more</li>
  * </ul>
@@ -111,12 +117,30 @@ public class OccurrenceExtractionOperation {
 
     protected ConversionService conversionService;
 
-    protected final HttpClient httpClient;
+    protected HttpClient httpClient;
+
+    // TODO: factorize this configuration to either local entity service or
+    // somewhere else configurable
+    protected static final Map<String, String> localTypes = new HashMap<String, String>();
+    static {
+        localTypes.put("http://dbpedia.org/ontology/Place", "Place");
+        localTypes.put("http://dbpedia.org/ontology/Person", "Person");
+        localTypes.put("http://dbpedia.org/ontology/Organisation",
+                "Organization");
+    }
 
     public OccurrenceExtractionOperation() throws Exception {
         // constructor to be used by automation runtime
         conversionService = Framework.getService(ConversionService.class);
+        initHttpClient();
+    }
 
+    public OccurrenceExtractionOperation(CoreSession session) throws Exception {
+        this();
+        this.session = session;
+    }
+
+    protected void initHttpClient() {
         // Create and initialize a scheme registry
         SchemeRegistry schemeRegistry = new SchemeRegistry();
         schemeRegistry.register(new Scheme("http",
@@ -130,11 +154,6 @@ public class OccurrenceExtractionOperation {
                 params, schemeRegistry);
 
         httpClient = new DefaultHttpClient(cm, params);
-    }
-
-    public OccurrenceExtractionOperation(CoreSession session) throws Exception {
-        this();
-        this.session = session;
     }
 
     @Context
@@ -151,6 +170,12 @@ public class OccurrenceExtractionOperation {
 
     @Param(name = "engineOutputFormat", required = true, values = { DEFAULT_ENGINE_OUTPUT_FORMAT })
     protected String outputFormat = DEFAULT_ENGINE_OUTPUT_FORMAT;
+
+    @Param(name = "linkToUnrecognizedEntities", required = true, values = { "true" })
+    protected boolean linkToUnrecognizedEntities = true;
+
+    @Param(name = "linkToAmbiguousEntities", required = true, values = { "true" })
+    protected boolean linkToAmbiguousEntities = true;
 
     @OperationMethod
     public DocumentRef run(DocumentRef docRef) throws Exception {
@@ -174,42 +199,119 @@ public class OccurrenceExtractionOperation {
         Model model = ModelFactory.createDefaultModel().read(
                 new StringReader(output), null);
         // TODO: implement entity extraction from model and linking to local
-        // entities
+        List<OccurrenceGroup> groups = findStanbolEntityOccurrences(model);
+
+        DocumentModel entityContainer = leService.getEntityContainer(session);
+        for (OccurrenceGroup group : groups) {
+            List<EntitySuggestion> suggestions = leService.suggestEntity(
+                    session, group.name, group.type, 3);
+
+            if (suggestions.isEmpty() && linkToUnrecognizedEntities) {
+                PathSegmentService pathService = Framework.getService(PathSegmentService.class);
+                DocumentModel localEntity = session.createDocumentModel(group.type);
+                localEntity.setPropertyValue("dc:title", group.name);
+                String pathSegment = pathService.generatePathSegment(localEntity);
+                localEntity.setPathInfo(entityContainer.getPathAsString(), pathSegment);
+                localEntity = session.createDocument(localEntity);
+                session.save();
+                leService.addOccurrences(session, doc.getRef(),
+                        localEntity.getRef(), group.occurrences);
+            } else {
+                EntitySuggestion bestGuess = suggestions.get(0);
+                if (suggestions.size() > 1 && !linkToAmbiguousEntities) {
+                    continue;
+                }
+                DocumentModel localEntity = leService.asLocalEntity(session,
+                        bestGuess);
+                leService.addOccurrences(session, doc.getRef(),
+                        localEntity.getRef(), group.occurrences);
+            }
+        }
         return doc;
     }
 
     /**
      * Find the list of all textual occurrences of entities in the output of the
-     * fise engine.
-     *
-     * @param model
-     * @return
+     * Apache Stanbol engine.
      */
-    public List<List<OccurrenceInfo>> findFiseEntityOccurrences(Model model) {
-
-        // Retrieve the existing text annotations handling the sub-sumption
+    public List<OccurrenceGroup> findStanbolEntityOccurrences(Model model) {
+        // Retrieve the existing text annotations handling the subsumption
         // relationships
-        Map<Resource, List<Resource>> textAnnotations = new HashMap<Resource, List<Resource>>();
-        Property type = model.getProperty("TODO");
-        Property dcRelation = model.getProperty("TODO");
-        Resource textAnnotationType = model.getResource("TODO");
+        Property type = model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+        Property entityType = model.getProperty("http://purl.org/dc/terms/type");
+        Property dcRelation = model.getProperty("http://purl.org/dc/terms/relation");
+        Resource textAnnotationType = model.getResource("http://fise.iks-project.eu/ontology/TextAnnotation");
         ResIterator it = model.listSubjectsWithProperty(type,
                 textAnnotationType);
+        List<OccurrenceGroup> groups = new ArrayList<OccurrenceGroup>();
         for (; it.hasNext();) {
             Resource annotation = it.nextResource();
-            if (!model.listObjectsOfProperty(annotation, dcRelation).hasNext()) {
+            if (model.listObjectsOfProperty(annotation, dcRelation).hasNext()) {
                 // this is not the most specific occurrence of this name: skip
+                continue;
             }
+
+            Statement typeStmt = annotation.getProperty(entityType);
+            if (typeStmt == null || !typeStmt.getObject().isURIResource()) {
+                continue;
+            }
+            Resource typeResouce = (Resource) typeStmt.getObject().as(
+                    Resource.class);
+            String localType = localTypes.get(typeResouce.getURI());
+            if (localType == null) {
+                continue;
+            }
+            OccurrenceInfo occInfo = getOccurrenceInfo(model, annotation);
+            if (occInfo == null) {
+                continue;
+            }
+            OccurrenceGroup group = new OccurrenceGroup(occInfo.mention,
+                    localType);
+            group.occurrences.add(occInfo);
+
             // This is a first occurrence, collect any subsumed annotations
-            List<Resource> subsumed = new ArrayList<Resource>();
             ResIterator it2 = model.listSubjectsWithProperty(dcRelation,
                     annotation);
             for (; it2.hasNext();) {
-                subsumed.add(it2.nextResource());
+                OccurrenceInfo subMention = getOccurrenceInfo(model,
+                        it2.nextResource());
+                if (subMention == null) {
+                    continue;
+                }
+                group.occurrences.add(subMention);
             }
-            textAnnotations.put(annotation, subsumed);
+            groups.add(group);
         }
-        return null;
+        return groups;
+    }
+
+    protected OccurrenceInfo getOccurrenceInfo(Model model, Resource annotation) {
+        Property mentionProp = model.getProperty("http://fise.iks-project.eu/ontology/selected-text");
+        Statement mentionStmt = annotation.getProperty(mentionProp);
+        if (mentionStmt == null || !mentionStmt.getObject().isLiteral()) {
+            return null;
+        }
+        Literal mentionLiteral = (Literal) mentionStmt.getObject().as(
+                Literal.class);
+
+        Property contextProp = model.getProperty("http://fise.iks-project.eu/ontology/selection-context");
+        Statement contextStmt = annotation.getProperty(contextProp);
+        if (contextStmt == null || !contextStmt.getObject().isLiteral()) {
+            return null;
+        }
+        Literal contextLiteral = (Literal) contextStmt.getObject().as(
+                Literal.class);
+        // TODO: normalize whitespace
+        String mention = mentionLiteral.getString().trim();
+        String context = contextLiteral.getString().trim();
+
+        if (!context.contains(mention) || context.length() > 500) {
+            // context extraction is likely to have failed on some complex
+            // layout
+            context = mention;
+        }
+
+        return new OccurrenceInfo(mention, context);
     }
 
     @OperationMethod
@@ -237,13 +339,15 @@ public class OccurrenceExtractionOperation {
         HttpPost post = new HttpPost(engineURL);
         try {
             post.setHeader("Accept", outputFormat);
-            // TODO: fix the fise engine handling of charset in mimetype
+            // TODO: fix the Stanbol engine handling of charset in mimetype
             // negociation
             // post.setHeader("Content-Type", "text/plain; charset=utf-8");
             post.setHeader("Content-Type", "text/plain");
             post.setEntity(new ByteArrayEntity(textContent.getBytes("utf-8")));
             HttpResponse response = httpClient.execute(post);
-            String body = IOUtils.toString(response.getEntity().getContent());
+            InputStream content = response.getEntity().getContent();
+            String body = IOUtils.toString(content);
+            content.close();
             if (response.getStatusLine().getStatusCode() == 200) {
                 return body;
             } else {

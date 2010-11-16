@@ -75,7 +75,7 @@ import com.hp.hpl.jena.rdf.model.Resource;
  * Implementation of the RemoteEntitySource interface that is able to suggest
  * DBpedia entities by name using the http://lookup.dbpedia.org RESTful service
  * and dereference DBpedia URIs using the official DBpedia sparql endpoint.
- * 
+ *
  * This implementation uses the SPARQL endpoint instead of HTTP GET based
  * queries since the virtuoso implementation arbitrarily truncates the entity
  * graph to around 2000 triples for entities with many properties.
@@ -432,7 +432,7 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                 Node resultNode = resultNodes.item(i);
                 String label = null;
                 URI uri = null;
-                boolean hasMathingType = OWL_THING.equals(mappedType);
+                boolean hasMatchingType = OWL_THING.equals(mappedType);
                 Node labelNode = (Node) xpath.evaluate("Label/text()",
                         resultNode, XPathConstants.NODE);
                 if (labelNode != null) {
@@ -449,11 +449,11 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
                 for (int k = 0; k < typeNodes.getLength(); k++) {
                     Node typeNode = typeNodes.item(k);
                     if (mappedType.equals(typeNode.getNodeValue())) {
-                        hasMathingType = true;
+                        hasMatchingType = true;
                         break;
                     }
                 }
-                if (hasMathingType && label != null && uri != null) {
+                if (hasMatchingType && label != null && uri != null) {
                     suggestions.add(new RemoteEntity(label, uri));
                     if (suggestions.size() >= maxSuggestions) {
                         break;

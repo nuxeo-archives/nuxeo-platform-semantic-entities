@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
@@ -92,11 +93,32 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 @Override
                 public void run() throws ClientException {
                     if (!session.exists(ref)) {
-                        DocumentModel container = session.createDocumentModel(
+
+                        // create the entity container
+                        DocumentModel entityContainer = session.createDocumentModel(
                                 parentPath, id, Constants.ENTITY_CONTAINER_TYPE);
-                        container.setPropertyValue("dc:title",
+                        entityContainer.setPropertyValue("dc:title",
                                 ENTITY_CONTAINER_TITLE);
-                        session.createDocument(container);
+
+                        session.createDocument(entityContainer);
+
+                        // create the occurrence container
+                        String parentPath = entityContainer.getPathAsString();
+                        String localId = "occurrences";
+                        DocumentRef occurrencesRef = new PathRef(parentPath
+                                + "/" + localId);
+                        DocumentModel occurrenceContainer = session.createDocumentModel(
+                                parentPath, localId, "OccurrenceContainer");
+                        occurrenceContainer = session.createDocument(occurrenceContainer);
+
+                        // put a single ACL that will be inherited for all
+                        // occurrences
+                        ACP openAcp = new ACPImpl();
+                        ACLImpl acl = new ACLImpl("open", true);
+                        acl.add(new ACE(SecurityConstants.EVERYONE,
+                                SecurityConstants.BROWSE, true));
+                        openAcp.addACL(acl);
+                        session.setACP(occurrencesRef, openAcp, true);
                         session.save();
                     }
                 }
@@ -109,6 +131,15 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             return null;
         }
         return session.getDocument(ref);
+    }
+
+    public DocumentModel getOccurrenceContainer(CoreSession session)
+            throws ClientException {
+        DocumentModel entityContainer = getEntityContainer(session);
+        String parentPath = entityContainer.getPathAsString();
+        String localId = "occurrences";
+        DocumentRef occurrencesRef = new PathRef(parentPath + "/" + localId);
+        return session.getDocument(occurrencesRef);
     }
 
     @Override
@@ -138,7 +169,13 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             if (createIfMissing) {
                 // create an empty document model in memory and adapt it to the
                 // OccurrenceRelation interface
-                DocumentModel occ = session.createDocumentModel(Constants.OCCURRENCE_TYPE);
+
+                // use a subcontainer of the entity container document as
+                // parent to avoid having to put read ACLs on occurrence that
+                // are not behaving correctly concurrently
+                DocumentModel occ = session.createDocumentModel(
+                        getOccurrenceContainer(session).getPathAsString(),
+                        null, Constants.OCCURRENCE_TYPE);
                 occ.setPropertyValue("relation:source", docRef.toString());
                 occ.setPropertyValue("relation:target", entityRef.toString());
                 return occ.getAdapter(OccurrenceRelation.class);
@@ -215,14 +252,6 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 occRef = session.createDocument(
                         relation.getOccurrenceDocument()).getRef();
 
-                // remove ACL checks on relations
-                ACP openAcp = new ACPImpl();
-                ACLImpl acl = new ACLImpl("open", true);
-                acl.add(new ACE(SecurityConstants.EVERYONE,
-                        SecurityConstants.BROWSE, true));
-                openAcp.addACL(acl);
-                session.setACP(occRef, openAcp, true);
-
                 // update the popularity estimate
                 Long newPopularity = entity.getProperty("entity:popularity").getValue(
                         Long.class) + 1;
@@ -281,16 +310,31 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 "Ent.cmis:objectId", "relatedEntities");
     }
 
+    public static String cleanupKeywords(String keywords) {
+        return keywords.replaceAll("\\W", " ").trim();
+    }
+
     @Override
     public List<DocumentModel> suggestLocalEntity(CoreSession session,
             String keywords, String type, int maxSuggestions)
             throws ClientException {
+        Set<String> entityTypeNames = new TreeSet<String>();
         if (type == null) {
-            type = Constants.ENTITY_TYPE;
+            try {
+                entityTypeNames = getEntityTypeNames();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            entityTypeNames.remove(Constants.ENTITY_TYPE);
+        } else {
+            entityTypeNames.add(type);
         }
+
         String q = String.format("SELECT * FROM %s WHERE ecm:fulltext = '%s'"
-                + " ORDER BY entity:popularity DESC, dc:title" + " LIMIT %d",
-                type, keywords.replace("'", "\'"), maxSuggestions);
+                + " AND ecm:primaryType IN ('%s')"
+                + " ORDER BY entity:popularity DESC, dc:title LIMIT %d",
+                Constants.ENTITY_TYPE, cleanupKeywords(keywords),
+                StringUtils.join(entityTypeNames, "', '"), maxSuggestions);
         return session.query(q);
     }
 
@@ -359,8 +403,8 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             if (types.size() > 0) {
                 suggestion.type = types.iterator().next();
                 suggestions.add(suggestion);
+                invScoreRemote += 1.0;
             }
-            invScoreRemote += 1.0;
         }
         Collections.sort(suggestions);
         Collections.reverse(suggestions);
@@ -377,7 +421,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 "SELECT cmis:objectId, SCORE() relevance FROM %s "
                         + "WHERE CONTAINS('%s') AND cmis:objectTypeId NOT IN ('%s') "
                         + "ORDER BY relevance", type,
-                keywords.replace("'", " "),
+                cleanupKeywords(keywords),
                 StringUtils.join(getEntityTypeNames(), "', '"));
         PageProvider<DocumentModel> provider = new CMISQLDocumentPageProvider(
                 session, query, "cmis:objectId", "suggestedDocuments");
@@ -387,8 +431,9 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
 
     @Override
     public Set<String> getEntityTypeNames() throws Exception {
-        return Framework.getService(SchemaManager.class).getDocumentTypeNamesExtending(
+        Set<String> types = Framework.getService(SchemaManager.class).getDocumentTypeNamesExtending(
                 Constants.ENTITY_TYPE);
+        return new TreeSet<String>(types);
     }
 
     @Override
