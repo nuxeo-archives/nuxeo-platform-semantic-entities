@@ -37,6 +37,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
@@ -107,7 +108,7 @@ public class OccurrenceExtractionOperation {
 
     private static final String ANY2TEXT = "any2text";
 
-    protected static final String DEFAULT_ENGINE_URL = "http://fise.demo.nuxeo.com/engines";
+    protected static final String DEFAULT_ENGINE_URL = "https://stanbol.demo.nuxeo.com/engines";
 
     protected static final String DEFAULT_SPARQL_QUERY = "SELECT ?label ?type ?context ";
 
@@ -145,6 +146,8 @@ public class OccurrenceExtractionOperation {
         SchemeRegistry schemeRegistry = new SchemeRegistry();
         schemeRegistry.register(new Scheme("http",
                 PlainSocketFactory.getSocketFactory(), 80));
+        schemeRegistry.register(new Scheme("https",
+                SSLSocketFactory.getSocketFactory(), 443));
 
         // Create an HttpClient with the ThreadSafeClientConnManager.
         // This connection manager must be used if more than one thread will
