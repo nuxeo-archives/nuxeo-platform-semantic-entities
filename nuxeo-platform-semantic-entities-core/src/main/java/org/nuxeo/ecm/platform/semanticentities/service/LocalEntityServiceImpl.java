@@ -78,9 +78,11 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     public static final String ENTITY_CONTAINER_TITLE = "%i18nEntities";
 
     @Override
-    public DocumentModel getEntityContainer(CoreSession session)
+    synchronized public DocumentModel getEntityContainer(CoreSession session)
             throws ClientException {
+
         final PathRef ref = new PathRef(ENTITY_CONTAINER_PATH);
+
         if (!session.exists(ref)) {
             // either the container has not been created yet or the current user
             // cannot see it because of a lack of permissions to do so
@@ -102,26 +104,31 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                         entityContainer.setPropertyValue("dc:title",
                                 ENTITY_CONTAINER_TITLE);
 
-                        session.createDocument(entityContainer);
+                        DocumentModel createdContainer = session.createDocument(entityContainer);
+                        if (!ENTITY_CONTAINER_PATH.equals(createdContainer.getPathAsString())) {
+                            // container concurrent creation in a race
+                            // condition: delete it
+                            session.removeDocument(createdContainer.getRef());
+                        } else {
+                            // create the occurrence container
+                            String parentPath = entityContainer.getPathAsString();
 
-                        // create the occurrence container
-                        String parentPath = entityContainer.getPathAsString();
+                            DocumentModel occurrenceContainer = session.createDocumentModel(
+                                    parentPath, "occurrences",
+                                    "OccurrenceContainer");
+                            occurrenceContainer = session.createDocument(occurrenceContainer);
 
-                        DocumentModel occurrenceContainer = session.createDocumentModel(
-                                parentPath, "occurrences",
-                                "OccurrenceContainer");
-                        occurrenceContainer = session.createDocument(occurrenceContainer);
-
-                        // put a single ACL that will be inherited for all
-                        // occurrences
-                        ACP openAcp = new ACPImpl();
-                        ACLImpl acl = new ACLImpl("open", true);
-                        acl.add(new ACE(SecurityConstants.EVERYONE,
-                                SecurityConstants.BROWSE, true));
-                        openAcp.addACL(acl);
-                        session.setACP(occurrenceContainer.getRef(), openAcp,
-                                true);
-                        session.save();
+                            // put a single ACL that will be inherited for all
+                            // occurrences
+                            ACP openAcp = new ACPImpl();
+                            ACLImpl acl = new ACLImpl("open", true);
+                            acl.add(new ACE(SecurityConstants.EVERYONE,
+                                    SecurityConstants.BROWSE, true));
+                            openAcp.addACL(acl);
+                            session.setACP(occurrenceContainer.getRef(),
+                                    openAcp, true);
+                            session.save();
+                        }
                     }
                 }
             };
@@ -333,9 +340,10 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             entityTypeNames.add(type);
         }
 
-        String q = String.format("SELECT * FROM %s WHERE ecm:fulltext = '%s'"
-                + " AND ecm:primaryType IN ('%s')"
-                + " ORDER BY entity:popularity DESC, dc:title LIMIT %d",
+        String q = String.format(
+                "SELECT * FROM %s WHERE ecm:fulltext_title = '%s'"
+                        + " AND ecm:primaryType IN ('%s')"
+                        + " ORDER BY entity:popularity DESC, dc:title LIMIT %d",
                 Constants.ENTITY_TYPE, cleanupKeywords(keywords),
                 StringUtils.join(entityTypeNames, "', '"), maxSuggestions);
         return session.query(q);
@@ -347,16 +355,34 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             String keywords, String type, int maxSuggestions)
             throws ClientException, DereferencingException {
         // lookup remote entities
-        List<RemoteEntity> remoteEntities = Collections.emptyList();
         RemoteEntityService reService;
         try {
             reService = Framework.getService(RemoteEntityService.class);
-            if (reService.canSuggestRemoteEntity()) {
-                remoteEntities = reService.suggestRemoteEntity(keywords, type,
-                        maxSuggestions);
-            }
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+        List<RemoteEntity> remoteEntities = Collections.emptyList();
+        if (reService.canSuggestRemoteEntity()) {
+            try {
+                remoteEntities = reService.suggestRemoteEntity(keywords, type,
+                        maxSuggestions);
+            } catch (IOException e) {
+                // wait a bit
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e1) {
+                    throw new RuntimeException(e1);
+                }
+                // retry once
+                try {
+                    remoteEntities = reService.suggestRemoteEntity(keywords,
+                            type, maxSuggestions);
+                } catch (IOException e2) {
+                    log.warn(String.format(
+                            "failed to suggest remote entity for '%s' with type '%s': %s",
+                            keywords, type, e.getMessage()));
+                }
+            }
         }
         // lookup local entities
         List<DocumentModel> localEntities = suggestLocalEntity(session,
@@ -396,7 +422,24 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                     remoteEntity.label, remoteEntity.uri.toString(), type).withScore(1 / invScoreRemote);
             // TODO: optimize me and change the source suggestion API to fetch
             // admissible types up-front instead
-            Set<String> types = reService.getAdmissibleTypes(remoteEntity.uri);
+            Set<String> types = Collections.emptySet();
+            try {
+                types = reService.getAdmissibleTypes(remoteEntity.uri);
+            } catch (IOException e) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e1) {
+                    throw new RuntimeException(e1);
+                }
+                // retry once
+                try {
+                    types = reService.getAdmissibleTypes(remoteEntity.uri);
+                } catch (IOException e1) {
+                    log.warn(String.format(
+                            "failed to resolve admissible type for '%s': %s",
+                            remoteEntity.uri, e1.getMessage()));
+                }
+            }
 
             // quick hack to filter out entities with overly generic types (such
             // as Entity) or entities without any admissible local types
