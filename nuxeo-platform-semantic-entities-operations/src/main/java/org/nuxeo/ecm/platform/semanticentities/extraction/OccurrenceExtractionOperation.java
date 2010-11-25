@@ -203,6 +203,9 @@ public class OccurrenceExtractionOperation {
                 new StringReader(output), null);
         // TODO: implement entity extraction from model and linking to local
         List<OccurrenceGroup> groups = findStanbolEntityOccurrences(model);
+        if (groups.isEmpty()) {
+            return doc;
+        }
 
         DocumentModel entityContainer = leService.getEntityContainer(session);
         for (OccurrenceGroup group : groups) {
