@@ -179,12 +179,35 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
 
         InputStream bodyStream = null;
         try {
+
+            StringBuilder constructPredicates = new StringBuilder();
+            StringBuilder wherePredicates = new StringBuilder();
+
+            constructPredicates.append(String.format("<%s> a ?t . ", remoteEntity));
+            constructPredicates.append("\n");
+
+            wherePredicates.append(String.format("<%s> a ?t . ", remoteEntity));
+            wherePredicates.append("\n");
+            int i = 0;
+            for (String property : new TreeSet<String>(
+                    descriptor.getMappedProperties().values())) {
+                constructPredicates.append(String.format("<%s> <%s> ?v%d . ",
+                        remoteEntity, property, i));
+                constructPredicates.append("\n");
+                wherePredicates.append(String.format(
+                        "OPTIONAL { <%s> <%s> ?v%d } . ", remoteEntity,
+                        property, i));
+                wherePredicates.append("\n");
+                i++;
+            }
+
             StringBuilder sparqlQuery = new StringBuilder();
-            sparqlQuery.append("CONSTRUCT { <");
-            sparqlQuery.append(remoteEntity);
-            sparqlQuery.append("> ?p ?o } WHERE { <");
-            sparqlQuery.append(remoteEntity);
-            sparqlQuery.append("> ?p ?o }");
+            sparqlQuery.append("CONSTRUCT { ");
+            sparqlQuery.append(constructPredicates);
+            sparqlQuery.append(" } WHERE { ");
+            sparqlQuery.append(wherePredicates);
+            sparqlQuery.append(" }");
+
             String encodedQuery = URLEncoder.encode(sparqlQuery.toString(),
                     "UTF-8");
 
@@ -448,8 +471,8 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
 
         // fetch more suggestions than requested since we will do type
         // post-filtering afterwards
-        InputStream bodyStream = fetchSuggestions(keywords,
-                "Thing", maxSuggestions * 3);
+        InputStream bodyStream = fetchSuggestions(keywords, "Thing",
+                maxSuggestions * 3);
         if (bodyStream == null) {
             throw new IOException(
                     String.format(
