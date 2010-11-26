@@ -128,6 +128,23 @@ public interface LocalEntityService {
             throws ClientException;
 
     /**
+     * Add several occurrences of the same entity in to a given document
+     * (occurring in several text snippets).
+     *
+     * @param session active session to the repository holding the document and
+     *            entities
+     * @param docRef the id of the document referring to the entity
+     * @param entitySuggestion entity to dereference if not local, and link to
+     *            it
+     * @param occurrences list of occurrence data to add to the relationship
+     * @return an OccurrenceRelation holding the aggregated occurrence data
+     * @throws IOException if dereferencing remote entity fails
+     */
+    void addOccurrences(CoreSession session, DocumentRef ref,
+            EntitySuggestion entitySuggestion, List<OccurrenceInfo> occurrences)
+            throws ClientException, IOException;
+
+    /**
      * Find the occurrence relation instance linking a document to an entity.
      * Return null if no such relation exist in the repository.
      *

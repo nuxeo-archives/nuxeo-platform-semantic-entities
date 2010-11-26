@@ -24,9 +24,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
@@ -59,6 +61,8 @@ import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.DefaultComponent;
 
+import com.google.common.collect.MapMaker;
+
 /**
  * Service to handle semantic entities linked to documents in the local
  * repository.
@@ -76,6 +80,9 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     public static final String ENTITY_CONTAINER_PATH = "/default-domain/entities";
 
     public static final String ENTITY_CONTAINER_TITLE = "%i18nEntities";
+
+    protected Map<String, DocumentRef> recentlyDereferenced = new MapMaker().concurrencyLevel(
+            4).expiration(10, TimeUnit.SECONDS).makeMap();
 
     @Override
     synchronized public DocumentModel getEntityContainer(CoreSession session)
@@ -200,6 +207,28 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             }
             return occurrences.get(0).getAdapter(OccurrenceRelation.class);
         }
+    }
+
+    @Override
+    public void addOccurrences(CoreSession session, DocumentRef docRef,
+            EntitySuggestion entitySuggestion, List<OccurrenceInfo> occurrences)
+            throws ClientException, IOException {
+
+        DocumentRef entityRef = null;
+        if (entitySuggestion.isLocal()) {
+            entityRef = entitySuggestion.localEntity.getRef();
+        } else {
+            // use the recentlyDereferenced cache that is shared among threads
+            // and concurrent transaction to avoid dereferencing the same remote
+            // entity to duplicated local entities
+            for (String uri : entitySuggestion.remoteEntityUris) {
+                entityRef = recentlyDereferenced.get(uri);
+            }
+            if (entityRef == null) {
+                entityRef = asLocalEntity(session, entitySuggestion).getRef();
+            }
+        }
+        addOccurrences(session, docRef, entityRef, occurrences);
     }
 
     @Override
@@ -534,6 +563,9 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             reService.dereferenceInto(localEntity, uri, false);
         }
         localEntity = session.createDocument(localEntity);
+        for (String remoteEntity : suggestion.remoteEntityUris) {
+            recentlyDereferenced.put(remoteEntity, localEntity.getRef());
+        }
         session.save();
         return localEntity;
     }

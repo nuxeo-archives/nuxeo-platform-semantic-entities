@@ -37,6 +37,10 @@
       <groupId>org.nuxeo.ecm.core</groupId>
       <artifactId>nuxeo-opencmis-impl</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.google.collections</groupId>
+      <artifactId>google-collections</artifactId>
+    </dependency>
 
     <!--
       jena is required to parse the RDF payload of linked data resources

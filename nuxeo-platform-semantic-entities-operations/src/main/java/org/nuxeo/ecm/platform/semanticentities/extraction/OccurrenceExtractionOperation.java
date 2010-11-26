@@ -223,14 +223,11 @@ public class OccurrenceExtractionOperation {
                 leService.addOccurrences(session, doc.getRef(),
                         localEntity.getRef(), group.occurrences);
             } else {
-                EntitySuggestion bestGuess = suggestions.get(0);
                 if (suggestions.size() > 1 && !linkToAmbiguousEntities) {
                     continue;
                 }
-                DocumentModel localEntity = leService.asLocalEntity(session,
-                        bestGuess);
-                leService.addOccurrences(session, doc.getRef(),
-                        localEntity.getRef(), group.occurrences);
+                EntitySuggestion bestGuess = suggestions.get(0);
+                leService.addOccurrences(session, doc.getRef(), bestGuess, group.occurrences);
             }
         }
         return doc;
