@@ -272,18 +272,37 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         public void run() throws ClientException {
             // update the entity aggregated alternative names for better
             // fulltext indexing
-            DocumentModel entity = session.getDocument(relation.getTargetEntityRef());
-            List<String> altnames = entity.getProperty("entity:altnames").getValue(
-                    List.class);
-            for (OccurrenceInfo occInfo : relation.getOccurrences()) {
-                if (!occInfo.mention.equals(entity.getPropertyValue("dc:title"))) {
-                    if (!altnames.contains(occInfo.mention)) {
-                        altnames = new ArrayList<String>(altnames);
-                        altnames.add(occInfo.mention);
+            DocumentModel entity = null;
+            try {
+                entity = session.getDocument(relation.getTargetEntityRef());
+            } catch (ClientException e) {
+                // there is still a potential race condition that can occur
+                // quite often in practice: the proper way to deal with this is
+                // probably to ensure that all relationships and entity
+                // dereferencing happen asynchronously in a singleton,
+                // de-duplicating thread queue with it's own transaction
+                // management.
+
+                // alternatively we could implement an out of phase entity
+                // merging strategy, but that's complicated too... Right now we
+                // will assume that the problem does not occur to often in
+                // practice so that the popularity score and the alternative
+                // names update discrepancies are not a major issue
+            }
+            if (entity != null) {
+                List<String> altnames = entity.getProperty("entity:altnames").getValue(
+                        List.class);
+                for (OccurrenceInfo occInfo : relation.getOccurrences()) {
+                    if (!occInfo.mention.equals(entity.getPropertyValue("dc:title"))) {
+                        if (!altnames.contains(occInfo.mention)) {
+                            altnames = new ArrayList<String>(altnames);
+                            altnames.add(occInfo.mention);
+                        }
                     }
                 }
+                entity.setPropertyValue("entity:altnames",
+                        (Serializable) altnames);
             }
-            entity.setPropertyValue("entity:altnames", (Serializable) altnames);
 
             if (relation.getOccurrenceDocument().getId() == null) {
                 // this is a creation of a new relation between a document and
@@ -291,17 +310,20 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 occRef = session.createDocument(
                         relation.getOccurrenceDocument()).getRef();
 
-                // update the popularity estimate
-                Long newPopularity = entity.getProperty("entity:popularity").getValue(
-                        Long.class) + 1;
-                entity.setPropertyValue("entity:popularity", newPopularity);
-
+                if (entity != null) {
+                    // update the popularity estimate
+                    Long newPopularity = entity.getProperty("entity:popularity").getValue(
+                            Long.class) + 1;
+                    entity.setPropertyValue("entity:popularity", newPopularity);
+                }
             } else {
                 // this is an update of an existing relation
                 occRef = session.saveDocument(relation.getOccurrenceDocument()).getRef();
 
             }
-            session.saveDocument(entity);
+            if (entity != null) {
+                session.saveDocument(entity);
+            }
             session.save();
         }
     }
