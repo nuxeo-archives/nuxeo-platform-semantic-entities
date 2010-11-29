@@ -44,7 +44,6 @@ import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpParams;
 import org.nuxeo.common.utils.StringUtils;
-import org.nuxeo.ecm.automation.core.Constants;
 import org.nuxeo.ecm.automation.core.annotations.Context;
 import org.nuxeo.ecm.automation.core.annotations.Operation;
 import org.nuxeo.ecm.automation.core.annotations.OperationMethod;
@@ -63,7 +62,9 @@ import org.nuxeo.ecm.core.api.impl.blob.StreamingBlob;
 import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.core.api.pathsegment.PathSegmentService;
 import org.nuxeo.ecm.core.convert.api.ConversionService;
+import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.utils.BlobsExtractor;
+import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
@@ -99,7 +100,7 @@ import com.hp.hpl.jena.rdf.model.Statement;
  *
  * @author <a href="mailto:ogrisel@nuxeo.com">Olivier Grisel</a>
  */
-@Operation(id = OccurrenceExtractionOperation.ID, category = Constants.CAT_DOCUMENT, label = "Extract occurrences", description = "Extract the text and launch an use a semantic engine to extract and link occurrences of semantic entities. Returns back the analyzed document.")
+@Operation(id = OccurrenceExtractionOperation.ID, category = org.nuxeo.ecm.automation.core.Constants.CAT_DOCUMENT, label = "Extract occurrences", description = "Extract the text and launch an use a semantic engine to extract and link occurrences of semantic entities. Returns back the analyzed document.")
 public class OccurrenceExtractionOperation {
 
     private static final Log log = LogFactory.getLog(OccurrenceExtractionOperation.class);
@@ -189,15 +190,17 @@ public class OccurrenceExtractionOperation {
 
     @OperationMethod
     public DocumentModel run(DocumentModel doc) throws Exception {
-        LocalEntityService leService = Framework.getService(LocalEntityService.class);
-        if (leService.getEntityTypeNames().contains(doc.getType())) {
+        SchemaManager schemaManager = Framework.getService(SchemaManager.class);
+        if (schemaManager.getDocumentTypeNamesExtending(Constants.ENTITY_TYPE).contains(
+                doc.getType())
+                || schemaManager.getDocumentTypeNamesExtending(
+                        Constants.OCCURRENCE_TYPE).contains(doc.getType())) {
             // do not try to analyze local entities themselves
             return doc;
         }
+
         String textContent = extractText(doc);
-        log.debug("extracted text: " + textContent);
         String output = callSemanticEngine(textContent, outputFormat);
-        log.debug(output);
 
         Model model = ModelFactory.createDefaultModel().read(
                 new StringReader(output), null);
@@ -207,6 +210,7 @@ public class OccurrenceExtractionOperation {
             return doc;
         }
 
+        LocalEntityService leService = Framework.getService(LocalEntityService.class);
         DocumentModel entityContainer = leService.getEntityContainer(session);
         for (OccurrenceGroup group : groups) {
             List<EntitySuggestion> suggestions = leService.suggestEntity(
@@ -217,7 +221,8 @@ public class OccurrenceExtractionOperation {
                 DocumentModel localEntity = session.createDocumentModel(group.type);
                 localEntity.setPropertyValue("dc:title", group.name);
                 String pathSegment = pathService.generatePathSegment(localEntity);
-                localEntity.setPathInfo(entityContainer.getPathAsString(), pathSegment);
+                localEntity.setPathInfo(entityContainer.getPathAsString(),
+                        pathSegment);
                 localEntity = session.createDocument(localEntity);
                 session.save();
                 leService.addOccurrences(session, doc.getRef(),
@@ -227,7 +232,8 @@ public class OccurrenceExtractionOperation {
                     continue;
                 }
                 EntitySuggestion bestGuess = suggestions.get(0);
-                leService.addOccurrences(session, doc.getRef(), bestGuess, group.occurrences);
+                leService.addOccurrences(session, doc.getRef(), bestGuess,
+                        group.occurrences);
             }
         }
         return doc;
