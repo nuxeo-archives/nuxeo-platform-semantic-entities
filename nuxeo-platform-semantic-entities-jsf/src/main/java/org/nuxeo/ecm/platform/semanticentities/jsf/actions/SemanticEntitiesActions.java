@@ -36,7 +36,9 @@ import org.jboss.seam.international.StatusMessage;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.IdRef;
+import org.nuxeo.ecm.core.api.LifeCycleConstants;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
@@ -219,7 +221,16 @@ public class SemanticEntitiesActions {
             rel = getLocalEntityService().getOccurrenceRelation(
                     documentManager, new IdRef(docId), new IdRef(entityId));
             if (rel != null) {
-                documentManager.removeDocument(rel.getOccurrenceDocument().getRef());
+                // TODO: define an invalidate transition to be used by default
+                // for explicitly handling human correction of false positives
+                DocumentRef relRef = rel.getOccurrenceDocument().getRef();
+                if (documentManager.getAllowedStateTransitions(relRef).contains(
+                        LifeCycleConstants.DELETE_TRANSITION)) {
+                    documentManager.followTransition(relRef,
+                            LifeCycleConstants.DELETE_TRANSITION);
+                } else {
+                    documentManager.removeDocument(relRef);
+                }
                 documentManager.save();
             }
         } catch (Exception e) {
