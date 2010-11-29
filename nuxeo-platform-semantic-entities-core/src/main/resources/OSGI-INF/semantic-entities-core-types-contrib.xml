@@ -73,4 +73,19 @@
 
   </extension>
 
+  <extension target="org.nuxeo.ecm.core.lifecycle.LifeCycleService"
+    point="types">
+
+    <types>
+      <type name="EntityContainer">default</type>
+      <type name="OccurrenceContainer">default</type>
+      <type name="Entity">default</type>
+      <type name="Person">default</type>
+      <type name="Place">default</type>
+      <type name="Organization">default</type>
+      <type name="Occurrence">default</type>
+    </types>
+
+  </extension>
+
 </component>
