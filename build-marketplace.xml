@@ -1,0 +1,18 @@
+<project name="semantic-entities-marketplace" default="marketplace">
+  <property name="build.dir" value="target/marketplace" />
+  <target name="marketplace">
+    <delete dir="${build.dir}"/>
+    <mkdir dir="${build.dir}"/>
+    <copy todir="${build.dir}">
+      <fileset dir="marketplace">
+      </fileset>
+    </copy>
+    <copy todir="${build.dir}" flatten="true">
+      <fileset dir=".">
+        <include name="nuxeo-platform-semantic-entities-*/target/*.jar"/>
+        <exclude name="nuxeo-platform-semantic-entities-*/target/*-sources.jar"/>
+      </fileset>
+    </copy>
+    <zip destfile="target/semantic-entities-5.4.0-SNAPSHOT.zip" basedir="${build.dir}"/>
+  </target>
+</project>

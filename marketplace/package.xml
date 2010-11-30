@@ -1,0 +1,33 @@
+<package type="addon" name="platform-semantic-entities" version="5.4.0-SNAPSHOT">
+  <title>Semantic Entities</title>
+  <description>Extract and analyze the text content of Nuxeo documents by using
+    an external Apache Stanbol server and and the knowledge base DBpedia to link
+    documents to summary hubs for real life entities such as persons, places and
+    organizations.
+
+    This addon can be seen as a way to automatically annotate documents with
+    semantically disambiguated tags.
+
+    This addon will put a high write concurrency pressure on the database server.
+    The test H2 database is NOT supported. To use this with a PostgreSQL server
+    please apply the workaround in the comment of:
+    https://jira.nuxeo.org/browse/NXP-6038
+
+    IMPORTANT: The default configuration of this addon will automatically
+    send the text content of all the newly created or modified documents
+    to a demo Apache Stanbol server hosted by Nuxeo. You should not use
+    the default configuration add-on on a Nuxeo repository containing
+    confidential document.  For production environments you MUST configure
+    your own Apache Stanbol server instance. See the marketplace page
+    for further instructions.
+  </description>
+  <vendor>Nuxeo</vendor>
+  <hotreload-support>false</hotreload-support>
+  <supported>false</supported>
+  <require-terms-and-conditions-acceptance>false</require-terms-and-conditions-acceptance>
+  <production-state>testing</production-state>
+  <nuxeo-validation>none</nuxeo-validation>
+  <platforms>
+    <platform>dm-5.4.0</platform>
+  </platforms>
+</package>

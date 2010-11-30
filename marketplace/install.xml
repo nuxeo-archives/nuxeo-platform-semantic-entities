@@ -1,0 +1,10 @@
+<install>
+<copy file="${package.root}/nuxeo-platform-semantic-entities-api-5.4.0-SNAPSHOT.jar" todir="${env.bundles}" overwrite="true" />
+<copy file="${package.root}/nuxeo-platform-semantic-entities-core-5.4.0-SNAPSHOT.jar" todir="${env.bundles}" overwrite="true" />
+<copy file="${package.root}/nuxeo-platform-semantic-entities-jsf-5.4.0-SNAPSHOT.jar" todir="${env.bundles}" overwrite="true" />
+<copy file="${package.root}/nuxeo-platform-semantic-entities-operations-5.4.0-SNAPSHOT.jar" todir="${env.bundles}" overwrite="true" />
+<deploy file="${env.bundles}/nuxeo-platform-semantic-entities-api-5.4.0-SNAPSHOT.jar" />
+<deploy file="${env.bundles}/nuxeo-platform-semantic-entities-core-5.4.0-SNAPSHOT.jar" />
+<deploy file="${env.bundles}/nuxeo-platform-semantic-entities-jsf-5.4.0-SNAPSHOT.jar" />
+<deploy file="${env.bundles}/nuxeo-platform-semantic-entities-operations-5.4.0-SNAPSHOT.jar" />
+</install>
