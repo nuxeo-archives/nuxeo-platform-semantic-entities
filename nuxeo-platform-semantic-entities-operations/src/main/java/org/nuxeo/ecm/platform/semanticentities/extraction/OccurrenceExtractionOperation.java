@@ -110,6 +110,8 @@ public class OccurrenceExtractionOperation {
     private static final String ANY2TEXT = "any2text";
 
     protected static final String DEFAULT_ENGINE_URL = "https://stanbol.demo.nuxeo.com/engines";
+    
+    protected static final String ENGINE_URL_PROPERTY = "org.nuxeo.ecm.platform.semanticentities.stanbolUrl";
 
     protected static final String DEFAULT_SPARQL_QUERY = "SELECT ?label ?type ?context ";
 
@@ -164,7 +166,7 @@ public class OccurrenceExtractionOperation {
     protected CoreSession session;
 
     @Param(name = "engineURL", required = true, values = { DEFAULT_ENGINE_URL })
-    protected String engineURL = DEFAULT_ENGINE_URL;
+    protected String engineURL = null;
 
     @Param(name = "sparqlQuery", required = true, values = { DEFAULT_SPARQL_QUERY })
     protected String sparqlQuery = DEFAULT_SPARQL_QUERY;
@@ -345,7 +347,18 @@ public class OccurrenceExtractionOperation {
 
     protected String callSemanticEngine(String textContent, String outputFormat)
             throws ClientProtocolException, IOException {
-        HttpPost post = new HttpPost(engineURL);
+        
+        String effectiveEngineUrl = engineURL;
+        if (effectiveEngineUrl == null) {
+            // no Automation Chain configuration available: use the
+            // configuration from a properties file
+            effectiveEngineUrl = Framework.getProperty(ENGINE_URL_PROPERTY,
+                    DEFAULT_ENGINE_URL);
+            if (effectiveEngineUrl.trim().isEmpty()) {
+                effectiveEngineUrl = DEFAULT_ENGINE_URL;
+            }
+        }
+        HttpPost post = new HttpPost(effectiveEngineUrl);
         try {
             post.setHeader("Accept", outputFormat);
             // TODO: fix the Stanbol engine handling of charset in mimetype
