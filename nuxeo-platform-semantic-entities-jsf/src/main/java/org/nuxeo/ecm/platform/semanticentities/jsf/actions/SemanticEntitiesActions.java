@@ -18,6 +18,7 @@ package org.nuxeo.ecm.platform.semanticentities.jsf.actions;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,7 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.LifeCycleConstants;
+import org.nuxeo.ecm.core.trash.TrashService;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
@@ -223,15 +225,16 @@ public class SemanticEntitiesActions {
             if (rel != null) {
                 // TODO: define an invalidate transition to be used by default
                 // for explicitly handling human correction of false positives
-                DocumentRef relRef = rel.getOccurrenceDocument().getRef();
-                if (documentManager.getAllowedStateTransitions(relRef).contains(
-                        LifeCycleConstants.DELETE_TRANSITION)) {
-                    documentManager.followTransition(relRef,
-                            LifeCycleConstants.DELETE_TRANSITION);
+                DocumentModel relDoc = rel.getOccurrenceDocument();
+                List<DocumentModel> docToDelete = Arrays.asList(relDoc);
+                TrashService trashService = Framework.getService(TrashService.class);
+                if (trashService.canDelete(docToDelete,
+                        documentManager.getPrincipal(), false)) {
+                    trashService.trashDocuments(docToDelete);
                 } else {
-                    documentManager.removeDocument(relRef);
+                    facesMessages.add(StatusMessage.Severity.WARN,
+                            messages.get("error.removingRelation"));
                 }
-                documentManager.save();
             }
         } catch (Exception e) {
             log.error(e, e);
