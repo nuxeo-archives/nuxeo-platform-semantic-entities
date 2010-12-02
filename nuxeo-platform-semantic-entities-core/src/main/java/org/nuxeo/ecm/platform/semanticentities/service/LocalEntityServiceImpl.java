@@ -44,6 +44,7 @@ import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.core.api.UnrestrictedSessionRunner;
 import org.nuxeo.ecm.core.api.pathsegment.PathSegmentService;
 import org.nuxeo.ecm.core.api.security.ACE;
+import org.nuxeo.ecm.core.api.security.ACL;
 import org.nuxeo.ecm.core.api.security.ACP;
 import org.nuxeo.ecm.core.api.security.SecurityConstants;
 import org.nuxeo.ecm.core.api.security.impl.ACLImpl;
@@ -128,7 +129,9 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                             // put a single ACL that will be inherited for all
                             // occurrences
                             ACP openAcp = new ACPImpl();
-                            ACLImpl acl = new ACLImpl("open", true);
+                            ACL acl = openAcp.getOrCreateACL();
+                            acl.add(new ACE("members", SecurityConstants.WRITE,
+                                    true));
                             acl.add(new ACE(SecurityConstants.EVERYONE,
                                     SecurityConstants.BROWSE, true));
                             openAcp.addACL(acl);
