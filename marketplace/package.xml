@@ -1,4 +1,4 @@
-<package type="addon" name="platform-semantic-entities" version="5.4.0-SNAPSHOT">
+<package type="addon" name="platform-semantic-entities" version="5.4.1-I20101202_1801">
   <title>Semantic Entities</title>
   <description>Extract and analyze the text content of Nuxeo documents by using
     an external Apache Stanbol server and and the knowledge base DBpedia to link
