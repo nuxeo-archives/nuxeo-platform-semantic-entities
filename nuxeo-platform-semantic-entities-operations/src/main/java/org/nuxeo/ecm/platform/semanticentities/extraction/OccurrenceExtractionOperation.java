@@ -62,6 +62,7 @@ import org.nuxeo.ecm.core.api.impl.blob.StreamingBlob;
 import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.core.api.pathsegment.PathSegmentService;
 import org.nuxeo.ecm.core.convert.api.ConversionService;
+import org.nuxeo.ecm.core.schema.FacetNames;
 import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.utils.BlobsExtractor;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
@@ -429,6 +430,19 @@ public class OccurrenceExtractionOperation {
             // ignore, not a note document
         } catch (IOException e) {
             throw new ClientException(e);
+        }
+
+        if (doc.hasFacet(FacetNames.HAS_RELATED_TEXT)) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, String>> resources = doc.getProperty(
+                    "relatedtext:relatedtextresources").getValue(List.class);
+            for (Map<String, String> relatedResource : resources) {
+                String text = relatedResource.get("relatedtext");
+                if (text != null && !text.trim().isEmpty()) {
+                    sb.append(text);
+                    sb.append("\n\n");
+                }
+            }
         }
 
         BlobsExtractor extractor = new BlobsExtractor();
