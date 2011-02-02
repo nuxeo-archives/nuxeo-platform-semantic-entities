@@ -82,22 +82,22 @@ import com.hp.hpl.jena.rdf.model.Statement;
 /**
  * Use a semantic engine to extract the occurrences of semantic entities from
  * the text content of a document.
- *
+ * 
  * The semantic engine is assumed to accept an HTTP POST request on a fixed URL
  * and synchronously return the result of the analysis as an RDF/XML graph in
  * the body of the response.
- *
+ * 
  * The label, type and context text snippet of each occurrence is then extracted
  * by performing a configurable SPARQL query on the resulting RDF model loaded
  * in a temporary RDF graph.
- *
+ * 
  * This pattern should work for semantic engines such as:
  * <ul>
  * <li>Stanbol from the project http://incubator.apache.org/stanbol</li>
  * <li>OpenCalais (untested)</li>
  * <li>Maybe more</li>
  * </ul>
- *
+ * 
  * @author <a href="mailto:ogrisel@nuxeo.com">Olivier Grisel</a>
  */
 @Operation(id = OccurrenceExtractionOperation.ID, category = org.nuxeo.ecm.automation.core.Constants.CAT_DOCUMENT, label = "Extract occurrences", description = "Extract the text and launch an use a semantic engine to extract and link occurrences of semantic entities. Returns back the analyzed document.")
@@ -110,7 +110,7 @@ public class OccurrenceExtractionOperation {
     private static final String ANY2TEXT = "any2text";
 
     protected static final String DEFAULT_ENGINE_URL = "https://stanbol.demo.nuxeo.com/engines";
-    
+
     protected static final String ENGINE_URL_PROPERTY = "org.nuxeo.ecm.platform.semanticentities.stanbolUrl";
 
     protected static final String DEFAULT_SPARQL_QUERY = "SELECT ?label ?type ?context ";
@@ -180,8 +180,11 @@ public class OccurrenceExtractionOperation {
     @Param(name = "linkToUnrecognizedEntities", required = true, values = { "true" })
     protected boolean linkToUnrecognizedEntities = true;
 
-    @Param(name = "linkToAmbiguousEntities", required = true, values = { "true" })
-    protected boolean linkToAmbiguousEntities = true;
+    @Param(name = "linkToAmbiguousEntities", required = true, values = { "false" })
+    protected boolean linkToAmbiguousEntities = false;
+
+    @Param(name = "linkShortPersonNames", required = true, values = { "false" })
+    protected boolean linkShortPersonNames = false;
 
     @OperationMethod
     public DocumentRef run(DocumentRef docRef) throws Exception {
@@ -201,6 +204,15 @@ public class OccurrenceExtractionOperation {
             return doc;
         }
 
+        String lang = doc.getProperty("dc:language").getValue(String.class);
+        if (lang != null && !lang.isEmpty() && !"en".equalsIgnoreCase(lang)
+                && !"english".equalsIgnoreCase(lang)) {
+            // skip documents explicitly detected in a non English language; to
+            // be disabled once we have explicit multi-lingual support in Apache
+            // Stanbol
+            return doc;
+        }
+
         String textContent = extractText(doc);
         String output = callSemanticEngine(textContent, outputFormat);
 
@@ -215,6 +227,12 @@ public class OccurrenceExtractionOperation {
         LocalEntityService leService = Framework.getService(LocalEntityService.class);
         DocumentModel entityContainer = leService.getEntityContainer(session);
         for (OccurrenceGroup group : groups) {
+
+            if (!linkShortPersonNames && "Person".equals(group.type)
+                    && group.name.trim().split(" ").length <= 1) {
+                continue;
+            }
+
             List<EntitySuggestion> suggestions = leService.suggestEntity(
                     session, group.name, group.type, 3);
 
@@ -347,7 +365,7 @@ public class OccurrenceExtractionOperation {
 
     protected String callSemanticEngine(String textContent, String outputFormat)
             throws ClientProtocolException, IOException {
-        
+
         String effectiveEngineUrl = engineURL;
         if (effectiveEngineUrl == null) {
             // no Automation Chain configuration available: use the

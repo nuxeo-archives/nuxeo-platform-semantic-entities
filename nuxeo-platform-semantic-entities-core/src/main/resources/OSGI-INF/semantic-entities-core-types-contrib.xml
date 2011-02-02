@@ -36,7 +36,7 @@
       <facet name="Versionable" />
       <facet name="Commentable" />
       <!-- Do not use the HiddenInNavigation facet since it will break the CMIS
-           join queries that explicitly remove types with this facet. We migh want
+           join queries that explicitly remove types with this facet. We might want
            to extend the NXQL query maker to support joins or write a dedicated
            QueryMaker for entities if this is a problem in the future.
         <facet name="HiddenInNavigation" />
@@ -55,11 +55,8 @@
       <schema name="organization"/>
     </doctype>
 
-    <doctype name="Occurrence" extends="Document">
-      <!-- Relate a portion of text in a nuxeo document to a semantic entity
-      In the future: should inherit from Relation instead of Document, but
-      we need to implement mappings for relations in nuxeo-opencmis first.
-      -->
+    <doctype name="Occurrence" extends="Relation">
+      <!-- Relate a portion of text in a nuxeo document to a semantic entity -->
       <schema name="dublincore"/>
       <schema name="relation"/>
       <schema name="occurrence"/>
