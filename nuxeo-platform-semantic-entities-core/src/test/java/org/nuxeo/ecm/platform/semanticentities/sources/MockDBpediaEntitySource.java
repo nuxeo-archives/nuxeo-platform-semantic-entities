@@ -7,7 +7,7 @@ import java.net.URI;
 
 public class MockDBpediaEntitySource extends DBpediaEntitySource {
 
-    URI BO_THUMB_URI = URI.create("http://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Official_portrait_of_Barack_Obama.jpg/200px-Official_portrait_of_Barack_Obama.jpg");
+    URI BO_THUMB_URI = URI.create("http://upload.wikimedia.org/wikipedia/en/thumb/e/e9/Official_portrait_of_Barack_Obama.jpg/200px-Official_portrait_of_Barack_Obama.jpg");
 
     @Override
     protected InputStream fetchResourceAsStream(URI uri, String format)
@@ -26,11 +26,11 @@ public class MockDBpediaEntitySource extends DBpediaEntitySource {
     }
 
     @Override
-    protected InputStream fetchSuggestions(String keywords, String type,
-            int maxSuggestions) throws IOException {
-        if (keywords.contains("Barack Obama") || keywords.contains("44th")) {
+    protected InputStream fetchSuggestions(String keywords, int maxSuggestions)
+            throws IOException {
+        if (keywords.contains("Obama")) {
             return getClass().getResourceAsStream(
-                    "/mock_replies/44th_US_president.xml");
+                    "/mock_replies/lookup-obama.xml");
         } else {
             throw new IllegalArgumentException("no mock suggestions for query "
                     + keywords);

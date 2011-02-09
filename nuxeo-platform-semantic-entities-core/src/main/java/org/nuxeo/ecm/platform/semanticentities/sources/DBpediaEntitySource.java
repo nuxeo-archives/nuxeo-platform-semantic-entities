@@ -16,6 +16,7 @@
  */
 package org.nuxeo.ecm.platform.semanticentities.sources;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -45,6 +46,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -88,7 +90,7 @@ import com.hp.hpl.jena.rdf.model.Resource;
  * Implementation of the RemoteEntitySource interface that is able to suggest
  * DBpedia entities by name using the http://lookup.dbpedia.org RESTful service
  * and dereference DBpedia URIs using the official DBpedia sparql endpoint.
- *
+ * 
  * This implementation uses the SPARQL endpoint instead of HTTP GET based
  * queries since the virtuoso implementation arbitrarily truncates the entity
  * graph to around 2000 triples for entities with many properties.
@@ -103,7 +105,7 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
 
     protected static final String SPARQL_URL_PATTERN = "%s?query=%s&format=%s";
 
-    protected String SUGGESTION_URL_PATTERN = "http://lookup.dbpedia.org/api/search.asmx/KeywordSearch?QueryString=%s&QueryClass=%s&MaxHits=%d";
+    protected String SUGGESTION_URL_PATTERN = "http://lookup.dbpedia.org/api/search.asmx/KeywordSearch?QueryString=%s&MaxHits=%d";
 
     protected String SPARQL_ENDPOINT = "http://dbpedia.org/sparql";
 
@@ -183,7 +185,8 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
             StringBuilder constructPredicates = new StringBuilder();
             StringBuilder wherePredicates = new StringBuilder();
 
-            constructPredicates.append(String.format("<%s> a ?t . ", remoteEntity));
+            constructPredicates.append(String.format("<%s> a ?t . ",
+                    remoteEntity));
             constructPredicates.append("\n");
 
             wherePredicates.append(String.format("<%s> a ?t . ", remoteEntity));
@@ -471,19 +474,22 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
 
         // fetch more suggestions than requested since we will do type
         // post-filtering afterwards
-        InputStream bodyStream = fetchSuggestions(keywords, "Thing",
-                maxSuggestions * 3);
+        log.debug("suggestion query for keywords: " + keywords);
+        InputStream bodyStream = fetchSuggestions(keywords, maxSuggestions * 3);
         if (bodyStream == null) {
-            throw new IOException(
-                    String.format(
-                            "Unable to fetch suggestion response for '%s' with type '%s'",
-                            keywords, type));
+            throw new IOException(String.format(
+                    "Unable to fetch suggestion response for '%s'", keywords));
         }
+        // Fetch the complete payload to make it easier for debugging (should
+        // not be big anyway)
+        String content = IOUtils.toString(bodyStream);
+        log.debug(content);
 
         List<RemoteEntity> suggestions = new ArrayList<RemoteEntity>();
         try {
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            Document document = builder.parse(bodyStream);
+            Document document = builder.parse(new ByteArrayInputStream(
+                    content.getBytes("utf-8")));
             XPath xpath = XPathFactory.newInstance().newXPath();
             NodeList resultNodes = (NodeList) xpath.evaluate(RESULT_NODE_XPATH,
                     document, XPathConstants.NODESET);
@@ -565,15 +571,13 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
         }
     }
 
-    protected InputStream fetchSuggestions(String keywords, String type,
-            int maxSuggestions) throws UnsupportedEncodingException,
-            MalformedURLException, IOException {
+    protected InputStream fetchSuggestions(String keywords, int maxSuggestions)
+            throws UnsupportedEncodingException, MalformedURLException,
+            IOException {
         String escapedKeywords = URLEncoder.encode(keywords, "UTF-8");
-        String escapedType = URLEncoder.encode(type, "UTF-8");
-
-        // XXX: the escapedType value is not taken into account by the service
         String query = String.format(SUGGESTION_URL_PATTERN, escapedKeywords,
-                escapedType, maxSuggestions);
+                maxSuggestions);
+        log.debug(query);
 
         URL url = new URL(query);
         URLConnection connection = url.openConnection();

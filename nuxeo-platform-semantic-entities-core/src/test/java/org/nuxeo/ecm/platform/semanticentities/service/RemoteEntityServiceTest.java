@@ -61,7 +61,8 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
         // initialize the session field
         openSession();
-        DocumentModel domain = session.createDocumentModel("/", "default-domain", "Folder");
+        DocumentModel domain = session.createDocumentModel("/",
+                "default-domain", "Folder");
         session.createDocument(domain);
         session.save();
 
@@ -71,8 +72,8 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
     public void testSuggestRemoteEntity() throws IOException {
         assertTrue(service.canSuggestRemoteEntity());
-        List<RemoteEntity> suggestions = service.suggestRemoteEntity(
-                "the 44th president of the United States", "Person", 3);
+        List<RemoteEntity> suggestions = service.suggestRemoteEntity("Obama",
+                "Person", 3);
         assertNotNull(suggestions);
         assertEquals(1, suggestions.size());
 
@@ -81,8 +82,7 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(DBPEDIA_BARACK_OBAMA_URI, suggested.uri);
 
         // this should also work for a null type
-        suggestions = service.suggestRemoteEntity(
-                "the 44th president of the United States", null, 3);
+        suggestions = service.suggestRemoteEntity("Obama", null, 3);
         assertNotNull(suggestions);
         assertEquals(1, suggestions.size());
 
@@ -90,9 +90,8 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals("Barack Obama", suggested.label);
         assertEquals(DBPEDIA_BARACK_OBAMA_URI, suggested.uri);
 
-        // however no organization should match this name
-        suggestions = service.suggestRemoteEntity(
-                "the 44th president of the United States", "Place", 3);
+        // however no place should match this name
+        suggestions = service.suggestRemoteEntity("Obama", "Place", 3);
         assertNotNull(suggestions);
         assertEquals(0, suggestions.size());
     }
@@ -123,14 +122,15 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
         String summary = barackDoc.getProperty("entity:summary").getValue(
                 String.class);
-        // for some reason the english summary is no longer available
-        assertNull(summary);
+        String expectedSummary = "Barack Hussein Obama II is the 44th and current President of the United States.";
+        assertEquals(expectedSummary,
+                summary.substring(0, expectedSummary.length()));
 
         Calendar birthDate = barackDoc.getProperty("person:birthDate").getValue(
                 Calendar.class);
         List<String> altnames = barackDoc.getProperty("entity:altnames").getValue(
                 List.class);
-        assertEquals(2, altnames.size());
+        assertEquals(4, altnames.size());
         // Western spelling:
         assertTrue(altnames.contains("Barack Obama"));
         // Russian spelling:
@@ -141,6 +141,7 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
         Blob depiction = barackDoc.getProperty("entity:depiction").getValue(
                 Blob.class);
+        assertNotNull(depiction);
         assertEquals("200px-Official_portrait_of_Barack_Obama.jpg",
                 depiction.getFilename());
         assertEquals(14748, depiction.getLength());
@@ -163,9 +164,8 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
                 birthDate.getTime().toString());
 
         // existing names are not re-added
-        altnames = barackDoc.getProperty("entity:altnames").getValue(
-                List.class);
-        assertEquals(2, altnames.size());
+        altnames = barackDoc.getProperty("entity:altnames").getValue(List.class);
+        assertEquals(4, altnames.size());
 
         // later dereferencing with override == true does not preserve local
         // changes
