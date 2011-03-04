@@ -323,25 +323,24 @@ public class OccurrenceExtractionOperation {
         }
         Literal mentionLiteral = (Literal) mentionStmt.getObject().as(
                 Literal.class);
+        String mention = mentionLiteral.getString().trim();
 
         Property contextProp = model.getProperty("http://fise.iks-project.eu/ontology/selection-context");
         Statement contextStmt = annotation.getProperty(contextProp);
-        if (contextStmt == null || !contextStmt.getObject().isLiteral()) {
-            return null;
-        }
-        Literal contextLiteral = (Literal) contextStmt.getObject().as(
-                Literal.class);
-        // TODO: normalize whitespace
-        String mention = mentionLiteral.getString().trim();
-        String context = contextLiteral.getString().trim();
+        if (contextStmt != null && contextStmt.getObject().isLiteral()) {
+            Literal contextLiteral = (Literal) contextStmt.getObject().as(Literal.class);
+            // TODO: normalize whitespace
+            String context = contextLiteral.getString().trim();
 
-        if (!context.contains(mention) || context.length() > 500) {
-            // context extraction is likely to have failed on some complex
-            // layout
-            context = mention;
+            if (!context.contains(mention) || context.length() > 500) {
+                // context extraction is likely to have failed on some complex
+                // layout
+                context = mention;
+            }
+            return new OccurrenceInfo(mention, context);
+        } else {
+            return new OccurrenceInfo(mention, mention);
         }
-
-        return new OccurrenceInfo(mention, context);
     }
 
     @OperationMethod
