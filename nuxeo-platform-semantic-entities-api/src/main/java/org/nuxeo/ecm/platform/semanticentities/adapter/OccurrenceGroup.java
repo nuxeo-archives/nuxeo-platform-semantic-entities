@@ -38,4 +38,9 @@ public class OccurrenceGroup {
         this.name = name;
         this.type = type;
     }
+
+    @Override
+    public String toString() {
+        return String.format("OccurrenceGroup(\"%s\", \"%s\")", name, type);
+    }
 }

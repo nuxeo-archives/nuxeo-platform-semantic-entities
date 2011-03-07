@@ -144,4 +144,9 @@ public class OccurrenceInfo {
         return true;
     }
 
+    @Override
+    public String toString() {
+        return String.format("OccurrenceInfo(\"%s\", \"%s\")", mention, context);
+    }
+
 }
