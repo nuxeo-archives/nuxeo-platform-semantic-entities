@@ -53,7 +53,13 @@ public class SemanticEntitiesCoreListener implements PostCommitEventListener {
             }
             EventContext eventContext = event.getContext();
             CoreSession s = eventContext.getCoreSession();
-            ids.add(((DocumentModel) eventContext.getArguments()[0]).getId());
+            DocumentModel dm = (DocumentModel) eventContext.getArguments()[0];
+            if (dm.isVersion() || dm.isProxy()) {
+                // do not perform analysis on archived versions: a separate event listener should be used to
+                // copy any previously existing the analysis results and manual corrections instead.
+                continue;
+            }
+            ids.add(dm.getId());
             if (session == null) {
                 session = s;
             } else if (session != s) {
