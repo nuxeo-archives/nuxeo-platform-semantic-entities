@@ -391,13 +391,15 @@ public class OccurrenceExtractionOperation {
             if (response.getStatusLine().getStatusCode() == 200) {
                 return body;
             } else {
-                String errorMsg = response.getStatusLine().toString();
+                String errorMsg = String.format("Unexpected response from '%s': %s", effectiveEngineUrl,
+                    response.getStatusLine().toString());
                 log.error(errorMsg + ":\n" + body);
                 throw new IOException(errorMsg);
             }
         } catch (ClientProtocolException e) {
             post.abort();
-            throw e;
+            throw new ClientProtocolException(String.format("Error connecting to '%s': %s",
+                effectiveEngineUrl, e.getMessage(), e));
         } catch (IOException e) {
             post.abort();
             throw e;
