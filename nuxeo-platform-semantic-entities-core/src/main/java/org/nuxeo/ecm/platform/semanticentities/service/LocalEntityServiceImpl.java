@@ -82,7 +82,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     public static final String ENTITY_CONTAINER_TITLE = "%i18nEntities";
 
     protected Map<String, DocumentRef> recentlyDereferenced = new MapMaker().concurrencyLevel(
-            4).expiration(10, TimeUnit.SECONDS).makeMap();
+            4).expiration(5, TimeUnit.MINUTES).makeMap();
 
     @Override
     synchronized public DocumentModel getEntityContainer(CoreSession session)
@@ -441,9 +441,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         List<DocumentModel> localEntities = suggestLocalEntity(session,
                 keywords, type, maxSuggestions);
 
-        // TODO: rewrite the following to perform local checks of remote
-        // entities in the complete local DB and not just the partial suggested
-        // results
+        // TODO: refactor this code to make it simpler
 
         List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
         double invScoreLocal = 10.0;
@@ -471,6 +469,21 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         remoteEntities.removeAll(mergedRemoteEntities);
         double invScoreRemote = 2.0;
         for (RemoteEntity remoteEntity : remoteEntities) {
+            // TODO: how to escape?
+            String query = String.format("SELECT * FROM Entity WHERE entity:sameas = '%s' ORDER BY dc:modified",
+                remoteEntity.uri.toString());
+            DocumentModelList localMatchingEntities = session.query(query);
+            if (localMatchingEntities.size() > 0) {
+                if (localMatchingEntities.size() > 1) {
+                    log.warn("found multiple local entities matching query: " + query);
+                }
+                DocumentModel localEntity = localMatchingEntities.get(0);
+                EntitySuggestion suggestion = new EntitySuggestion(localEntity).withScore(2 / invScoreRemote);
+                suggestion.remoteEntityUris.add(remoteEntity.uri.toString());
+                suggestions.add(suggestion);
+                continue;
+            }
+
             EntitySuggestion suggestion = new EntitySuggestion(
                     remoteEntity.label, remoteEntity.uri.toString(), type).withScore(1 / invScoreRemote);
             // TODO: optimize me and change the source suggestion API to fetch
