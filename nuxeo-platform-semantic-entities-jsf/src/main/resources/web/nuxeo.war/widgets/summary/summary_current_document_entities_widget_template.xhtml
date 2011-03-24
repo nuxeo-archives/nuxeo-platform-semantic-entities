@@ -15,7 +15,30 @@
  -->
 <a4j:outputPanel id="relatedEntitiesPanel">
 
-<h3 class="summaryTitle" style="padding-top: 0">#{messages['heading.linkToEntity']}</h3>
+<f:subview rendered="#{!empty relatedPeopleProvider.currentPage}">
+  <h3 class="summaryTitle">#{messages['heading.occurrencesOfPeople']}</h3>
+  <c:forEach var="entity" items="#{relatedPeopleProvider.currentPage}">
+    <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
+  </c:forEach>
+</f:subview>
+
+<f:subview rendered="#{!empty relatedOrganizationsProvider.currentPage}">
+  <h3 class="summaryTitle">#{messages['heading.occurrencesOfOrganizations']}</h3>
+  <c:forEach var="entity" items="#{relatedOrganizationsProvider.currentPage}">
+    <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
+  </c:forEach>
+</f:subview>
+
+<f:subview rendered="#{!empty relatedPlacesProvider.currentPage}">
+  <h3 class="summaryTitle">#{messages['heading.occurrencesOfPlaces']}</h3>
+  <c:forEach var="entity" items="#{relatedPlacesProvider.currentPage}">
+    <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
+  </c:forEach>
+</f:subview>
+
+</a4j:outputPanel>
+
+<h3 class="summaryTitle">#{messages['heading.linkToEntity']}</h3>
   <h:inputText id="entitySuggestionKeywords" styleClass="dataInputText"
     onkeydown="if (event.keyCode == 13 || event.keyCode == 9) {return false;}" />
   <a4j:status>
@@ -43,28 +66,4 @@
       #{entitySuggestion.label}
     </h:column>
   </rich:suggestionbox>
-
-<f:subview rendered="#{!empty relatedPeopleProvider.currentPage}">
-  <h3 class="summaryTitle">#{messages['heading.occurrencesOfPeople']}</h3>
-  <c:forEach var="entity" items="#{relatedPeopleProvider.currentPage}">
-    <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
-  </c:forEach>
-</f:subview>
-
-<f:subview rendered="#{!empty relatedOrganizationsProvider.currentPage}">
-  <h3 class="summaryTitle">#{messages['heading.occurrencesOfOrganizations']}</h3>
-  <c:forEach var="entity" items="#{relatedOrganizationsProvider.currentPage}">
-    <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
-  </c:forEach>
-</f:subview>
-
-<f:subview rendered="#{!empty relatedPlacesProvider.currentPage}">
-  <h3 class="summaryTitle">#{messages['heading.occurrencesOfPlaces']}</h3>
-  <c:forEach var="entity" items="#{relatedPlacesProvider.currentPage}">
-    <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
-  </c:forEach>
-</f:subview>
-
-</a4j:outputPanel>
-<br/>
 </div>
