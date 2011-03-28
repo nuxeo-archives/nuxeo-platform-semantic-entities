@@ -83,6 +83,9 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
 
     protected Map<String, DocumentRef> recentlyDereferenced = new MapMaker().concurrencyLevel(
             4).expiration(5, TimeUnit.MINUTES).makeMap();
+    
+    protected Map<DocumentRef, String> progressMessages = new MapMaker().concurrencyLevel(
+        4).expiration(10, TimeUnit.MINUTES).makeMap();
 
     @Override
     synchronized public DocumentModel getEntityContainer(CoreSession session)

@@ -1,4 +1,4 @@
-<div class="relation_block" xmlns:nxu="http://nuxeo.org/nxweb/util"
+<div class="entities_block" xmlns:nxu="http://nuxeo.org/nxweb/util"
   xmlns:f="http://java.sun.com/jsf/core"
   xmlns:ui="http://java.sun.com/jsf/facelets"
   xmlns:h="http://java.sun.com/jsf/html"
@@ -7,13 +7,31 @@
   xmlns:nxl="http://nuxeo.org/nxforms/layout"
   xmlns:a4j="http://richfaces.org/a4j"
   xmlns:rich="http://richfaces.org/rich">
-  
 <!--
  TODO: Rewrite this as a generic widget that uses parameterized
        content views (once the CMISQL-joins enabled provider is
        factorized out of the project
  -->
+
+<a4j:region renderRegionOnly="true">
 <a4j:outputPanel id="relatedEntitiesPanel">
+
+<a4j:poll interval="1000"
+ enabled="#{!empty semanticWorkInProgressMessage}"
+ reRender="relatedEntitiesPanel" />
+
+<f:subview rendered="#{!empty semanticWorkInProgressMessage}">
+  <div class="semanticWorkInProgressMessage">#{messages[semanticWorkInProgressMessage]}</div>
+</f:subview>
+
+<f:subview rendered="#{empty semanticWorkInProgressMessage}">
+  <a4j:commandButton value="#{messages['label.button.launchSemanticAnalysis']}"
+   action="#{semanticEntitiesActions.launchAsyncAnalysis(currentDocument.id)}"
+   rendered="#{documentManager.hasPermission(currentDocument.ref, 'WriteProperties')}"
+   onclick="this.disabled=true"
+   oncomplete="this.disabled=false"
+   reRender="relatedEntitiesPanel" />
+</f:subview>
 
 <f:subview rendered="#{!empty relatedPeopleProvider.currentPage}">
   <h3 class="summaryTitle">#{messages['heading.occurrencesOfPeople']}</h3>
@@ -36,9 +54,8 @@
   </c:forEach>
 </f:subview>
 
-</a4j:outputPanel>
-
-<h3 class="summaryTitle">#{messages['heading.linkToEntity']}</h3>
+<f:subview rendered="#{empty semanticWorkInProgressMessage}}">
+  <h3 class="summaryTitle">#{messages['heading.linkToEntity']}</h3>
   <h:inputText id="entitySuggestionKeywords" styleClass="dataInputText"
     onkeydown="if (event.keyCode == 13 || event.keyCode == 9) {return false;}" />
   <a4j:status>
@@ -66,4 +83,8 @@
       #{entitySuggestion.label}
     </h:column>
   </rich:suggestionbox>
+</f:subview>
+</a4j:outputPanel>
+</a4j:region>
+
 </div>

@@ -37,6 +37,7 @@ import org.jboss.seam.international.StatusMessage;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.trash.TrashService;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
@@ -90,6 +91,25 @@ public class SemanticEntitiesActions {
             leService = Framework.getService(LocalEntityService.class);
         }
         return leService;
+    }
+
+    @Factory(scope = ScopeType.EVENT, value = "semanticWorkInProgressMessage")
+    public String getSemanticWorkInProgressMessage() {
+        return getSemanticWorkInProgressMessageFor(null);
+    }
+
+    public String getSemanticWorkInProgressMessageFor(DocumentRef docRef) {
+        if (docRef == null) {
+            docRef = navigationContext.getCurrentDocument().getRef();
+        }
+        // TODO read the message from the service
+        String message = "this is the message with a4j:form";
+        if (message != null) {
+            // there is some work in progress: invalidate the cached results to
+            // display the real state
+            invalidateCurrentDocumentProviders();
+        }
+        return message;
     }
 
     @Factory(scope = ScopeType.SESSION, value = "canBrowseEntityContainer")
