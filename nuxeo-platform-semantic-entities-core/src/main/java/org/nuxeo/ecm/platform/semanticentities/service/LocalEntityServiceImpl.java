@@ -324,7 +324,6 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             } else {
                 // this is an update of an existing relation
                 occRef = session.saveDocument(relation.getOccurrenceDocument()).getRef();
-
             }
             if (entity != null) {
                 session.saveDocument(entity);
