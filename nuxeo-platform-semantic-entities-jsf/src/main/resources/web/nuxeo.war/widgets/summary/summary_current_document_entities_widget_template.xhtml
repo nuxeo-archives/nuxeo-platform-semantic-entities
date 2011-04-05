@@ -21,10 +21,10 @@
  reRender="relatedEntitiesPanel" />
 
 <f:subview rendered="#{!empty semanticWorkInProgressMessage}">
-  <div class="semanticWorkInProgressMessage">
-    #{messages[semanticWorkInProgressMessage]}
-   <span style="width: 1em"/>
-   <h:graphicImage value="/img/standart_waiter.gif" />
+  <div class="infoFeedback semanticWorkInProgressMessage">
+      #{messages[semanticWorkInProgressMessage]}
+      <span style="width: 1em"/>
+      <h:graphicImage value="/img/standart_waiter.gif" />
   </div>
 </f:subview>
 
@@ -60,7 +60,7 @@
 
 <f:subview rendered="#{empty semanticWorkInProgressMessage}">
   <h3 class="summaryTitle">#{messages['heading.linkToEntity']}</h3>
-  <h:inputText id="entitySuggestionKeywords" styleClass="dataInputText"
+  <h:inputText id="entitySuggestionKeywords" styleClass="searchField"
     onkeydown="if (event.keyCode == 13 || event.keyCode == 9) {return false;}" />
   <a4j:status>
     <f:facet name="start">
