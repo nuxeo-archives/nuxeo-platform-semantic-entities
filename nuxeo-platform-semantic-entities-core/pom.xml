@@ -34,6 +34,10 @@
       <artifactId>nuxeo-platform-query-api</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.nuxeo.ecm.core</groupId>
+      <artifactId>nuxeo-core-convert-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.nuxeo.common</groupId>
       <artifactId>nuxeo-common</artifactId>
     </dependency>
@@ -72,15 +76,18 @@
       <!-- TODO: remove hardcoded version number -->
       <version>4.0.3</version>
     </dependency>
+    <!--
+      jena is required to parse the RDF payload of linked data resources
+      only, we do not maintain persistent jena store in this module
+    -->
+    <dependency>
+      <groupId>org.nuxeo.ecm.core</groupId>
+      <artifactId>nuxeo-core-convert-api</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.nuxeo.ecm.core</groupId>
       <artifactId>nuxeo-core-event</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.nuxeo.ecm.core</groupId>
-      <artifactId>nuxeo-core-convert-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

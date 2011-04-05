@@ -21,12 +21,16 @@
  reRender="relatedEntitiesPanel" />
 
 <f:subview rendered="#{!empty semanticWorkInProgressMessage}">
-  <div class="semanticWorkInProgressMessage">#{messages[semanticWorkInProgressMessage]}</div>
+  <div class="semanticWorkInProgressMessage">
+    #{messages[semanticWorkInProgressMessage]}
+   <span style="width: 1em"/>
+   <h:graphicImage value="/img/standart_waiter.gif" />
+  </div>
 </f:subview>
 
-<f:subview rendered="#{empty semanticWorkInProgressMessage}">
+<f:subview rendered="#{false and empty semanticWorkInProgressMessage}">
   <a4j:commandButton value="#{messages['label.button.launchSemanticAnalysis']}"
-   action="#{semanticEntitiesActions.launchAsyncAnalysis(currentDocument.id)}"
+   action="#{semanticEntitiesActions.launchAsyncAnalysis}"
    rendered="#{documentManager.hasPermission(currentDocument.ref, 'WriteProperties')}"
    onclick="this.disabled=true"
    oncomplete="this.disabled=false"
@@ -54,7 +58,7 @@
   </c:forEach>
 </f:subview>
 
-<f:subview rendered="#{empty semanticWorkInProgressMessage}}">
+<f:subview rendered="#{empty semanticWorkInProgressMessage}">
   <h3 class="summaryTitle">#{messages['heading.linkToEntity']}</h3>
   <h:inputText id="entitySuggestionKeywords" styleClass="dataInputText"
     onkeydown="if (event.keyCode == 13 || event.keyCode == 9) {return false;}" />

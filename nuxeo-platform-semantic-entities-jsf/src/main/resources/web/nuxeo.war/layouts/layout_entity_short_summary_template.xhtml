@@ -17,7 +17,7 @@
   styleClass="entityDepiction" />
 <h:graphicImage
   url="/icons/#{value.type}_100.png"
-  style="max-height: 60px; max-width: 60px; border: 1px solid darkGray; padding: 1px"
+  style="max-height: 48px; max-width: 48px; border: 1px solid darkGray; padding: 1px"
   rendered="#{value.hasSchema('entity') and empty value.entity.depiction}"
   styleClass="entityDepiction" />
 </div>
@@ -25,7 +25,7 @@
   <a4j:commandLink immediate="true"
     reRender="relatedEntitiesPanel"
     action="#{semanticEntitiesActions.removeOccurrenceRelation(currentDocument.id, value.id)}"
-    rendered="#{documentManager.hasPermission(currentDocument.ref, 'WriteProperties')}">
+    rendered="#{documentManager.hasPermission(currentDocument.ref, 'WriteProperties') and empty semanticWorkInProgressMessage}">
     <h:graphicImage value="/icons/action_delete_mini.gif" />
   </a4j:commandLink>
 </div>
@@ -35,7 +35,7 @@
     #{nxd:titleOrId(value)}
   </nxd:restDocumentLink>
 </p>
-<p class="entityShortSummary">#{semanticEntitiesActions.ellipsis(value.entity.summary, 130)}</p>
+<p class="entityShortSummary">#{semanticEntitiesActions.ellipsis(value.entity.summary, 100)}</p>
 </div>
 <div style="clear: both; padding: 0.5em;"></div>
 

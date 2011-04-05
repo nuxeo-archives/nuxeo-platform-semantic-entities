@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<component
+  name="org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService">
+  <require>org.nuxeo.ecm.platform.semanticentities.LocalEntityService</require>
+  <require>org.nuxeo.ecm.platform.semanticentities.RemoteEntityService</require>
+
+  <implementation
+    class="org.nuxeo.ecm.platform.semanticentities.service.SemanticAnalysisServiceImpl" />
+
+  <service>
+    <provide
+      interface="org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService" />
+  </service>
+
+  <documentation>
+    The SemanticAnalysisService provides simple API to
+    analyze the unstructured content of a document so as to extract
+    relationship to semantic entities occurring in the content of the
+    document.
+  </documentation>
+
+</component>

@@ -52,36 +52,14 @@
        <groupId>commons-io</groupId>
        <artifactId>commons-io</artifactId>
     </dependency>
-
-    <!--
-      jena is required to parse the RDF payload of linked data resources
-      only, we do not maintain persistent jena store in this module
-    -->
-    <dependency>
-      <groupId>com.hp.hpl.jena</groupId>
-      <artifactId>jena</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.hp.hpl.jena</groupId>
-      <artifactId>iri</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.ibm.icu</groupId>
-      <artifactId>icu4j</artifactId>
-    </dependency>
     <dependency>
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.nuxeo.ecm.core</groupId>
-      <artifactId>nuxeo-core-convert-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.nuxeo.ecm.core</groupId>
       <artifactId>nuxeo-core-event</artifactId>
     </dependency>
-
     <!-- test setup -->
     <dependency>
       <groupId>org.nuxeo.ecm.core</groupId>
