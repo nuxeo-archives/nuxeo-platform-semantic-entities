@@ -227,8 +227,12 @@ public class SemanticEntitiesActions {
             } else if (selectedEntitySuggestion != null) {
                 DocumentModel localEntity = leService
                         .asLocalEntity(documentManager, selectedEntitySuggestion);
-                leService.addOccurrences(documentManager, navigationContext.getCurrentDocument().getRef(),
+                OccurrenceRelation relation = leService.addOccurrences(documentManager, navigationContext.getCurrentDocument().getRef(),
                     localEntity.getRef(), null);
+                DocumentRef occRef = relation.getOccurrenceDocument().getRef();
+                if ("deleted".equals(documentManager.getCurrentLifeCycleState(occRef))) {
+                    documentManager.followTransition(occRef, "undelete");
+                }
             }
         } catch (Exception e) {
             log.error(e, e);
