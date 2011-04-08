@@ -29,6 +29,7 @@ import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
+import org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService;
 import org.nuxeo.runtime.api.Framework;
 
 public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
@@ -44,6 +45,8 @@ public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
     private LocalEntityService leService;
 
     private RemoteEntityService reService;
+
+    private SemanticAnalysisService saService;
 
     @Override
     public void setUp() throws Exception {
@@ -70,6 +73,9 @@ public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
 
         reService = Framework.getService(RemoteEntityService.class);
         assertNotNull(reService);
+
+        saService = Framework.getService(SemanticAnalysisService.class);
+        assertNotNull(saService);
     }
 
     public void makeSomeEntities() throws ClientException {
@@ -200,6 +206,9 @@ public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
 
         DocumentModel doc = createSampleDocumentModel();
         Framework.getLocalService(EventService.class).waitForAsyncCompletion();
+        while (saService.getProgressStatus(doc.getRef()) != null) {
+            Thread.sleep(100);
+        }
 
         PageProvider<DocumentModel> relatedPeople = leService.getRelatedEntities(
                 session, doc.getRef(), "Person");
