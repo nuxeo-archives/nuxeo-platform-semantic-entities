@@ -31,7 +31,8 @@ import org.nuxeo.ecm.core.event.Event;
 import org.nuxeo.ecm.core.event.EventBundle;
 import org.nuxeo.ecm.core.event.EventContext;
 import org.nuxeo.ecm.core.event.PostCommitEventListener;
-import org.nuxeo.ecm.platform.semanticentities.extraction.OccurrenceExtractionOperation;
+import org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService;
+import org.nuxeo.runtime.api.Framework;
 
 /**
  * Event listener that tries to find occurrences of entities in document.
@@ -94,9 +95,8 @@ public class SemanticEntitiesCoreListener implements PostCommitEventListener {
             }
             // perform the entity extraction and linking operation
             try {
-                OccurrenceExtractionOperation op = new OccurrenceExtractionOperation(
-                        session);
-                op.run(doc);
+                SemanticAnalysisService saService = Framework.getService(SemanticAnalysisService.class);
+                saService.launchAnalysis(doc);
             } catch (Exception e) {
                 log.error(e, e);
             }

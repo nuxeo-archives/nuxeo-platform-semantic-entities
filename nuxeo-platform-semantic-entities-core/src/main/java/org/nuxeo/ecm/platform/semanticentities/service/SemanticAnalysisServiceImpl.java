@@ -14,6 +14,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -143,7 +146,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
         initHttpClient();
 
         analysisTaskQueue = new LinkedBlockingQueue<Runnable>();
-        analysisExecutor = new ThreadPoolExecutor(4, 10, 5, TimeUnit.MINUTES, analysisTaskQueue);
+        analysisExecutor = new ThreadPoolExecutor(10, 10, 5, TimeUnit.MINUTES, analysisTaskQueue);
         serializationTaskQueue = new LinkedBlockingQueue<SerializationTask>();
         serializerActive = true;
         Thread serializer = new Thread() {
@@ -164,7 +167,9 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
                             break;
                         }
                         TransactionHelper.startTransaction();
+                        LoginContext lc = null;
                         try {
+                            lc = Framework.login();
                             CoreSession session = manager.getRepository(task.getRepositoryName()).open();
                             try {
                                 createLinks(session.getDocument(task.getDocumentRef()), session,
@@ -177,6 +182,13 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
                             log.error(e.getMessage(), e);
                         } finally {
                             states.remove(task.getDocumentRef());
+                            if (lc != null) {
+                                try {
+                                    lc.logout();
+                                } catch (LoginException e) {
+                                    log.error(e, e);
+                                }
+                            }
                             TransactionHelper.commitOrRollbackTransaction();
                         }
                     } catch (InterruptedException e) {
@@ -242,7 +254,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
             while (analysisTaskQueue.remove(task)) {
                 // remove any previous version of the same document to avoid analyzing several times in a row
             }
-            analysisTaskQueue.add(task);
+            analysisExecutor.execute(task);
         } finally {
             states.remove(doc.getRef());
         }
