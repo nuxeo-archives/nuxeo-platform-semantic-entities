@@ -203,6 +203,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
 
     @Override
     public void scheduleSerializationTask(SerializationTask task) {
+        states.put(task.getDocumentRef(), STATUS_LINKING_QUEUED);
         serializationTaskQueue.add(task);
     }
 
