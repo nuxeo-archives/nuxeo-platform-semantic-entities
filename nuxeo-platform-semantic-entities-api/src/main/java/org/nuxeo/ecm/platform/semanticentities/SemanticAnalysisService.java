@@ -14,6 +14,8 @@ import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
  */
 public interface SemanticAnalysisService {
 
+    public static final String STATUS_ANALYSIS_QUEUED = "status.semantic.analysisQueued";
+    
     public static final String STATUS_ANALYSIS_PENDING = "status.semantic.analysisPending";
 
     public static final String STATUS_LINKING_PENDING = "status.semantic.linkingPending";

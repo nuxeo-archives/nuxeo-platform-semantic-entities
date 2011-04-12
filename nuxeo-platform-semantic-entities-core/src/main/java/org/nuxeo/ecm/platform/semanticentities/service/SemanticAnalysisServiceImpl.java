@@ -53,7 +53,6 @@ import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.utils.BlobsExtractor;
 import org.nuxeo.ecm.platform.semanticentities.AnalysisTask;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
-import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService;
@@ -147,7 +146,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
         initHttpClient();
 
         analysisTaskQueue = new LinkedBlockingQueue<Runnable>();
-        analysisExecutor = new ThreadPoolExecutor(10, 10, 5, TimeUnit.MINUTES, analysisTaskQueue);
+        analysisExecutor = new ThreadPoolExecutor(4, 8, 5, TimeUnit.MINUTES, analysisTaskQueue);
         serializationTaskQueue = new LinkedBlockingQueue<SerializationTask>();
         serializerActive = true;
         Thread serializer = new Thread() {
@@ -243,7 +242,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
 
     @Override
     public void launchAnalysis(String repositoryName, DocumentRef docRef) throws ClientException {
-        states.put(docRef, STATUS_ANALYSIS_PENDING);
+        states.put(docRef, STATUS_ANALYSIS_QUEUED);
         AnalysisTask task = new AnalysisTask(repositoryName, docRef, this);
         while (analysisTaskQueue.remove(task)) {
             // remove any previous version of the same document to avoid
@@ -267,14 +266,12 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
         }
     }
 
-    protected void createLinks(DocumentModel doc, CoreSession session, List<OccurrenceGroup> groups) throws ClientException,
-                                                                                                    DereferencingException,
-                                                                                                    IOException {
+    protected void createLinks(DocumentModel doc, CoreSession session,
+            List<OccurrenceGroup> groups) throws ClientException, IOException {
         if (groups.isEmpty()) {
             return;
         }
         states.put(doc.getRef(), STATUS_LINKING_PENDING);
-
         DocumentModel entityContainer = leService.getEntityContainer(session);
         for (OccurrenceGroup group : groups) {
 
@@ -388,6 +385,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
     @Override
     public List<OccurrenceGroup> analyze(DocumentModel doc) throws IOException,
             ClientException {
+        states.put(doc.getRef(), STATUS_ANALYSIS_PENDING);
         if (shouldSkip(doc)) {
             return Collections.emptyList();
         }
