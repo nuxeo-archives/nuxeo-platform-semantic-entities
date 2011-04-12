@@ -7,7 +7,7 @@
       annotation service to find entity occurrences in documents -->
     </documentation>
 
-    <listener name="semanticentities" async="true" postCommit="true"
+    <listener name="semanticentities" async="false" postCommit="true"
       class="org.nuxeo.ecm.platform.semanticentities.listener.SemanticEntitiesCoreListener"
       priority="510">
     </listener>

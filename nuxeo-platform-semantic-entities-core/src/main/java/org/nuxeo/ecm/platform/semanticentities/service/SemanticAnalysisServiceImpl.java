@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -77,7 +78,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
 
     private static final Log log = LogFactory.getLog(SemanticAnalysisServiceImpl.class);
 
-    protected final Map<DocumentRef,String> states = new MapMaker().concurrencyLevel(4)
+    protected final Map<DocumentRef,String> states = new MapMaker().concurrencyLevel(10)
             .expiration(10, TimeUnit.MINUTES).makeMap();
 
     private static final String ANY2TEXT = "any2text";
@@ -241,24 +242,14 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
     }
 
     @Override
-    public void launchAnalysis(DocumentModel doc) throws ClientException {
-        if (shouldSkip(doc)) {
-            return;
+    public void launchAnalysis(String repositoryName, DocumentRef docRef) throws ClientException {
+        states.put(docRef, STATUS_ANALYSIS_PENDING);
+        AnalysisTask task = new AnalysisTask(repositoryName, docRef, this);
+        while (analysisTaskQueue.remove(task)) {
+            // remove any previous version of the same document to avoid
+            // analyzing several times in a row
         }
-        states.put(doc.getRef(), STATUS_ANALYSIS_PENDING);
-        try {
-            // extract the text synchronously to benefit from the cache and spare some session house keeping
-            // in the analysis thread pool
-            String textContent = extractText(doc);
-            AnalysisTask task = new AnalysisTask(doc.getRepositoryName(), doc.getRef(), textContent, this);
-            while (analysisTaskQueue.remove(task)) {
-                // remove any previous version of the same document to avoid analyzing several times in a row
-            }
-            analysisExecutor.execute(task);
-        } finally {
-            states.remove(doc.getRef());
-        }
-
+        analysisExecutor.execute(task);
     }
 
     @Override
@@ -392,6 +383,17 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
         Model model = ModelFactory.createDefaultModel().read(new StringReader(output), null);
         return findStanbolEntityOccurrences(model);
     }
+
+
+    @Override
+    public List<OccurrenceGroup> analyze(DocumentModel doc) throws IOException,
+            ClientException {
+        if (shouldSkip(doc)) {
+            return Collections.emptyList();
+        }
+        return analyze(extractText(doc));
+    }
+
 
     public String callSemanticEngine(String textContent, String outputFormat, int retry) throws IOException {
 

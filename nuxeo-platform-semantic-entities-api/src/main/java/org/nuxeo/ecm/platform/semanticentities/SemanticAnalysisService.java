@@ -19,7 +19,7 @@ public interface SemanticAnalysisService {
     public static final String STATUS_LINKING_PENDING = "status.semantic.linkingPending";
 
     /**
-     * Synchronous analysis of pre-extracted text content.
+     * Synchronous analysis of pre-extracted text content (without linking).
      *
      * @param textContent
      *            the text to send to the engines
@@ -30,6 +30,17 @@ public interface SemanticAnalysisService {
     List<OccurrenceGroup> analyze(String textContent) throws IOException;
 
     /**
+     * Synchronous analysis of a document (without linking).
+     *
+     * @param doc the document to analyze (must be attached to an active core
+     *            session to extract the text content)
+     * @return Occurrence suggestions
+     * @throws ClientException if the text extraction fails
+     * @throws IOException if the engine is not reachable or fails
+     */
+    List<OccurrenceGroup> analyze(DocumentModel doc) throws IOException, ClientException;
+
+    /**
      * Asynchronously save the
      *
      * @param task
@@ -38,16 +49,16 @@ public interface SemanticAnalysisService {
     void scheduleSerializationTask(SerializationTask task);
 
     /**
-     * Launch an asynchronous analysis of a document. The result of the analysis is stored directly in the
-     * Nuxeo repository, usually as relationship to semantic entities, other documents or updated properties.
+     * Launch an asynchronous analysis of a document. The result of the analysis
+     * is stored directly in the Nuxeo repository, usually as relationship to
+     * semantic entities, other documents or updated properties.
      *
-     * @param doc
-     *            the document to analyze
-     * @throws ClientException
-     *             if a property of the document to analyze is not available due to a database connection
-     *             issue for instance.
+     * @param repositoryName the repository where the document is stored
+     * @param docRef the reference of the document to analyze
+     * @throws ClientException if a property of the document to analyze is not
+     *             available due to a database connection issue for instance.
      */
-    void launchAnalysis(DocumentModel doc) throws ClientException;
+    void launchAnalysis(String repositoryName, DocumentRef docRef) throws ClientException;
 
     /**
      * Launch a analysis of a document and wait for the result before returning. The result of the analysis is

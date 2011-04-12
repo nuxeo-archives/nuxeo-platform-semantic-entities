@@ -78,25 +78,10 @@ public class SemanticEntitiesCoreListener implements PostCommitEventListener {
 
         for (Serializable id : ids) {
             IdRef docRef = new IdRef((String) id);
-            // if the runtime has shutdown (normally because tests are finished)
-            // this can happen, see NXP-4009
-            if (session.getPrincipal() == null) {
-                continue;
-            }
-            if (!session.exists(docRef)) {
-                // doc is gone
-                continue;
-            }
-            DocumentModel doc = session.getDocument(docRef);
-            if (doc.isProxy()) {
-                // proxies don't have any fulltext attached, it's
-                // the target document that carries it
-                continue;
-            }
             // perform the entity extraction and linking operation
             try {
                 SemanticAnalysisService saService = Framework.getService(SemanticAnalysisService.class);
-                saService.launchAnalysis(doc);
+                saService.launchAnalysis(session.getRepositoryName(), docRef);
             } catch (Exception e) {
                 log.error(e, e);
             }

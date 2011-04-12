@@ -138,7 +138,9 @@ public class SemanticEntitiesActions {
     }
 
     public void launchAsyncAnalysis() throws ClientException {
-        getSemanticAnalysisService().launchAnalysis(navigationContext.getCurrentDocument());
+        DocumentModel doc = navigationContext.getCurrentDocument();
+        getSemanticAnalysisService().launchAnalysis(doc.getRepositoryName(),
+                doc.getRef());
         invalidateCurrentDocumentProviders();
     }
 
