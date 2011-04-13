@@ -10,26 +10,17 @@ import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
 
 /**
- * Service to asynchronously launch and monitor the semantic analysis of Nuxeo documents.
+ * Service to asynchronously launch and monitor the semantic analysis of Nuxeo
+ * documents.
  */
 public interface SemanticAnalysisService {
-
-    public static final String STATUS_ANALYSIS_QUEUED = "status.semantic.analysisQueued";
-
-    public static final String STATUS_ANALYSIS_PENDING = "status.semantic.analysisPending";
-
-    public static final String  STATUS_LINKING_QUEUED = "status.semantic.linkingQueued";
-
-    public static final String STATUS_LINKING_PENDING = "status.semantic.linkingPending";
 
     /**
      * Synchronous analysis of pre-extracted text content (without linking).
      *
-     * @param textContent
-     *            the text to send to the engines
+     * @param textContent the text to send to the engines
      * @return Occurrence suggestions
-     * @throws IOException
-     *             if the engine is not reachable or fails
+     * @throws IOException if the engine is not reachable or fails
      */
     List<OccurrenceGroup> analyze(String textContent) throws IOException;
 
@@ -42,13 +33,15 @@ public interface SemanticAnalysisService {
      * @throws ClientException if the text extraction fails
      * @throws IOException if the engine is not reachable or fails
      */
-    List<OccurrenceGroup> analyze(DocumentModel doc) throws IOException, ClientException;
+    List<OccurrenceGroup> analyze(DocumentModel doc) throws IOException,
+            ClientException;
 
     /**
-     * Asynchronously save the
+     * Asynchronously save the result of the analyze using a dedicated
+     * sequential thread.
      *
-     * @param task
-     *            a DTO that contains the reference of a document and the occurrence groups to link to it
+     * @param task a DTO that contains the reference of a document and the
+     *            occurrence groups to link to it
      */
     void scheduleSerializationTask(SerializationTask task);
 
@@ -62,40 +55,39 @@ public interface SemanticAnalysisService {
      * @throws ClientException if a property of the document to analyze is not
      *             available due to a database connection issue for instance.
      */
-    void launchAnalysis(String repositoryName, DocumentRef docRef) throws ClientException;
+    void launchAnalysis(String repositoryName, DocumentRef docRef)
+            throws ClientException;
 
     /**
-     * Launch a analysis of a document and wait for the result before returning. The result of the analysis is
-     * stored directly in the Nuxeo repository, usually as relationship to semantic entities, other documents
-     * or updated properties.
+     * Launch a analysis of a document and wait for the result before returning.
+     * The result of the analysis is stored directly in the Nuxeo repository,
+     * usually as relationship to semantic entities, other documents or updated
+     * properties.
      *
-     * @param doc
-     *            the document to analyze
-     * @throws ClientException
-     *             if a property of the document to analyze is not available due to a database connection
-     *             issue for instance.
-     * @throws IOException
-     *             if the connection to the analysis engine fails, or if the engine it-self fails
-     * @throws DereferencingException
-     *             if the dereferencing process fails (e.g. due to a network failure to a remote knowledge
-     *             base).
+     * @param doc the document to analyze
+     * @throws ClientException if a property of the document to analyze is not
+     *             available due to a database connection issue for instance.
+     * @throws IOException if the connection to the analysis engine fails, or if
+     *             the engine it-self fails
+     * @throws DereferencingException if the dereferencing process fails (e.g.
+     *             due to a network failure to a remote knowledge base).
      */
-    void launchSynchronousAnalysis(DocumentModel doc, CoreSession session) throws ClientException,
-                                                                          DereferencingException,
-                                                                          IOException;
+    void launchSynchronousAnalysis(DocumentModel doc, CoreSession session)
+            throws ClientException, DereferencingException, IOException;
 
     /**
-     * Return a description of the state of the analysis of the document or null if no analysis is in
-     * progress.
+     * Return a description of the state of the analysis of the document or null
+     * if no analysis is in progress.
      *
      * @param docRef
      * @return state description or null
      */
-    String getProgressStatus(DocumentRef docRef);
+    ProgressStatus getProgressStatus(String repositoryName, DocumentRef docRef);
 
     /**
-     * Mark the status as complete (even though the document might still be under processing).
+     * Mark the status as complete (even though the document might still be
+     * under processing).
      */
-    void clearProgressStatus(DocumentRef docRef);
+    void clearProgressStatus(String repositoryName, DocumentRef docRef);
 
 }

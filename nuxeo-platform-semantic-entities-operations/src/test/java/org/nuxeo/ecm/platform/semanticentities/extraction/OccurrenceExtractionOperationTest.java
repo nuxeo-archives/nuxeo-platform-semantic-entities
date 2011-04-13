@@ -206,7 +206,7 @@ public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
 
         DocumentModel doc = createSampleDocumentModel();
         Framework.getLocalService(EventService.class).waitForAsyncCompletion();
-        while (saService.getProgressStatus(doc.getRef()) != null) {
+        while (saService.getProgressStatus(doc.getRepositoryName(), doc.getRef()) != null) {
             Thread.sleep(100);
         }
 

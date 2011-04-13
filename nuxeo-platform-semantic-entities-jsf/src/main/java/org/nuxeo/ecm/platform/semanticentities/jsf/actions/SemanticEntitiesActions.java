@@ -32,6 +32,7 @@ import org.jboss.seam.annotations.Name;
 import org.jboss.seam.annotations.Observer;
 import org.jboss.seam.annotations.Scope;
 import org.jboss.seam.contexts.Contexts;
+import org.jboss.seam.core.Interpolator;
 import org.jboss.seam.faces.FacesMessages;
 import org.jboss.seam.international.StatusMessage;
 import org.nuxeo.ecm.core.api.ClientException;
@@ -44,6 +45,7 @@ import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
+import org.nuxeo.ecm.platform.semanticentities.ProgressStatus;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService;
@@ -118,13 +120,22 @@ public class SemanticEntitiesActions {
     }
 
     public String getSemanticWorkInProgressMessageFor(DocumentRef docRef) {
-        String message = getSemanticAnalysisService().getProgressStatus(docRef);
-        if (message != null) {
-            // there is some work in progress: invalidate the cached results to
-            // display the real state
-            invalidateCurrentDocumentProviders();
+        ProgressStatus status = getSemanticAnalysisService().getProgressStatus(
+                documentManager.getRepositoryName(), docRef);
+        if (status == null) {
+            return null;
         }
-        return message;
+        // there is some work in progress: invalidate the cached results to
+        // display the real state
+        invalidateCurrentDocumentProviders();
+
+        // i18n status message with interpolation
+        String i18nMessageTemplate = messages.get(status.getMessage());
+        if (i18nMessageTemplate == null) {
+            return status.getMessage();
+        }
+        return Interpolator.instance().interpolate(i18nMessageTemplate,
+                status.positionInQueue, status.queueSize);
     }
 
     @Factory(scope = ScopeType.SESSION, value = "canBrowseEntityContainer")

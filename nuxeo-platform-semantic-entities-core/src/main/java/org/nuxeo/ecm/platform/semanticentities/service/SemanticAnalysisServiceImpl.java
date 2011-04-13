@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -38,10 +39,12 @@ import org.nuxeo.common.utils.StringUtils;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
+import org.nuxeo.ecm.core.api.DocumentLocation;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.blobholder.BlobHolder;
 import org.nuxeo.ecm.core.api.blobholder.SimpleBlobHolder;
+import org.nuxeo.ecm.core.api.impl.DocumentLocationImpl;
 import org.nuxeo.ecm.core.api.impl.blob.StreamingBlob;
 import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.core.api.pathsegment.PathSegmentService;
@@ -55,6 +58,7 @@ import org.nuxeo.ecm.platform.semanticentities.AnalysisTask;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
+import org.nuxeo.ecm.platform.semanticentities.ProgressStatus;
 import org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService;
 import org.nuxeo.ecm.platform.semanticentities.SerializationTask;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
@@ -73,12 +77,13 @@ import com.hp.hpl.jena.rdf.model.ResIterator;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 
-public class SemanticAnalysisServiceImpl extends DefaultComponent implements SemanticAnalysisService {
+public class SemanticAnalysisServiceImpl extends DefaultComponent implements
+        SemanticAnalysisService {
 
     private static final Log log = LogFactory.getLog(SemanticAnalysisServiceImpl.class);
 
-    protected final Map<DocumentRef,String> states = new MapMaker().concurrencyLevel(10)
-            .expiration(10, TimeUnit.MINUTES).makeMap();
+    protected final Map<DocumentLocation, String> states = new MapMaker().concurrencyLevel(
+            10).expiration(10, TimeUnit.MINUTES).makeMap();
 
     private static final String ANY2TEXT = "any2text";
 
@@ -92,7 +97,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
 
     protected static final String DEFAULT_ENGINE_OUTPUT_FORMAT = "application/rdf+xml";
 
-    // TODO: turn the following fields into configurable parameters set by a contribution to an extension
+    // TODO: turn the following fields into configurable parameters set by a
+    // contribution to an extension
     // point
 
     protected String sparqlQuery = DEFAULT_SPARQL_QUERY;
@@ -129,11 +135,12 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
     protected boolean serializerActive;
 
     // TODO: make the following configurable using an extension point
-    protected static final Map<String,String> localTypes = new HashMap<String,String>();
+    protected static final Map<String, String> localTypes = new HashMap<String, String>();
     static {
         localTypes.put("http://dbpedia.org/ontology/Place", "Place");
         localTypes.put("http://dbpedia.org/ontology/Person", "Person");
-        localTypes.put("http://dbpedia.org/ontology/Organisation", "Organization");
+        localTypes.put("http://dbpedia.org/ontology/Organisation",
+                "Organization");
     }
 
     @Override
@@ -146,7 +153,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
         initHttpClient();
 
         analysisTaskQueue = new LinkedBlockingQueue<Runnable>();
-        analysisExecutor = new ThreadPoolExecutor(4, 8, 5, TimeUnit.MINUTES, analysisTaskQueue);
+        analysisExecutor = new ThreadPoolExecutor(4, 8, 5, TimeUnit.MINUTES,
+                analysisTaskQueue);
         serializationTaskQueue = new LinkedBlockingQueue<SerializationTask>();
         serializerActive = true;
         Thread serializer = new Thread() {
@@ -170,10 +178,12 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
                         LoginContext lc = null;
                         try {
                             lc = Framework.login();
-                            CoreSession session = manager.getRepository(task.getRepositoryName()).open();
+                            CoreSession session = manager.getRepository(
+                                    task.getRepositoryName()).open();
                             try {
-                                createLinks(session.getDocument(task.getDocumentRef()), session,
-                                    task.getOccurrenceGroups());
+                                createLinks(
+                                        session.getDocument(task.getDocumentRef()),
+                                        session, task.getOccurrenceGroups());
                             } finally {
                                 Repository.close(session);
                             }
@@ -181,7 +191,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
                             TransactionHelper.setTransactionRollbackOnly();
                             log.error(e.getMessage(), e);
                         } finally {
-                            states.remove(task.getDocumentRef());
+                            states.remove(task.getDocumentLocation());
                             if (lc != null) {
                                 try {
                                     lc.logout();
@@ -203,35 +213,45 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
 
     @Override
     public void scheduleSerializationTask(SerializationTask task) {
-        states.put(task.getDocumentRef(), STATUS_LINKING_QUEUED);
+        states.put(task.getDocumentLocation(),
+                ProgressStatus.STATUS_LINKING_QUEUED);
+        while (serializationTaskQueue.remove(task)) {
+            // remove duplicates to only link to the latest version
+        }
         serializationTaskQueue.add(task);
     }
 
     protected void initHttpClient() {
         // Create and initialize a scheme registry
         SchemeRegistry schemeRegistry = new SchemeRegistry();
-        schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
-        schemeRegistry.register(new Scheme("https", SSLSocketFactory.getSocketFactory(), 443));
+        schemeRegistry.register(new Scheme("http",
+                PlainSocketFactory.getSocketFactory(), 80));
+        schemeRegistry.register(new Scheme("https",
+                SSLSocketFactory.getSocketFactory(), 443));
 
         // Create an HttpClient with the ThreadSafeClientConnManager.
         // This connection manager must be used if more than one thread will
         // be using the HttpClient.
         HttpParams params = new BasicHttpParams();
-        ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(params, schemeRegistry);
+        ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(
+                params, schemeRegistry);
 
         httpClient = new DefaultHttpClient(cm, params);
     }
 
-    protected boolean shouldSkip(DocumentModel doc) throws PropertyException, ClientException {
-        if (schemaManager.getDocumentTypeNamesExtending(Constants.ENTITY_TYPE).contains(doc.getType())
-            || schemaManager.getDocumentTypeNamesExtending(Constants.OCCURRENCE_TYPE).contains(doc.getType())) {
+    protected boolean shouldSkip(DocumentModel doc) throws PropertyException,
+            ClientException {
+        if (schemaManager.getDocumentTypeNamesExtending(Constants.ENTITY_TYPE).contains(
+                doc.getType())
+                || schemaManager.getDocumentTypeNamesExtending(
+                        Constants.OCCURRENCE_TYPE).contains(doc.getType())) {
             // do not try to analyze local entities themselves
             return true;
         }
 
         String lang = doc.getProperty("dc:language").getValue(String.class);
         if (lang != null && !lang.isEmpty() && !"en".equalsIgnoreCase(lang)
-            && !"english".equalsIgnoreCase(lang)) {
+                && !"english".equalsIgnoreCase(lang)) {
             // XXX: temporary hack!
             // skip documents explicitly detected in a non English language; to
             // be disabled once we have explicit multi-lingual support in Apache
@@ -242,28 +262,32 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
     }
 
     @Override
-    public void launchAnalysis(String repositoryName, DocumentRef docRef) throws ClientException {
-        states.put(docRef, STATUS_ANALYSIS_QUEUED);
+    public void launchAnalysis(String repositoryName, DocumentRef docRef)
+            throws ClientException {
+        states.put(new DocumentLocationImpl(repositoryName, docRef),
+                ProgressStatus.STATUS_ANALYSIS_QUEUED);
         AnalysisTask task = new AnalysisTask(repositoryName, docRef, this);
-        while (analysisTaskQueue.remove(task)) {
-            // remove any previous version of the same document to avoid
-            // analyzing several times in a row
+        if (!analysisTaskQueue.contains(task)) {
+            analysisExecutor.execute(task);
         }
-        analysisExecutor.execute(task);
     }
 
     @Override
-    public void launchSynchronousAnalysis(DocumentModel doc, CoreSession session) throws ClientException,
-                                                                                 IOException {
+    public void launchSynchronousAnalysis(DocumentModel doc, CoreSession session)
+            throws ClientException, IOException {
         if (shouldSkip(doc)) {
             return;
         }
         try {
-            states.put(doc.getRef(), STATUS_ANALYSIS_PENDING);
+            states.put(
+                    new DocumentLocationImpl(doc.getRepositoryName(),
+                            doc.getRef()),
+                    ProgressStatus.STATUS_ANALYSIS_PENDING);
             String textContent = extractText(doc);
             createLinks(doc, session, analyze(textContent));
         } finally {
-            states.remove(doc.getRef());
+            states.remove(new DocumentLocationImpl(doc.getRepositoryName(),
+                    doc.getRef()));
         }
     }
 
@@ -272,33 +296,40 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
         if (groups.isEmpty()) {
             return;
         }
-        states.put(doc.getRef(), STATUS_LINKING_PENDING);
+        states.put(
+                new DocumentLocationImpl(doc.getRepositoryName(), doc.getRef()),
+                ProgressStatus.STATUS_LINKING_PENDING);
         DocumentModel entityContainer = leService.getEntityContainer(session);
         for (OccurrenceGroup group : groups) {
 
-            // hardcoded trick to avoid linking to persons just based on their first name or last names for
+            // hardcoded trick to avoid linking to persons just based on their
+            // first name or last names for
             // instance
             if (!linkShortPersonNames && "Person".equals(group.type)
-                && group.name.trim().split(" ").length <= 1) {
+                    && group.name.trim().split(" ").length <= 1) {
                 continue;
             }
 
-            List<EntitySuggestion> suggestions = leService.suggestEntity(session, group.name, group.type, 3);
+            List<EntitySuggestion> suggestions = leService.suggestEntity(
+                    session, group.name, group.type, 3);
 
             if (suggestions.isEmpty() && linkToUnrecognizedEntities) {
                 DocumentModel localEntity = session.createDocumentModel(group.type);
                 localEntity.setPropertyValue("dc:title", group.name);
                 String pathSegment = pathService.generatePathSegment(localEntity);
-                localEntity.setPathInfo(entityContainer.getPathAsString(), pathSegment);
+                localEntity.setPathInfo(entityContainer.getPathAsString(),
+                        pathSegment);
                 localEntity = session.createDocument(localEntity);
                 session.save();
-                leService.addOccurrences(session, doc.getRef(), localEntity.getRef(), group.occurrences);
+                leService.addOccurrences(session, doc.getRef(),
+                        localEntity.getRef(), group.occurrences);
             } else {
                 if (suggestions.size() > 1 && !linkToAmbiguousEntities) {
                     continue;
                 }
                 EntitySuggestion bestGuess = suggestions.get(0);
-                leService.addOccurrences(session, doc.getRef(), bestGuess, group.occurrences);
+                leService.addOccurrences(session, doc.getRef(), bestGuess,
+                        group.occurrences);
             }
         }
     }
@@ -310,7 +341,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
         Property entityType = model.getProperty("http://purl.org/dc/terms/type");
         Property dcRelation = model.getProperty("http://purl.org/dc/terms/relation");
         Resource textAnnotationType = model.getResource("http://fise.iks-project.eu/ontology/TextAnnotation");
-        ResIterator it = model.listSubjectsWithProperty(type, textAnnotationType);
+        ResIterator it = model.listSubjectsWithProperty(type,
+                textAnnotationType);
         List<OccurrenceGroup> groups = new ArrayList<OccurrenceGroup>();
         for (; it.hasNext();) {
             Resource annotation = it.nextResource();
@@ -323,7 +355,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
             if (typeStmt == null || !typeStmt.getObject().isURIResource()) {
                 continue;
             }
-            Resource typeResouce = (Resource) typeStmt.getObject().as(Resource.class);
+            Resource typeResouce = (Resource) typeStmt.getObject().as(
+                    Resource.class);
             String localType = localTypes.get(typeResouce.getURI());
             if (localType == null) {
                 continue;
@@ -332,13 +365,16 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
             if (occInfo == null) {
                 continue;
             }
-            OccurrenceGroup group = new OccurrenceGroup(occInfo.mention, localType);
+            OccurrenceGroup group = new OccurrenceGroup(occInfo.mention,
+                    localType);
             group.occurrences.add(occInfo);
 
             // This is a first occurrence, collect any subsumed annotations
-            ResIterator it2 = model.listSubjectsWithProperty(dcRelation, annotation);
+            ResIterator it2 = model.listSubjectsWithProperty(dcRelation,
+                    annotation);
             for (; it2.hasNext();) {
-                OccurrenceInfo subMention = getOccurrenceInfo(model, it2.nextResource());
+                OccurrenceInfo subMention = getOccurrenceInfo(model,
+                        it2.nextResource());
                 if (subMention == null) {
                     continue;
                 }
@@ -355,13 +391,15 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
         if (mentionStmt == null || !mentionStmt.getObject().isLiteral()) {
             return null;
         }
-        Literal mentionLiteral = (Literal) mentionStmt.getObject().as(Literal.class);
+        Literal mentionLiteral = (Literal) mentionStmt.getObject().as(
+                Literal.class);
         String mention = mentionLiteral.getString().trim();
 
         Property contextProp = model.getProperty("http://fise.iks-project.eu/ontology/selection-context");
         Statement contextStmt = annotation.getProperty(contextProp);
         if (contextStmt != null && contextStmt.getObject().isLiteral()) {
-            Literal contextLiteral = (Literal) contextStmt.getObject().as(Literal.class);
+            Literal contextLiteral = (Literal) contextStmt.getObject().as(
+                    Literal.class);
             // TODO: normalize whitespace
             String context = contextLiteral.getString().trim();
 
@@ -378,29 +416,32 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
 
     public List<OccurrenceGroup> analyze(String textContent) throws IOException {
         String output = callSemanticEngine(textContent, outputFormat, 2);
-        Model model = ModelFactory.createDefaultModel().read(new StringReader(output), null);
+        Model model = ModelFactory.createDefaultModel().read(
+                new StringReader(output), null);
         return findStanbolEntityOccurrences(model);
     }
-
 
     @Override
     public List<OccurrenceGroup> analyze(DocumentModel doc) throws IOException,
             ClientException {
-        states.put(doc.getRef(), STATUS_ANALYSIS_PENDING);
+        states.put(
+                new DocumentLocationImpl(doc.getRepositoryName(), doc.getRef()),
+                ProgressStatus.STATUS_ANALYSIS_PENDING);
         if (shouldSkip(doc)) {
             return Collections.emptyList();
         }
         return analyze(extractText(doc));
     }
 
-
-    public String callSemanticEngine(String textContent, String outputFormat, int retry) throws IOException {
+    public String callSemanticEngine(String textContent, String outputFormat,
+            int retry) throws IOException {
 
         String effectiveEngineUrl = engineURL;
         if (effectiveEngineUrl == null) {
             // no Automation Chain configuration available: use the
             // configuration from a properties file
-            effectiveEngineUrl = Framework.getProperty(ENGINE_URL_PROPERTY, DEFAULT_ENGINE_URL);
+            effectiveEngineUrl = Framework.getProperty(ENGINE_URL_PROPERTY,
+                    DEFAULT_ENGINE_URL);
             if (effectiveEngineUrl.trim().isEmpty()) {
                 effectiveEngineUrl = DEFAULT_ENGINE_URL;
             }
@@ -426,17 +467,21 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
                     } catch (InterruptedException e) {
                         // pass
                     }
-                    return callSemanticEngine(textContent, outputFormat, retry - 1);
+                    return callSemanticEngine(textContent, outputFormat,
+                            retry - 1);
                 } else {
-                    String errorMsg = String.format("Unexpected response from '%s': %s\n %s",
-                        effectiveEngineUrl, response.getStatusLine().toString(), body);
+                    String errorMsg = String.format(
+                            "Unexpected response from '%s': %s\n %s",
+                            effectiveEngineUrl,
+                            response.getStatusLine().toString(), body);
                     throw new IOException(errorMsg);
                 }
             }
         } catch (ClientProtocolException e) {
             post.abort();
-            throw new ClientProtocolException(String.format("Error connecting to '%s': %s",
-                effectiveEngineUrl, e.getMessage(), e));
+            throw new ClientProtocolException(String.format(
+                    "Error connecting to '%s': %s", effectiveEngineUrl,
+                    e.getMessage(), e));
         } catch (IOException e) {
             post.abort();
             throw e;
@@ -472,9 +517,9 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
 
         if (doc.hasFacet(FacetNames.HAS_RELATED_TEXT)) {
             @SuppressWarnings("unchecked")
-            List<Map<String,String>> resources = doc.getProperty("relatedtext:relatedtextresources")
-                    .getValue(List.class);
-            for (Map<String,String> relatedResource : resources) {
+            List<Map<String, String>> resources = doc.getProperty(
+                    "relatedtext:relatedtextresources").getValue(List.class);
+            for (Map<String, String> relatedResource : resources) {
                 String text = relatedResource.get("relatedtext");
                 if (text != null && !text.trim().isEmpty()) {
                     sb.append(text);
@@ -493,7 +538,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
         for (Blob blob : blobs) {
             try {
                 SimpleBlobHolder bh = new SimpleBlobHolder(blob);
-                BlobHolder result = conversionService.convert(ANY2TEXT, bh, null);
+                BlobHolder result = conversionService.convert(ANY2TEXT, bh,
+                        null);
                 if (result == null) {
                     continue;
                 }
@@ -516,13 +562,38 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
     }
 
     @Override
-    public String getProgressStatus(DocumentRef docRef) {
-        return states.get(docRef);
+    public ProgressStatus getProgressStatus(String repositoryName, DocumentRef docRef) {
+        DocumentLocation loc = new DocumentLocationImpl(repositoryName, docRef);
+        String status = states.get(loc);
+        if (status == null) {
+            // early return
+            return null;
+        }
+        @SuppressWarnings("rawtypes")
+        Queue q = null;
+        if (ProgressStatus.STATUS_ANALYSIS_QUEUED.equals(status)) {
+            q = analysisTaskQueue;
+        } else if (ProgressStatus.STATUS_LINKING_QUEUED.equals(status)) {
+            q = serializationTaskQueue;
+        }
+        int posInQueue = 0;
+        int queueSize = 0;
+        if (q != null) {
+            Object[] queuedItems = q.toArray();
+            queueSize = queuedItems.length;
+            for (int i = 0; i < queueSize; i++) {
+                if (queuedItems[i].equals(loc)) {
+                    posInQueue = i + 1;
+                    break;
+                }
+            }
+        }
+        return new ProgressStatus(status, posInQueue, queueSize);
     }
 
     @Override
-    public void clearProgressStatus(DocumentRef docRef) {
-        states.remove(docRef);
+    public void clearProgressStatus(String repositoryName, DocumentRef docRef) {
+        states.remove(new DocumentLocationImpl(repositoryName, docRef));
     }
 
 }

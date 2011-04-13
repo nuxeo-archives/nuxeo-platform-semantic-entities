@@ -8,6 +8,7 @@ import javax.security.auth.login.LoginException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.CoreSession;
+import org.nuxeo.ecm.core.api.DocumentLocation;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.repository.Repository;
 import org.nuxeo.ecm.core.api.repository.RepositoryManager;
@@ -51,7 +52,7 @@ public class AnalysisTask implements Runnable {
             CoreSession session = manager.getRepository(repositoryName).open();
             if (!session.exists(docRef)) {
                 // document was deleted
-                service.clearProgressStatus(docRef);
+                service.clearProgressStatus(repositoryName, docRef);
                 return;
             }
             try {
@@ -63,7 +64,7 @@ public class AnalysisTask implements Runnable {
                 Repository.close(session);
             }
         } catch (Exception e) {
-            service.clearProgressStatus(docRef);
+            service.clearProgressStatus(repositoryName, docRef);
             TransactionHelper.setTransactionRollbackOnly();
             log.error(e.getMessage(), e);
         } finally {
@@ -78,12 +79,24 @@ public class AnalysisTask implements Runnable {
         }
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#equals(java.lang.Object)
+     * 
+     * Override to make it possible to lookup the position of a document in the
+     * queue and remove duplicates
+     */
     @Override
     public boolean equals(Object o) {
         if (o instanceof AnalysisTask) {
             AnalysisTask otherTask = (AnalysisTask) o;
             return repositoryName.equals(otherTask.repositoryName)
                     && docRef.equals(((AnalysisTask) o).docRef);
+        } else if (o instanceof DocumentLocation) {
+            DocumentLocation otherLocation = (DocumentLocation) o;
+            return repositoryName.equals(otherLocation.getServerName())
+                    && docRef.equals(otherLocation.getDocRef());
         }
         return false;
     }
