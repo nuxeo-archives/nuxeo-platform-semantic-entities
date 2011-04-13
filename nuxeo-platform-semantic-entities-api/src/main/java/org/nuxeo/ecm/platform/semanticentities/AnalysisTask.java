@@ -57,6 +57,10 @@ public class AnalysisTask implements Runnable {
             }
             try {
                 List<OccurrenceGroup> occurrenceGroups = service.analyze(session.getDocument(docRef));
+                if (occurrenceGroups.isEmpty()) {
+                    service.clearProgressStatus(repositoryName, docRef);
+                    return;
+                }
                 SerializationTask task = new SerializationTask(repositoryName,
                         docRef, occurrenceGroups);
                 service.scheduleSerializationTask(task);
