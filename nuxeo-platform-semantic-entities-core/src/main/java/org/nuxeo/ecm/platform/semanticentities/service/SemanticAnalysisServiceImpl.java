@@ -235,7 +235,6 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         HttpParams params = new BasicHttpParams();
         ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(
                 params, schemeRegistry);
-
         httpClient = new DefaultHttpClient(cm, params);
     }
 
