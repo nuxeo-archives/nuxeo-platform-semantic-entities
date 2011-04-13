@@ -83,9 +83,9 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
 
     protected Map<String, DocumentRef> recentlyDereferenced = new MapMaker().concurrencyLevel(
             4).expiration(5, TimeUnit.MINUTES).makeMap();
-    
+
     protected Map<DocumentRef, String> progressMessages = new MapMaker().concurrencyLevel(
-        4).expiration(10, TimeUnit.MINUTES).makeMap();
+            4).expiration(10, TimeUnit.MINUTES).makeMap();
 
     @Override
     synchronized public DocumentModel getEntityContainer(CoreSession session)
@@ -281,16 +281,10 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             try {
                 entity = session.getDocument(relation.getTargetEntityRef());
             } catch (ClientException e) {
-                // there is still a potential race condition that can occur
-                // quite often in practice: the proper way to deal with this is
-                // probably to ensure that all relationships and entity
-                // dereferencing happen asynchronously in a singleton,
-                // de-duplicating thread queue with it's own transaction
-                // management.
+                // There is a potential race condition if two users deference
+                // the same entity exactly at the same time.
 
-                // alternatively we could implement an out of phase entity
-                // merging strategy, but that's complicated too... Right now we
-                // will assume that the problem does not occur to often in
+                // Will assume that the problem does not occur to often in
                 // practice so that the popularity score and the alternative
                 // names update discrepancies are not a major issue
             }
@@ -472,12 +466,14 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         double invScoreRemote = 2.0;
         for (RemoteEntity remoteEntity : remoteEntities) {
             // TODO: how to escape?
-            String query = String.format("SELECT * FROM Entity WHERE entity:sameas = '%s' ORDER BY dc:modified",
-                remoteEntity.uri.toString());
+            String query = String.format(
+                    "SELECT * FROM Entity WHERE entity:sameas = '%s' ORDER BY dc:modified",
+                    remoteEntity.uri.toString());
             DocumentModelList localMatchingEntities = session.query(query);
             if (localMatchingEntities.size() > 0) {
                 if (localMatchingEntities.size() > 1) {
-                    log.warn("found multiple local entities matching query: " + query);
+                    log.warn("found multiple local entities matching query: "
+                            + query);
                 }
                 DocumentModel localEntity = localMatchingEntities.get(0);
                 EntitySuggestion suggestion = new EntitySuggestion(localEntity).withScore(2 / invScoreRemote);
