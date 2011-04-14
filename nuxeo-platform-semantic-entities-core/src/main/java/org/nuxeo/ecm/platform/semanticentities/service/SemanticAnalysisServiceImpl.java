@@ -51,6 +51,7 @@ import org.nuxeo.ecm.core.api.pathsegment.PathSegmentService;
 import org.nuxeo.ecm.core.api.repository.Repository;
 import org.nuxeo.ecm.core.api.repository.RepositoryManager;
 import org.nuxeo.ecm.core.convert.api.ConversionService;
+import org.nuxeo.ecm.core.event.impl.AsyncEventExecutor.NamedThreadFactory;
 import org.nuxeo.ecm.core.schema.FacetNames;
 import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.utils.BlobsExtractor;
@@ -83,7 +84,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     private static final Log log = LogFactory.getLog(SemanticAnalysisServiceImpl.class);
 
     protected final Map<DocumentLocation, String> states = new MapMaker().concurrencyLevel(
-            10).expiration(10, TimeUnit.MINUTES).makeMap();
+            10).expiration(30, TimeUnit.MINUTES).makeMap();
 
     private static final String ANY2TEXT = "any2text";
 
@@ -152,12 +153,15 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         schemaManager = Framework.getService(SchemaManager.class);
         initHttpClient();
 
+        NamedThreadFactory threadFactory = new NamedThreadFactory(
+                "Nuxeo Async Semantic Analysis");
         analysisTaskQueue = new LinkedBlockingQueue<Runnable>();
         analysisExecutor = new ThreadPoolExecutor(4, 8, 5, TimeUnit.MINUTES,
-                analysisTaskQueue);
+                analysisTaskQueue, threadFactory);
         serializationTaskQueue = new LinkedBlockingQueue<SerializationTask>();
         serializerActive = true;
-        Thread serializer = new Thread() {
+        Thread serializer = new Thread("Nuxeo Semantic Relationship Serializer") {
+
             @Override
             public void run() {
                 RepositoryManager manager = null;
@@ -188,8 +192,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                                 Repository.close(session);
                             }
                         } catch (Exception e) {
-                            TransactionHelper.setTransactionRollbackOnly();
                             log.error(e.getMessage(), e);
+                            TransactionHelper.setTransactionRollbackOnly();
                         } finally {
                             states.remove(task.getDocumentLocation());
                             if (lc != null) {
@@ -263,10 +267,10 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     @Override
     public void launchAnalysis(String repositoryName, DocumentRef docRef)
             throws ClientException {
-        states.put(new DocumentLocationImpl(repositoryName, docRef),
-                ProgressStatus.STATUS_ANALYSIS_QUEUED);
         AnalysisTask task = new AnalysisTask(repositoryName, docRef, this);
         if (!analysisTaskQueue.contains(task)) {
+            states.put(new DocumentLocationImpl(repositoryName, docRef),
+                    ProgressStatus.STATUS_ANALYSIS_QUEUED);
             analysisExecutor.execute(task);
         }
     }
