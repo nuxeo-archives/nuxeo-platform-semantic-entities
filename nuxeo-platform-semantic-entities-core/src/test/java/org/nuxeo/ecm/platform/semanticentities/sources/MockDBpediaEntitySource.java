@@ -32,8 +32,8 @@ public class MockDBpediaEntitySource extends DBpediaEntitySource {
             return getClass().getResourceAsStream(
                     "/mock_replies/lookup-obama.xml");
         } else {
-            throw new IllegalArgumentException("no mock suggestions for query "
-                    + keywords);
+            return getClass().getResourceAsStream(
+                    "/mock_replies/lookup-empty-resultset.xml");
         }
     }
 
