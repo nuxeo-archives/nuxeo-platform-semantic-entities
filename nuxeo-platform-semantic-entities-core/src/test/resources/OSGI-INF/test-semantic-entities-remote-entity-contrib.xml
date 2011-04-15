@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <component name="org.nuxeo.ecm.platform.semanticentities.testRemoteSource">
 
-  <extension target="org.nuxeo.ecm.platform.semanticentities.RemoteEntityService"
+  <extension target="org.nuxeo.ecm.platform.semanticentities.service.RemoteEntityServiceImpl"
     point="remoteSources">
 
     <documentation>

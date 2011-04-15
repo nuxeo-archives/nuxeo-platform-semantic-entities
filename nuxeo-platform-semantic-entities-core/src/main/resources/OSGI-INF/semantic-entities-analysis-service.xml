@@ -1,8 +1,11 @@
 <?xml version="1.0"?>
 <component
-  name="org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService">
-  <require>org.nuxeo.ecm.platform.semanticentities.LocalEntityService</require>
-  <require>org.nuxeo.ecm.platform.semanticentities.RemoteEntityService</require>
+  name="org.nuxeo.ecm.platform.semanticentities.service.SemanticAnalysisServiceImpl">
+  <require>org.nuxeo.ecm.platform.semanticentities.service.LocalEntityServiceImpl</require>
+  <require>org.nuxeo.ecm.platform.semanticentities.service.RemoteEntityServiceImpl</require>
+  <require>org.nuxeo.ecm.core.convert.service.ConversionServiceImpl</require>
+  <require>org.nuxeo.ecm.core.api.pathsegment.PathSegmentService</require>
+  <require>org.nuxeo.ecm.core.schema.TypeService</require>
 
   <implementation
     class="org.nuxeo.ecm.platform.semanticentities.service.SemanticAnalysisServiceImpl" />
