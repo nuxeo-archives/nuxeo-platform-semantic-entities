@@ -446,4 +446,10 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
     }
 
+    public void testCleanupKeywords() {
+        assertEquals("This is a test",
+                LocalEntityServiceImpl.cleanupKeywords("This is. a\n test?"));
+        assertEquals("a b", LocalEntityServiceImpl.cleanupKeywords("a'.;,<>b"));
+    }
+
 }
