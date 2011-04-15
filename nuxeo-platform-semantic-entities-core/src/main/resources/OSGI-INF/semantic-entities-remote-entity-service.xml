@@ -42,7 +42,7 @@
     <object class="org.nuxeo.ecm.platform.semanticentities.service.RemoteEntitySourceDescriptor" />
   </extension-point>
 
-  <extension target="org.nuxeo.ecm.platform.semanticentities.RemoteEntityService"
+  <extension target="org.nuxeo.ecm.platform.semanticentities.service.RemoteEntityServiceImpl"
     point="remoteSources">
 
     <documentation>
