@@ -16,6 +16,11 @@ import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
 public interface SemanticAnalysisService {
 
     /**
+     * @return true if the service could be correctly initialized
+     */
+    boolean isActive();
+
+    /**
      * Synchronous analysis of pre-extracted text content (without linking).
      *
      * @param textContent the text to send to the engines
@@ -89,5 +94,17 @@ public interface SemanticAnalysisService {
      * under processing).
      */
     void clearProgressStatus(String repositoryName, DocumentRef docRef);
+
+    /**
+     * Save semantic links in the repository to materialize the occurrence
+     * relationships between documents and entities
+     *
+     * @throws IOException if the remote entity sources fail during lookups
+     * @throws ClientException if the document repository fails during local
+     *             lookups or saving entities and occurrences
+     */
+    void createLinks(DocumentModel document, CoreSession session,
+            List<OccurrenceGroup> occurrenceGroups) throws ClientException,
+            IOException;
 
 }

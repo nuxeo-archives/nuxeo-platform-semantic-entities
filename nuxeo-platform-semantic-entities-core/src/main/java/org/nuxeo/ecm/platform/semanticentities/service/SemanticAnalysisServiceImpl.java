@@ -18,9 +18,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -50,8 +47,6 @@ import org.nuxeo.ecm.core.api.impl.DocumentLocationImpl;
 import org.nuxeo.ecm.core.api.impl.blob.StreamingBlob;
 import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.core.api.pathsegment.PathSegmentService;
-import org.nuxeo.ecm.core.api.repository.Repository;
-import org.nuxeo.ecm.core.api.repository.RepositoryManager;
 import org.nuxeo.ecm.core.convert.api.ConversionService;
 import org.nuxeo.ecm.core.schema.FacetNames;
 import org.nuxeo.ecm.core.schema.SchemaManager;
@@ -68,7 +63,6 @@ import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceInfo;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.ComponentContext;
 import org.nuxeo.runtime.model.DefaultComponent;
-import org.nuxeo.runtime.transaction.TransactionHelper;
 
 import com.google.common.collect.MapMaker;
 import com.hp.hpl.jena.rdf.model.Literal;
@@ -134,7 +128,10 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     protected BlockingQueue<SerializationTask> serializationTaskQueue;
 
-    protected boolean serializerActive;
+    protected ThreadPoolExecutor serializationExecutor;
+
+    protected boolean active = false;
+
 
     // TODO: make the following configurable using an extension point
     protected static final Map<String, String> localTypes = new HashMap<String, String>();
@@ -154,66 +151,28 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         schemaManager = Framework.getService(SchemaManager.class);
         initHttpClient();
 
-        NamedThreadFactory threadFactory = new NamedThreadFactory(
+        NamedThreadFactory analysisThreadFactory = new NamedThreadFactory(
                 "Nuxeo Async Semantic Analysis");
         analysisTaskQueue = new LinkedBlockingQueue<Runnable>();
         analysisExecutor = new ThreadPoolExecutor(4, 8, 5, TimeUnit.MINUTES,
-                analysisTaskQueue, threadFactory);
+                analysisTaskQueue, analysisThreadFactory);
+
+        NamedThreadFactory aserializationThreadFactory = new NamedThreadFactory(
+                "Nuxeo Async Semantic Link Serialization");
         serializationTaskQueue = new LinkedBlockingQueue<SerializationTask>();
-        serializerActive = true;
-        Thread serializer = new Thread("Nuxeo Semantic Relationship Serializer") {
+        serializationExecutor = new ThreadPoolExecutor(1, 1, 5,
+                TimeUnit.MINUTES, analysisTaskQueue,
+                aserializationThreadFactory);
+        active = true;
+    }
 
-            @Override
-            public void run() {
-                RepositoryManager manager = null;
-                try {
-                    manager = Framework.getService(RepositoryManager.class);
-                } catch (Exception e) {
-                    log.error(e, e);
-                    serializerActive = false;
-                }
-                while (serializerActive) {
-                    try {
-                        SerializationTask task = serializationTaskQueue.take();
-                        if (task.isLastTask()) {
-                            serializerActive = false;
-                            break;
-                        }
-                        TransactionHelper.startTransaction();
-                        LoginContext lc = null;
-                        try {
-                            lc = Framework.login();
-                            CoreSession session = manager.getRepository(
-                                    task.getRepositoryName()).open();
-                            try {
-                                createLinks(
-                                        session.getDocument(task.getDocumentRef()),
-                                        session, task.getOccurrenceGroups());
-                            } finally {
-                                Repository.close(session);
-                            }
-                        } catch (Exception e) {
-                            log.error(e.getMessage(), e);
-                            TransactionHelper.setTransactionRollbackOnly();
-                        } finally {
-                            states.remove(task.getDocumentLocation());
-                            if (lc != null) {
-                                try {
-                                    lc.logout();
-                                } catch (LoginException e) {
-                                    log.error(e, e);
-                                }
-                            }
-                            TransactionHelper.commitOrRollbackTransaction();
-                        }
-                    } catch (InterruptedException e) {
-                        log.error(e.getMessage(), e);
-                    }
-
-                }
-            }
-        };
-        serializer.start();
+    @Override
+    public void deactivate(ComponentContext context) throws Exception {
+        active = false;
+        analysisTaskQueue.clear();
+        serializationTaskQueue.clear();
+        analysisExecutor.shutdownNow();
+        serializationExecutor.shutdownNow();
     }
 
     @Override
@@ -223,7 +182,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         while (serializationTaskQueue.remove(task)) {
             // remove duplicates to only link to the latest version
         }
-        serializationTaskQueue.add(task);
+        serializationExecutor.execute(task);
     }
 
     protected void initHttpClient() {
@@ -295,7 +254,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         }
     }
 
-    protected void createLinks(DocumentModel doc, CoreSession session,
+    public void createLinks(DocumentModel doc, CoreSession session,
             List<OccurrenceGroup> groups) throws ClientException, IOException {
         if (groups.isEmpty()) {
             return;
@@ -628,6 +587,11 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             t.setPriority(Thread.NORM_PRIORITY);
             return t;
         }
+    }
+
+    @Override
+    public boolean isActive() {
+        return active ;
     }
 
 }

@@ -45,6 +45,9 @@ public class AnalysisTask implements Runnable {
 
     @Override
     public void run() {
+        if (!service.isActive()) {
+            return;
+        }
         TransactionHelper.startTransaction();
         LoginContext lc = null;
         try {
@@ -62,7 +65,7 @@ public class AnalysisTask implements Runnable {
                     return;
                 }
                 SerializationTask task = new SerializationTask(repositoryName,
-                        docRef, occurrenceGroups);
+                        docRef, occurrenceGroups, service);
                 service.scheduleSerializationTask(task);
             } finally {
                 Repository.close(session);
