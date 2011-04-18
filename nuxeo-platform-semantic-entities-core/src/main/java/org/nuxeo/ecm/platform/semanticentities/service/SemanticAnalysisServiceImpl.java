@@ -126,7 +126,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     protected ThreadPoolExecutor analysisExecutor;
 
-    protected BlockingQueue<SerializationTask> serializationTaskQueue;
+    protected BlockingQueue<Runnable> serializationTaskQueue;
 
     protected ThreadPoolExecutor serializationExecutor;
 
@@ -157,12 +157,12 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         analysisExecutor = new ThreadPoolExecutor(4, 8, 5, TimeUnit.MINUTES,
                 analysisTaskQueue, analysisThreadFactory);
 
-        NamedThreadFactory aserializationThreadFactory = new NamedThreadFactory(
+        NamedThreadFactory serializationThreadFactory = new NamedThreadFactory(
                 "Nuxeo Async Semantic Link Serialization");
-        serializationTaskQueue = new LinkedBlockingQueue<SerializationTask>();
+        serializationTaskQueue = new LinkedBlockingQueue<Runnable>();
         serializationExecutor = new ThreadPoolExecutor(1, 1, 5,
-                TimeUnit.MINUTES, analysisTaskQueue,
-                aserializationThreadFactory);
+                TimeUnit.MINUTES, serializationTaskQueue,
+                serializationThreadFactory);
         active = true;
     }
 
