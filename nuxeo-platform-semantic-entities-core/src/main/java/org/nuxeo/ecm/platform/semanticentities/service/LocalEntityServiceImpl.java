@@ -79,7 +79,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     // TODO: make me configurable in an extension point
     public static final String ENTITY_CONTAINER_PATH = "/default-domain/entities";
 
-    public static final String ENTITY_CONTAINER_TITLE = "%i18nEntities";
+    public static final String ENTITY_CONTAINER_TITLE = "Entities";
 
     protected Map<String, DocumentRef> recentlyDereferenced = new MapMaker().concurrencyLevel(
             4).expiration(5, TimeUnit.MINUTES).makeMap();
@@ -392,6 +392,8 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         String q = String.format(
                 "SELECT * FROM %s WHERE ecm:fulltext_title = '%s'"
                         + " AND ecm:primaryType IN ('%s')"
+                        + " AND ecm:currentLifeCycleState != 'deleted'"
+                        + " AND ecm:isCheckedInVersion = 0"
                         + " ORDER BY entity:popularity DESC, dc:title LIMIT %d",
                 Constants.ENTITY_TYPE, cleanupKeywords(keywords),
                 StringUtils.join(entityTypeNames, "', '"), maxSuggestions);
@@ -529,7 +531,10 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         }
         String query = String.format(
                 "SELECT cmis:objectId, SCORE() relevance FROM %s "
-                        + "WHERE CONTAINS('%s') AND cmis:objectTypeId NOT IN ('%s') "
+                        + "WHERE CONTAINS('%s')"
+                        + " AND cmis:objectTypeId NOT IN ('%s')"
+                        // TODO: add the following filter once CMIS-37 is fixed
+                        // + " AND ecm:isCheckedInVersion = false "
                         + "ORDER BY relevance", type,
                 cleanupKeywords(keywords),
                 StringUtils.join(getEntityTypeNames(), "', '"));

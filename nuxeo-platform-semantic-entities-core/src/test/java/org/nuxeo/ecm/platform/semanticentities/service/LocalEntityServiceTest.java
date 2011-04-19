@@ -26,8 +26,10 @@ import java.util.List;
 
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.VersioningOption;
 import org.nuxeo.ecm.core.event.EventService;
 import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
+import org.nuxeo.ecm.core.versioning.VersioningService;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
@@ -68,7 +70,8 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
         // initialize the session field
         openSession();
-        DocumentModel domain = session.createDocumentModel("/", "default-domain", "Folder");
+        DocumentModel domain = session.createDocumentModel("/",
+                "default-domain", "Folder");
         session.createDocument(domain);
         session.save();
 
@@ -334,6 +337,35 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
                 "John Lennon was born in Liverpool in 1940.", 0, 11);
 
         // Lennon is now the top person for the "John" query
+        suggestions = service.suggestLocalEntity(session, "John", "Person", 3);
+        assertEquals(2, suggestions.size());
+        assertEquals(john, suggestions.get(0));
+        assertEquals(johndoe, suggestions.get(1));
+
+        // create a new version for Lennon
+        john.putContextData(VersioningService.VERSIONING_OPTION,
+                VersioningOption.MAJOR);
+        john = session.saveDocument(john);
+        session.save();
+
+        // We should still get only two suggestions (the archived versions are
+        // not suggested)
+        suggestions = service.suggestLocalEntity(session, "John", "Person", 3);
+        assertEquals(2, suggestions.size());
+        assertEquals(john, suggestions.get(0));
+        assertEquals(johndoe, suggestions.get(1));
+
+        // delete the john entity (using the trash)
+        session.followTransition(john.getRef(), "delete");
+        session.save();
+
+        // We only get non-deleted live entities as suggestion
+        suggestions = service.suggestLocalEntity(session, "John", "Person", 3);
+        assertEquals(1, suggestions.size());
+        assertEquals(johndoe, suggestions.get(0));
+
+        session.followTransition(john.getRef(), "undelete");
+        session.save();
         suggestions = service.suggestLocalEntity(session, "John", "Person", 3);
         assertEquals(2, suggestions.size());
         assertEquals(john, suggestions.get(0));
