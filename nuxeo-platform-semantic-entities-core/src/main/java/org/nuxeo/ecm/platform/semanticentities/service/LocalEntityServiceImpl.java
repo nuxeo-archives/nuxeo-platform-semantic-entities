@@ -533,8 +533,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 "SELECT cmis:objectId, SCORE() relevance FROM %s "
                         + "WHERE CONTAINS('%s')"
                         + " AND cmis:objectTypeId NOT IN ('%s')"
-                        // TODO: add the following filter once CMIS-37 is fixed
-                        // + " AND ecm:isCheckedInVersion = false "
+                        + " AND nuxeo:isVersion = false "
                         + "ORDER BY relevance", type,
                 cleanupKeywords(keywords),
                 StringUtils.join(getEntityTypeNames(), "', '"));
