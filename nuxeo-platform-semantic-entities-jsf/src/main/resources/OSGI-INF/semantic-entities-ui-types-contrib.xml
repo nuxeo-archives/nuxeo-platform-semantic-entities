@@ -13,6 +13,7 @@
       <description>EntityContainer.description</description>
       <default-view>view_documents</default-view>
       <subtypes>
+        <type>Topic</type>
         <type>Person</type>
         <type>Place</type>
         <type>Organization</type>
@@ -32,9 +33,23 @@
       </contentViews>
     </type>
 
+    <type id="Topic">
+      <label>Topic</label>
+      <icon>/icons/Topic.png</icon>
+      <bigIcon>/icons/Topic_100.png</bigIcon>
+      <category>SimpleDocument</category>
+      <description>Topic.description</description>
+      <default-view>view_documents</default-view>
+      <layouts mode="summary">
+        <layout>entity_summary_layout</layout>
+      </layouts>
+      <layouts mode="any">
+        <layout>entity_heading</layout>
+      </layouts>
+    </type>
+
     <type id="Person">
       <label>Person</label>
-      <!-- TODO: find a dedicated icon -->
       <icon>/icons/Person.png</icon>
       <bigIcon>/icons/Person_100.png</bigIcon>
       <category>SimpleDocument</category>
@@ -51,7 +66,6 @@
 
     <type id="Organization">
       <label>Organization</label>
-      <!-- TODO: find a dedicated icon -->
       <icon>/icons/Organization.png</icon>
       <bigIcon>/icons/Organization_100.png</bigIcon>
       <category>SimpleDocument</category>
@@ -68,7 +82,6 @@
 
     <type id="Place">
       <label>Place</label>
-      <!-- TODO: find a dedicated icon -->
       <icon>/icons/Place.png</icon>
       <bigIcon>/icons/Place_100.png</bigIcon>
       <category>SimpleDocument</category>
