@@ -177,6 +177,11 @@ public class SemanticEntitiesActions {
         return getLocalEntityService().getRelatedDocuments(documentManager, entity.getRef(), null);
     }
 
+    @Factory(scope = ScopeType.EVENT, value = "relatedTopicsProvider")
+    public PageProvider<DocumentModel> getRelatedTopicsProvider() throws ClientException, Exception {
+        return getRelatedEntitiesProvider(navigationContext.getCurrentDocument(), "Topic");
+    }
+
     @Factory(scope = ScopeType.EVENT, value = "relatedPeopleProvider")
     public PageProvider<DocumentModel> getRelatedPeopleProvider() throws ClientException, Exception {
         return getRelatedEntitiesProvider(navigationContext.getCurrentDocument(), "Person");

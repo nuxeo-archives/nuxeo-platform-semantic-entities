@@ -37,6 +37,13 @@
    reRender="relatedEntitiesPanel" />
 </f:subview>
 
+<f:subview rendered="#{!empty relatedTopicsProvider.currentPage}">
+  <h3 class="summaryTitle">#{messages['heading.topics']}</h3>
+  <c:forEach var="entity" items="#{relatedTopicsProvider.currentPage}">
+    <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
+  </c:forEach>
+</f:subview>
+
 <f:subview rendered="#{!empty relatedPeopleProvider.currentPage}">
   <h3 class="summaryTitle">#{messages['heading.occurrencesOfPeople']}</h3>
   <c:forEach var="entity" items="#{relatedPeopleProvider.currentPage}">
