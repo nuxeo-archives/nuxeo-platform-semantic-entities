@@ -219,9 +219,12 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
     public void testSimpleAnalysis() throws Exception {
         DocumentModel doc = createSampleDocumentModel("john-bio1");
         List<OccurrenceGroup> groups = saService.analyze(doc);
-        assertEquals(2, groups.size());
+        assertEquals(7, groups.size());
         assertEquals("Liverpool", groups.get(0).name);
         assertEquals("John Lennon", groups.get(1).name);
+        assertEquals("The Beatles members", groups.get(2).name);
+        assertEquals("Places associated with The Beatles", groups.get(3).name);
+        // ...
     }
 
     protected void checkRelatedEntities(DocumentModel doc)
