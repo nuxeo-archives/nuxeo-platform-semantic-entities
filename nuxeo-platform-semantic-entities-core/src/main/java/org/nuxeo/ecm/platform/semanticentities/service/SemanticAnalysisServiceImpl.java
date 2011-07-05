@@ -494,7 +494,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         query.set(MoreLikeThisParams.INTERESTING_TERMS, "details");
         query.set(MoreLikeThisParams.SIMILARITY_FIELDS, "text");
         query.set(CommonParams.STREAM_BODY, textContent);
-        query.setRows(5); // hardcoded maximum number of results
+        query.setRows(3); // hardcoded maximum number of results
         QueryResponse response;
         StreamQueryRequest request = new StreamQueryRequest(query);
         List<OccurrenceGroup> occurrences = new ArrayList<OccurrenceGroup>();
