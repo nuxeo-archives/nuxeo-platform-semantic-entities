@@ -219,6 +219,10 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     protected boolean shouldSkip(DocumentModel doc) throws PropertyException,
             ClientException {
+        if (doc.isFolder()) {
+            return true;
+        }
+
         if (schemaManager.getDocumentTypeNamesExtending(Constants.ENTITY_TYPE).contains(
                 doc.getType())
                 || schemaManager.getDocumentTypeNamesExtending(
