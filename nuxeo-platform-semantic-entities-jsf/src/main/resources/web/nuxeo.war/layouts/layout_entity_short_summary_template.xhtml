@@ -2,6 +2,7 @@
   xmlns:c="http://java.sun.com/jstl/core"
   xmlns:f="http://java.sun.com/jsf/core"
   xmlns:h="http://java.sun.com/jsf/html"
+  xmlns:ui="http://java.sun.com/jsf/facelets"
   xmlns:nxl="http://nuxeo.org/nxforms/layout"
   xmlns:nxu="http://nuxeo.org/nxweb/util"
   xmlns:nxd="http://nuxeo.org/nxweb/document"
@@ -9,34 +10,58 @@
   xmlns:a4j="http://richfaces.org/a4j"
   id="#{layout.id}">
 
+
+<div class="entityOccurrence">
 <div class="entityDepictionContainer" style="float: left; width: 40px;">
 <h:graphicImage
-  url="#{nxd:fileUrl('downloadFile', value, 'entity:depiction', value.entity.depiction.filename)}?conversationId=#{conversation.id}"
+  url="#{nxd:fileUrl('downloadFile', value.entityModel, 'entity:depiction', value.entityModel.entity.depiction.filename)}?conversationId=#{conversation.id}"
   style="max-height: 40px; max-width: 40px; border: 1px solid darkGray; padding: 1px"
-  rendered="#{value.hasSchema('entity') and !empty value.entity.depiction}"
+  rendered="#{value.entityModel.hasSchema('entity') and !empty value.entityModel.entity.depiction}"
   styleClass="entityDepiction" />
 <h:graphicImage
-  url="/icons/#{value.type}_100.png"
+  url="/icons/#{value.entityModel.type}_100.png"
   style="max-height: 32px; max-width: 32px; border: 1px solid darkGray; padding: 1px"
-  rendered="#{value.hasSchema('entity') and empty value.entity.depiction}"
+  rendered="#{value.entityModel.hasSchema('entity') and empty value.entityModel.entity.depiction}"
   styleClass="entityDepiction" />
 </div>
 <div style="float: right">
   <a4j:commandLink immediate="true"
     reRender="relatedEntitiesPanel"
-    action="#{semanticEntitiesActions.removeOccurrenceRelation(currentDocument.id, value.id)}"
-    rendered="#{documentManager.hasPermission(currentDocument.ref, 'WriteProperties') and empty semanticWorkInProgressMessage}">
+    action="#{semanticEntitiesActions.removeOccurrenceRelation(value.documentModel.id, value.entityModel.id)}"
+    rendered="#{documentManager.hasPermission(value.documentModel.ref, 'WriteProperties') and empty semanticWorkInProgressMessage}">
     <h:graphicImage value="/icons/action_delete_mini_over.png" />
   </a4j:commandLink>
 </div>
 <div style="margin: 0 0 0 50px; padding: 0, 0, 0, 1em">
 <p class="entityLink">
-  <nxd:restDocumentLink document="#{value}">
-    #{nxd:titleOrId(value)}
+  <nxd:restDocumentLink document="#{value.entityModel}">
+    #{nxd:titleOrId(value.entityModel)}
   </nxd:restDocumentLink>
 </p>
-<p class="entityShortSummary">#{semanticEntitiesActions.ellipsis(value.entity.summary, 100)}</p>
+<p class="entityShortSummary">#{semanticEntitiesActions.ellipsis(value.entityModel.entity.summary, 100)}</p>
 </div>
 <div style="clear: both; padding: 0.5em;"></div>
+</div>
+
+<div class="entityOccurrenceTooltip"
+  style="
+    background-color: #000;
+    border: 1px solid #fff;
+    padding: 10px 15px;
+    width: 400px;
+    display: none;
+    color: #fff;
+    text-align: left;
+    font-size: 12px;
+    -moz-box-shadow: 0 0 10px #000;
+    -webkit-box-shadow: 0 0 10px #000;">
+<ul>
+<ui:repeat value="#{value.occurrences}" var="occInfo">
+ <li><h:outputText value="#{occInfo.prefixContext}"/>
+     <strong><h:outputText value=" #{occInfo.mention} "/></strong>
+     <h:outputText value="#{occInfo.suffixContext}"/></li>
+</ui:repeat>
+</ul>
+</div>
 
 </f:subview>

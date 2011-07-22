@@ -177,29 +177,45 @@ public class SemanticEntitiesActions {
         return getLocalEntityService().getRelatedDocuments(documentManager, entity.getRef(), null);
     }
 
-    @Factory(scope = ScopeType.EVENT, value = "relatedPeopleProvider")
-    public PageProvider<DocumentModel> getRelatedPeopleProvider() throws ClientException, Exception {
-        return getRelatedEntitiesProvider(navigationContext.getCurrentDocument(), "Person");
+    @Factory(scope = ScopeType.EVENT, value = "relatedPeopleOccurrences")
+    public List<EntityOccurrence> getRelatedPeopleOccurrences()
+            throws ClientException, Exception {
+        return getRelatedOccurrences(navigationContext.getCurrentDocument(),
+                "Person");
     }
 
-    @Factory(scope = ScopeType.EVENT, value = "relatedPlacesProvider")
-    public PageProvider<DocumentModel> getRelatedPlacesProvider() throws ClientException, Exception {
-        return getRelatedEntitiesProvider(navigationContext.getCurrentDocument(), "Place");
+    @Factory(scope = ScopeType.EVENT, value = "relatedPlacesOccurrences")
+    public List<EntityOccurrence> getRelatedPlacesProvider() throws ClientException, Exception {
+        return getRelatedOccurrences(navigationContext.getCurrentDocument(), "Place");
     }
 
-    @Factory(scope = ScopeType.EVENT, value = "relatedOrganizationsProvider")
-    public PageProvider<DocumentModel> getRelatedOrganizationsProvider() throws ClientException, Exception {
-        return getRelatedEntitiesProvider(navigationContext.getCurrentDocument(), "Organization");
+    @Factory(scope = ScopeType.EVENT, value = "relatedOrganizationsOccurrences")
+    public List<EntityOccurrence> getRelatedOrganizationsProvider() throws ClientException, Exception {
+        return getRelatedOccurrences(navigationContext.getCurrentDocument(), "Organization");
     }
 
     /**
-     * Return the local entities that hold an occurrence to the given document.
+     * Return occurrence information to the local entities linked to the given
+     * document.
+     * 
+     * TODO: make it a provider to enable pagination TODO: make it possible to
+     * choose the type of relation (occurrence, topic, ...)
      */
-    public PageProvider<DocumentModel> getRelatedEntitiesProvider(DocumentModel doc, String entityType) throws ClientException,
-                                                                                                       Exception {
-        return getLocalEntityService().getRelatedEntities(documentManager, doc.getRef(), entityType);
+    protected List<EntityOccurrence> getRelatedOccurrences(DocumentModel doc,
+            String entityType) throws ClientException {
+        PageProvider<DocumentModel> entities = getLocalEntityService().getRelatedEntities(
+                documentManager, doc.getRef(), entityType);
+        List<EntityOccurrence> occurrences = new ArrayList<EntityOccurrence>();
+        for (DocumentModel entity : entities.getCurrentPage()) {
+            OccurrenceRelation relation = getLocalEntityService().getOccurrenceRelation(
+                    documentManager, doc.getRef(), entity.getRef());
+            EntityOccurrence occ = new EntityOccurrence(doc, entity,
+                    relation.getOccurrenceDocument(), relation.getOccurrences());
+            occurrences.add(occ);
+        }
+        return occurrences;
     }
-
+    
     /*
      * Ajax callbacks for new occurrence relationship creation.
      */
