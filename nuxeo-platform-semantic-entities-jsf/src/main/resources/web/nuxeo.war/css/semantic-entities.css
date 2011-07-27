@@ -1,0 +1,35 @@
+.entityOccurrences .entityDepictionContainer {
+  float: left;
+  width: 40px;
+}
+
+.entityOccurrences img.entityDepiction {
+  max-height: 40px;
+  max-width: 40px;
+  border: 1px solid darkGray;
+  padding: 1px;
+}
+
+.entityOccurrences div.entityOccurrence {
+  margin-bottom: 1em;
+}
+
+.entityOccurrences div.entityLinkAndSummary {
+  margin: 0 0 0 50px;
+  padding: 0 0 0 1em;
+}
+
+.entityOccurrences div.entityOccurrenceTooltip {
+  /* Hidden by default, jquery tools tooltip plugin will trigger the display
+       of the element */
+  display: none;
+  background-color: #fff;
+  border: 1px solid #000;
+  padding: 1em;
+  width: 400px;
+  box-shadow: 0 0 10px #000;
+}
+
+.entityOccurrences .entityOccurrenceTooltip .entityMentions p {
+  font-size: 95%;
+}

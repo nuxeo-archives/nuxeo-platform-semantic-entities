@@ -39,32 +39,34 @@
 
 <f:subview rendered="#{!empty relatedPeopleOccurrences}">
   <h3 class="summaryTitle">#{messages['heading.occurrencesOfPeople']}</h3>
+  <div class="entityOccurrences">
   <c:forEach var="occurrence" items="#{relatedPeopleOccurrences}">
     <nxl:layout name="entity_short_summary_layout" value="#{occurrence}" mode="view" />
   </c:forEach>
+  </div>
 </f:subview>
 
 <f:subview rendered="#{!empty relatedOrganizationsOccurrences}">
   <h3 class="summaryTitle">#{messages['heading.occurrencesOfOrganizations']}</h3>
+  <div class="entityOccurrences">
   <c:forEach var="occurrence" items="#{relatedOrganizationsOccurrences}">
     <nxl:layout name="entity_short_summary_layout" value="#{occurrence}" mode="view" />
   </c:forEach>
+  </div>
 </f:subview>
 
 <f:subview rendered="#{!empty relatedPlacesOccurrences}">
   <h3 class="summaryTitle">#{messages['heading.occurrencesOfPlaces']}</h3>
+  <div class="entityOccurrences">
   <c:forEach var="occurrence" items="#{relatedPlacesOccurrences}">
     <nxl:layout name="entity_short_summary_layout" value="#{occurrence}" mode="view" />
   </c:forEach>
+  </div>
 </f:subview>
 
 <script>
 jQuery(".entityOccurrence").tooltip({
   position: "center left",
-  // a little tweaking of the position
-  offset: [-2, 10],
-  // effect: "fade",
-  opacity: 0.9,
   tipClass: 'entityOccurrenceTooltip'
 });
 </script>
