@@ -94,9 +94,8 @@ jQuery(".entityOccurrence").tooltip({
     <h:column>
       <h:graphicImage
         url="/icons/#{entitySuggestion.type}.png"
-        style="height: 16px; width: 16px; border: none; padding: 0"
         rendered="#{!empty entitySuggestion.type}"
-        styleClass="entityDepiction" />
+        styleClass="entityTypeIcon" />
       #{entitySuggestion.label}
     </h:column>
   </rich:suggestionbox>

@@ -32,4 +32,12 @@
 
 .entityOccurrences .entityOccurrenceTooltip .entityMentions p {
   font-size: 95%;
+  margin-bottom: 0.5;
+}
+
+img.entityTypeIcon {
+  height: 16px;
+  width: 16px;
+  border: none;
+  padding: 0;
 }
