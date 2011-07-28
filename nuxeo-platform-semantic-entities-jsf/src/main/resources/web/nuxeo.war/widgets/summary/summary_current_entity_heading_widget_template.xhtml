@@ -18,16 +18,16 @@ jQuery(document).ready(function() {
 
 <div class="entityDepictionContainer">
 <h:graphicImage
-  url="#{nxd:fileUrl('downloadFile', currentDocument, 'entity:depiction', currentDocument.entity.depiction.filename)}?conversationId=#{conversation.id}"
-  rendered="#{currentDocument.hasSchema('entity') and !empty currentDocument.entity.depiction}"
+  url="#{nxd:fileUrl('downloadFile', value, 'entity:depiction', value.entity.depiction.filename)}?conversationId=#{conversation.id}"
+  rendered="#{value.hasSchema('entity') and !empty value.entity.depiction}"
   styleClass="entityDepiction" />
 <h:graphicImage
-  url="/icons/#{currentDocument.type}_100.png"
-  rendered="#{currentDocument.hasSchema('entity') and empty currentDocument.entity.depiction}"
+  url="/icons/#{value.type}_100.png"
+  rendered="#{value.hasSchema('entity') and empty value.entity.depiction}"
   styleClass="genericEntityDepiction" />
 </div>
 <div class="entitySummary">
-  <h:outputText value="#{currentDocument.entity.summary}" />
+  <h:outputText value="#{value.entity.summary}" />
 </div>
 
 <div style="clear: both"></div>

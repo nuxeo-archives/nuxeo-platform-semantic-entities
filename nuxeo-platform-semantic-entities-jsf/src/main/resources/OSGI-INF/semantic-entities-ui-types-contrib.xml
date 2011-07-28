@@ -7,8 +7,8 @@
     <type id="EntityContainer">
       <label>EntityContainer</label>
       <!-- TODO: find a dedicated icon -->
-      <icon>/icons/domain.gif</icon>
-      <bigIcon>/icons/domain_100.png</bigIcon>
+      <icon>/icons/EntityContainer.png</icon>
+      <bigIcon>/icons/EntityContainer_100.png</bigIcon>
       <category>Collaborative</category>
       <description>EntityContainer.description</description>
       <default-view>view_documents</default-view>
