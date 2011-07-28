@@ -1,4 +1,4 @@
-<div class="entities_block" xmlns:nxu="http://nuxeo.org/nxweb/util"
+<div class="entitiesBlock" xmlns:nxu="http://nuxeo.org/nxweb/util"
   xmlns:f="http://java.sun.com/jsf/core"
   xmlns:ui="http://java.sun.com/jsf/facelets"
   xmlns:h="http://java.sun.com/jsf/html"
@@ -21,10 +21,10 @@
  reRender="relatedEntitiesPanel" />
 
 <f:subview rendered="#{!empty semanticWorkInProgressMessage}">
-  <div class="infoFeedback semanticWorkInProgressMessage">
-      #{semanticWorkInProgressMessage}
-      <span style="width: 1em"/>
+  <div class="actions_block semanticWorkInProgressMessage">
       <h:graphicImage value="/img/standart_waiter.gif" />
+      <span style="width: 1em"/>
+      #{semanticWorkInProgressMessage}
   </div>
 </f:subview>
 

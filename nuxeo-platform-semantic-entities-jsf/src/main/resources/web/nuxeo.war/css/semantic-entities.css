@@ -24,7 +24,7 @@
        of the element */
   display: none;
   background-color: #fff;
-  border: 1px solid #000;
+  border: 1px solid #dedede;
   padding: 1em;
   width: 400px;
   box-shadow: 0 0 10px #000;
@@ -40,4 +40,29 @@ img.entityTypeIcon {
   width: 16px;
   border: none;
   padding: 0;
+}
+
+.entityHeadingBlock div.entityDepictionContainer {
+  float: left;
+  margin: 0px 1em 1em 0px;
+}
+
+.entityHeadingBlock .entityDepictionContainer img {
+  max-height: 200px;
+  max-width: 150px;
+  border: 1px solid darkGray;
+  padding: 1px;
+}
+
+.entityHeadingBlock img.genericEntityDepiction {
+  max-height: 60px;
+  max-width: 60px;
+}
+
+.entityHeadingBlock .entitySummary {
+  margin: 1em;
+}
+
+.entitiesBlock .semanticWorkInProgressMessage {
+  padding-bottom: 0.5em;
 }
