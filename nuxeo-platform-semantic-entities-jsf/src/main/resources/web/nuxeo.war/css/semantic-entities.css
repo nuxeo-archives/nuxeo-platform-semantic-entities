@@ -32,7 +32,7 @@
 
 .entityOccurrences .entityOccurrenceTooltip .entityMentions p {
   font-size: 95%;
-  margin-bottom: 0.5;
+  margin-bottom: 0.5em;
 }
 
 img.entityTypeIcon {
