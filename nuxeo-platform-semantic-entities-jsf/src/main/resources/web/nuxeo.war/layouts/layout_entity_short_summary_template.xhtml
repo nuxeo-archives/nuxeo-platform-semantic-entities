@@ -11,7 +11,7 @@
   id="#{layout.id}">
 
 <div class="entityOccurrence">
-<div class="entityDepictionContainer">
+<div class="entityDepictionSmallContainer">
 <h:graphicImage
   url="#{nxd:fileUrl('downloadFile', value.entityModel, 'entity:depiction', value.entityModel.entity.depiction.filename)}?conversationId=#{conversation.id}"
   rendered="#{value.entityModel.hasSchema('entity') and !empty value.entityModel.entity.depiction}"
@@ -41,7 +41,10 @@
 </div>
 
 <div class="entityOccurrenceTooltip">
-
+<ui:include src="/widgets/summary/summary_current_entity_heading_widget_template.xhtml">
+  <ui:param name="value" value="#{value.entityModel}"/>
+</ui:include>
+<h3 class="summaryTitle">#{messages['heading.mentionsInCurrentDocument']}</h3>
 <div class="entityMentions">
 <ui:repeat value="#{value.occurrences}" var="occInfo">
  <p><h:outputText value="#{occInfo.prefixContext}"/>

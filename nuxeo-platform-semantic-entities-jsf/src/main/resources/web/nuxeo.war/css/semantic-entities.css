@@ -1,4 +1,4 @@
-.entityOccurrences .entityDepictionContainer {
+.entityOccurrences .entityDepictionSmallContainer {
   float: left;
   width: 40px;
 }
@@ -26,7 +26,7 @@
   background-color: #fff;
   border: 1px solid #dedede;
   padding: 1em;
-  width: 400px;
+  width: 600px;
   box-shadow: 0 0 10px #000;
 }
 
@@ -48,7 +48,7 @@ img.entityTypeIcon {
 }
 
 .entityHeadingBlock .entityDepictionContainer img {
-  max-height: 200px;
+  max-height: 250px;
   max-width: 150px;
   border: 1px solid darkGray;
   padding: 1px;
@@ -64,5 +64,9 @@ img.entityTypeIcon {
 }
 
 .entitiesBlock .semanticWorkInProgressMessage {
-  padding-bottom: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.entitiesBlock .semanticWorkInProgressMessage img {
+  margin-right: 2em;
 }

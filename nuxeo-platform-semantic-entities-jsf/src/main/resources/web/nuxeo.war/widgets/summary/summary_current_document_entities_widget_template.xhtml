@@ -21,10 +21,11 @@
  reRender="relatedEntitiesPanel" />
 
 <f:subview rendered="#{!empty semanticWorkInProgressMessage}">
-  <div class="actions_block semanticWorkInProgressMessage">
-      <h:graphicImage value="/img/standart_waiter.gif" />
-      <span style="width: 1em"/>
-      #{semanticWorkInProgressMessage}
+  <div class="actions_block">
+    <div class="semanticWorkInProgressMessage">
+        <h:graphicImage value="/img/standart_waiter.gif" />
+        #{semanticWorkInProgressMessage}
+    </div>
   </div>
 </f:subview>
 
