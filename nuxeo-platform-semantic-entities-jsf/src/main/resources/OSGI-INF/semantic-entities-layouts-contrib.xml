@@ -25,7 +25,7 @@
           <widget>summary_current_document_comments</widget>
         </row>
         <row>
-          <widget>summary_current_entity_heading</widget>
+          <widget>summary_entity_heading</widget>
           <widget>summary_current_entity_view</widget>
           <widget>summary_current_entity_sync</widget>
           <!-- Should be moved to the top
@@ -37,7 +37,7 @@
           <widget>summary_current_document_single_tasks</widget>
         </row>
       </rows>
-      <widget name="summary_current_entity_heading" type="summary_current_entity_heading" />
+      <widget name="summary_entity_heading" type="summary_entity_heading" />
       <widget name="summary_current_entity_occurrences" type="summary_current_entity_occurrences" />
       <widget name="summary_current_entity_view" type="summary_current_entity_view" />
       <widget name="summary_current_entity_sync" type="summary_current_entity_sync" />
@@ -414,7 +414,7 @@
   <extension target="org.nuxeo.ecm.platform.forms.layout.WebLayoutManager"
     point="widgettypes">
 
-    <widgetType name="summary_current_entity_heading">
+    <widgetType name="summary_entity_heading">
 
       <documentation>
         This widget displays the heading common to all entities:
@@ -437,7 +437,7 @@
         org.nuxeo.ecm.platform.forms.layout.facelets.plugins.TemplateWidgetTypeHandler
       </handler-class>
       <property name="template">
-        /widgets/summary/summary_current_entity_heading_widget_template.xhtml
+        /widgets/summary/summary_entity_heading_widget_template.xhtml
       </property>
     </widgetType>
 
