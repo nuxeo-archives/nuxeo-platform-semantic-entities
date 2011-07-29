@@ -13,23 +13,25 @@
        factorized out of the project
  -->
 
+<c:set var="docId" value="#{currentDocument.id}" />
+
+<a4j:queue name="entitiesQueue"/>
 <a4j:region renderRegionOnly="true">
 <a4j:outputPanel id="relatedEntitiesPanel">
 
-<a4j:poll interval="1000"
- enabled="#{!empty semanticWorkInProgressMessage}"
- reRender="relatedEntitiesPanel" />
+<a4j:poll interval="3000" enabled="true" eventsQueue="entitiesQueue"
+  reRender="relatedEntitiesPanel" ignoreDupResponses="true" />
 
-<f:subview rendered="#{!empty semanticWorkInProgressMessage}">
+<f:subview rendered="#{!empty semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}">
   <div class="actions_block">
     <div class="semanticWorkInProgressMessage">
         <h:graphicImage value="/img/standart_waiter.gif" />
-        #{semanticWorkInProgressMessage}
+        #{semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}
     </div>
   </div>
 </f:subview>
 
-<f:subview rendered="#{false and empty semanticWorkInProgressMessage}">
+<f:subview rendered="#{false and empty semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}">
   <a4j:commandButton value="#{messages['label.button.launchSemanticAnalysis']}"
    action="#{semanticEntitiesActions.launchAsyncAnalysis}"
    rendered="#{documentManager.hasPermission(currentDocument.ref, 'WriteProperties')}"
@@ -72,36 +74,37 @@ jQuery(".entityOccurrence").tooltip({
 });
 </script>
 
-<f:subview rendered="#{empty semanticWorkInProgressMessage}">
-  <h3 class="summaryTitle">#{messages['heading.linkToEntity']}</h3>
-  <h:inputText id="entitySuggestionKeywords" styleClass="searchField"
-    onkeydown="if (event.keyCode == 13 || event.keyCode == 9) {return false;}" />
-  <a4j:status>
-    <f:facet name="start">
-      <h:graphicImage value="/img/standart_waiter.gif" />
-    </f:facet>
-  </a4j:status>
-  <rich:suggestionbox
-    suggestionAction="#{semanticEntitiesActions.suggestEntities}" var="entitySuggestion"
-    for="entitySuggestionKeywords"
-    nothingLabel="${messages['label.results.noMatchingEntity']}"
-    ajaxSingle="true">
-    <a4j:support event="onselect" reRender="relatedEntitiesPanel"
-      action="#{semanticEntitiesActions.addNewOccurrenceRelation}"
-      ajaxSingle="true">
-      <f:setPropertyActionListener value="#{entitySuggestion}"
-        target="#{semanticEntitiesActions.selectedSuggestion}" />
-    </a4j:support>
-    <h:column>
-      <h:graphicImage
-        url="/icons/#{entitySuggestion.type}.png"
-        rendered="#{!empty entitySuggestion.type}"
-        styleClass="entityTypeIcon" />
-      #{entitySuggestion.label}
-    </h:column>
-  </rich:suggestionbox>
-</f:subview>
 </a4j:outputPanel>
 </a4j:region>
 
+<h3 class="summaryTitle">#{messages['heading.linkToEntity']}</h3>
+<h:inputText id="entitySuggestionKeywords" styleClass="searchField"
+  onkeydown="if (event.keyCode == 13 || event.keyCode == 9) {return false;}" />
+<a4j:status>
+  <f:facet name="start">
+    <h:graphicImage value="/img/standart_waiter.gif" />
+  </f:facet>
+</a4j:status>
+<rich:suggestionbox
+  suggestionAction="#{semanticEntitiesActions.suggestEntities}" var="entitySuggestion"
+  for="entitySuggestionKeywords"
+  nothingLabel="${messages['label.results.noMatchingEntity']}"
+  eventsQueue="entitiesQueue"
+  ajaxSingle="true">
+  <a4j:support event="onselect"
+    reRender="relatedEntitiesPanel"
+    eventsQueue="entitiesQueue"
+    action="#{semanticEntitiesActions.addNewOccurrenceRelation}"
+    ajaxSingle="true">
+    <f:setPropertyActionListener value="#{entitySuggestion}"
+      target="#{semanticEntitiesActions.selectedSuggestion}" />
+  </a4j:support>
+  <h:column>
+    <h:graphicImage
+      url="/icons/#{entitySuggestion.type}.png"
+      rendered="#{!empty entitySuggestion.type}"
+      styleClass="entityTypeIcon" />
+    #{entitySuggestion.label}
+  </h:column>
+</rich:suggestionbox>
 </div>
