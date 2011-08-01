@@ -358,7 +358,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             // TODO: normalize whitespace
             String context = contextLiteral.getString().trim();
 
-            if (!context.contains(mention) || context.length() > 500) {
+            if (!context.contains(mention) || context.length() > 10000) {
                 // context extraction is likely to have failed on some complex
                 // layout
                 context = mention;
