@@ -157,13 +157,13 @@ public class OccurrenceInfo {
      * @return the slice of the context sentence before the actual mention
      */
     public String getPrefixContext() {
-        return context.substring(0, startPosInContext).trim();
+        return context.substring(0, startPosInContext);
     }
 
     /**
      * @return the slice of the context sentence after the actual mention
      */
     public String getSuffixContext() {
-        return context.substring(endPosInContext).trim();
+        return context.substring(endPosInContext);
     }
 }

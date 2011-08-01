@@ -8,14 +8,6 @@
   xmlns:nxl="http://nuxeo.org/nxforms/layout"
   xmlns:nxd="http://nuxeo.org/nxweb/document">
 
-<script>
-<!-- 
-jQuery(document).ready(function() {
-  jQuery('.entitySummary').condense();
-});
--->
-</script>
-
 <div class="entityDepictionContainer">
 <h:graphicImage
   url="#{nxd:fileUrl('downloadFile', value, 'entity:depiction', value.entity.depiction.filename)}?conversationId=#{conversation.id}"
@@ -27,7 +19,7 @@ jQuery(document).ready(function() {
   styleClass="genericEntityDepiction" />
 </div>
 <div class="entitySummary">
-  <h:outputText value="#{value.entity.summary}" />
+  <h:outputText value="#{semanticEntitiesActions.ellipsis(value.entity.summary, 500)}" />
 </div>
 
 <div style="clear: both"></div>

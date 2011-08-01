@@ -460,7 +460,25 @@ public class SemanticEntitiesActions {
         if (content == null) {
             return "";
         } else if (content.length() > maxSize) {
-            return content.substring(0, maxSize) + "[...]";
+            String[] tokens = content.split(" ");
+            StringBuilder sb = new StringBuilder();
+            int size = 0;
+            for (String token: tokens) {
+                if (size + token.length() + 7 < maxSize) {
+                    // add a new token
+                    if (size != 0) {
+                        sb.append(" ");
+                        size += 1;
+                    }
+                    sb.append(token);
+                    size += token.length();
+                } else {
+                    // reached maxSize, add ellipsis symbol and stop
+                    sb.append(" (...)");
+                    break;
+                }
+            }
+            return sb.toString();
         }
         return content;
     }

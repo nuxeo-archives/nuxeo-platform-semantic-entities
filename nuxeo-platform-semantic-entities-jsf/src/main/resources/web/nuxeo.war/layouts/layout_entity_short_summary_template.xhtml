@@ -48,9 +48,9 @@
 <h3 class="summaryTitle">#{messages['heading.mentionsInCurrentDocument']}</h3>
 <div class="entityMentions">
 <ui:repeat value="#{value.occurrences}" var="occInfo">
- <p><h:outputText value="#{occInfo.prefixContext}"/>
-     <strong><h:outputText value=" #{occInfo.mention} "/></strong>
-     <h:outputText value="#{occInfo.suffixContext}"/></p>
+ <p><h:outputText value="#{occInfo.prefixContext}"/><strong><h:outputText
+  value=" #{occInfo.mention} "/></strong><h:outputText
+  value="#{occInfo.suffixContext}"/></p>
 </ui:repeat>
 </div>
 </div>
