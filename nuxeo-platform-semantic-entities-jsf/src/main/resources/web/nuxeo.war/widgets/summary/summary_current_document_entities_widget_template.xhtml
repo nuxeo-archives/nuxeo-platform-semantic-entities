@@ -19,8 +19,11 @@
 <a4j:region renderRegionOnly="true">
 <a4j:outputPanel id="relatedEntitiesPanel">
 
-<a4j:poll interval="3000" enabled="true" eventsQueue="entitiesQueue"
-  reRender="relatedEntitiesPanel" ignoreDupResponses="true" />
+
+<a4j:poll interval="5000" eventsQueue="entitiesQueue"
+  reRender="relatedEntitiesPanel" ignoreDupResponses="true"
+  enabled="#{!empty semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}" />
+
 
 <f:subview rendered="#{!empty semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}">
   <div class="actions_block">
