@@ -35,6 +35,7 @@ import org.jboss.seam.contexts.Contexts;
 import org.jboss.seam.core.Interpolator;
 import org.jboss.seam.faces.FacesMessages;
 import org.jboss.seam.international.StatusMessage;
+import org.nuxeo.common.utils.StringUtils;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -225,7 +226,8 @@ public class SemanticEntitiesActions {
             OccurrenceRelation relation = getLocalEntityService().getOccurrenceRelation(
                     documentManager, doc.getRef(), entity.getRef());
             EntityOccurrence occ = new EntityOccurrence(doc, entity,
-                    relation.getOccurrenceDocument(), relation.getOccurrences());
+                    relation.getOccurrenceDocument(),
+                    relation.getOccurrences(), 3);
             occurrences.add(occ);
         }
         return occurrences;
@@ -456,30 +458,35 @@ public class SemanticEntitiesActions {
     }
 
     // TODO: move this to a JSF function
-    public String ellipsis(String content, int maxSize) {
+    protected String ellipsis(String content, int maxWords, boolean reverse) {
         if (content == null) {
             return "";
-        } else if (content.length() > maxSize) {
-            String[] tokens = content.split(" ");
-            StringBuilder sb = new StringBuilder();
-            int size = 0;
-            for (String token: tokens) {
-                if (size + token.length() + 7 < maxSize) {
-                    // add a new token
-                    if (size != 0) {
-                        sb.append(" ");
-                        size += 1;
-                    }
-                    sb.append(token);
-                    size += token.length();
-                } else {
-                    // reached maxSize, add ellipsis symbol and stop
-                    sb.append(" (...)");
-                    break;
-                }
+        }
+        List<String> tokens = Arrays.asList(content.split(" "));
+        if (tokens.size() > maxWords) {
+            if (reverse) {
+                Collections.reverse(tokens);
             }
-            return sb.toString();
+            tokens = new ArrayList<String>(tokens.subList(0, maxWords));
+            if ((!reverse && content.startsWith(" "))
+                    || (reverse && content.endsWith(" "))) {
+                // re-add missing space removed by split
+                tokens.add(0, " ");
+            }
+            tokens.add("(...)");
+            if (reverse) {
+                Collections.reverse(tokens);
+            }
+            return StringUtils.join(tokens, " ");
         }
         return content;
+    }
+
+    public String ellipsis(String content, int maxWords) {
+        return ellipsis(content, maxWords, false);
+    }
+
+    public String reverseEllipsis(String content, int maxWords) {
+        return ellipsis(content, maxWords, true);
     }
 }

@@ -18,18 +18,22 @@ public class EntityOccurrence {
 
     protected final DocumentModel occurrenceModel;
 
+    protected int maxDisplayedOccurences;
+
     protected final List<OccurrenceInfo> occurrences = new ArrayList<OccurrenceInfo>();
 
     public EntityOccurrence(DocumentModel doc, DocumentModel entity,
-            DocumentModel occurrence, List<OccurrenceInfo> occurrences) {
+            DocumentModel occurrence, List<OccurrenceInfo> occurrences,
+            int maxDisplayedOccurrences) {
         this.documentModel = doc;
         this.entityModel = entity;
         this.occurrenceModel = occurrence;
         this.occurrences.addAll(occurrences);
+        this.maxDisplayedOccurences = maxDisplayedOccurrences;
     }
 
     // Getters for Seam / JSF
-    
+
     public DocumentModel getDocumentModel() {
         return documentModel;
     }
@@ -43,7 +47,14 @@ public class EntityOccurrence {
     }
 
     public List<OccurrenceInfo> getOccurrences() {
+        if (occurrences.size() > maxDisplayedOccurences) {
+            return occurrences.subList(0, maxDisplayedOccurences);
+        }
         return occurrences;
     }
 
+    public int getExtractOccurrences() {
+        int extra = occurrences.size() - maxDisplayedOccurences;
+        return extra > 0 ? extra : 0;
+    }
 }
