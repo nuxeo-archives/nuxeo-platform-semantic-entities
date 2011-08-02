@@ -9,7 +9,6 @@
       merge="true">
       <format-type>widget</format-type>
       <resource>semantic-entities.css</resource>
-      <resource>condense.js</resource>
     </view>
 
   </extension>
@@ -18,10 +17,6 @@
 
     <resource name="semantic-entities.css">
       <path>css/semantic-entities.css</path>
-    </resource>
-
-    <resource name="condense.js">
-      <path>scripts/condense.js</path>
     </resource>
 
   </extension>
