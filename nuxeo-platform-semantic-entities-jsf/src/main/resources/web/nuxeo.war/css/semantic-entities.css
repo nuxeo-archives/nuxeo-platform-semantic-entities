@@ -70,3 +70,29 @@ img.entityTypeIcon {
 .entitiesBlock .semanticWorkInProgressMessage img {
   margin-right: 2em;
 }
+
+.entityOccurrenceTooltip .linkedEntity {
+  position: relative;
+}
+
+.entityOccurrenceTooltip .linkedEntity .entityUpdater {
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  opacity: 0.0;
+}
+
+.entityOccurrenceTooltip .linkedEntity .entityUpdater h3.summaryTitle {
+  padding-top: 0;
+}
+
+.entityOccurrenceTooltip .linkedEntity p.editLink {
+  text-align: right;
+}
+
+.entityOccurrenceTooltip .linkedEntity p.cancelLink {
+  text-align: right;
+  display: none;
+}

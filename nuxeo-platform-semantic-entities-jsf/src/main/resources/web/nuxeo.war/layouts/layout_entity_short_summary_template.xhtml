@@ -8,6 +8,7 @@
   xmlns:nxd="http://nuxeo.org/nxweb/document"
   xmlns:fn="http://java.sun.com/jsp/jstl/functions"
   xmlns:a4j="http://richfaces.org/a4j"
+  xmlns:rich="http://richfaces.org/rich"
   id="#{layout.id}">
 
 <div class="entityOccurrence">
@@ -42,9 +43,48 @@
 </div>
 
 <div class="entityOccurrenceTooltip">
-<ui:include src="/widgets/summary/summary_entity_heading_widget_template.xhtml">
-  <ui:param name="value" value="#{value.entityModel}"/>
-</ui:include>
+<div class="linkedEntity">
+  <div class="currentEntity">
+    <ui:include src="/widgets/summary/summary_entity_heading_widget_template.xhtml">
+      <ui:param name="value" value="#{value.entityModel}"/>
+    </ui:include>
+  </div>
+  <div class="entityUpdater">
+    <h3 class="summaryTitle"><h:outputText
+      value="#{messages['heading.linkToAnotherEntity']}"/></h3>
+
+    <h:inputText id="entitySuggestionKeywords2" styleClass="searchField"
+      onkeydown="if (event.keyCode == 13 || event.keyCode == 9) {return false;}" />
+    <rich:suggestionbox
+      suggestionAction="#{semanticEntitiesActions.suggestEntities}"
+      var="entitySuggestion"
+      for="entitySuggestionKeywords2"
+      nothingLabel="${messages['label.results.noMatchingEntity']}"
+      eventsQueue="entitiesQueue"
+      ajaxSingle="true">
+      <a4j:support event="onselect"
+        reRender="relatedEntitiesPanel"
+        eventsQueue="entitiesQueue"
+        action="#{semanticEntitiesActions.updateOccurrenceRelation(value.occurrenceModel.id)}"
+        ajaxSingle="true">
+        <f:setPropertyActionListener value="#{entitySuggestion}"
+          target="#{semanticEntitiesActions.selectedSuggestion}" />
+      </a4j:support>
+      <h:column>
+        <h:graphicImage
+          url="/icons/#{entitySuggestion.type}.png"
+          rendered="#{!empty entitySuggestion.type}"
+          styleClass="entityTypeIcon" />
+        #{entitySuggestion.label}
+      </h:column>
+    </rich:suggestionbox>
+  </div>
+  <p class="editLink"><a href="#"><h:outputText
+    value="#{messages['label.link.linkToAnotherEntity']}"/></a></p>
+  <p class="cancelLink"><a href="#"><h:outputText
+    value="#{messages['label.link.cancelLinkToAnotherEntity']}"/></a></p>
+</div>
+
 <h3 class="summaryTitle">#{messages['heading.mentionsInCurrentDocument']}</h3>
 <div class="entityMentions">
 <ui:repeat value="#{value.occurrences}" var="occInfo">

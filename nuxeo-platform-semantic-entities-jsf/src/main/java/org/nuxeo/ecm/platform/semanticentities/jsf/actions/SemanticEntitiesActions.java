@@ -295,6 +295,38 @@ public class SemanticEntitiesActions {
         invalidateCurrentDocumentProviders();
     }
 
+    public void updateOccurrenceRelation(String occurrenceId) {
+        try {
+            DocumentModel occurrenceModel = documentManager.getDocument(new IdRef(
+                    occurrenceId));
+            OccurrenceRelation oldRelation = occurrenceModel.getAdapter(OccurrenceRelation.class);
+
+            // merge the old relation occurrence information into a
+            // (potentially new) relation pointing to the selected suggested
+            // entity
+            DocumentModel localEntity = leService.asLocalEntity(
+                    documentManager, selectedEntitySuggestion);
+            OccurrenceRelation updatedRelation = leService.addOccurrences(
+                    documentManager,
+                    navigationContext.getCurrentDocument().getRef(),
+                    localEntity.getRef(), oldRelation.getOccurrences());
+            DocumentRef occRef = updatedRelation.getOccurrenceDocument().getRef();
+            if ("deleted".equals(documentManager.getCurrentLifeCycleState(occRef))) {
+                documentManager.followTransition(occRef, "undelete");
+            }
+
+            // delete the old relation
+            removeOccurrenceRelation(
+                    oldRelation.getSourceDocumentRef().toString(),
+                    oldRelation.getTargetEntityRef().toString());
+        } catch (Exception e) {
+            log.error(e, e);
+            facesMessages.add(StatusMessage.Severity.ERROR,
+                    messages.get("error.updatingRelation"));
+        }
+        invalidateCurrentDocumentProviders();
+    }
+
     public void removeOccurrenceRelation(String docId, String entityId) {
         OccurrenceRelation rel;
         try {
