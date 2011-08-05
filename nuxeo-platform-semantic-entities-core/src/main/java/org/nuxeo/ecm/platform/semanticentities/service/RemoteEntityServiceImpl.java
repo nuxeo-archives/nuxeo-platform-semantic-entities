@@ -51,11 +51,11 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
 
     protected final List<RemoteEntitySourceDescriptor> registeredSourceDescriptors = new ArrayList<RemoteEntitySourceDescriptor>();
 
-    protected HashMap<String, ParameterizedRemoteEntitySource> activeSources;
+    protected HashMap<String, ParameterizedHTTPEntitySource> activeSources;
 
-    protected HashMap<String, ParameterizedRemoteEntitySource> getActiveSources() {
+    protected HashMap<String, ParameterizedHTTPEntitySource> getActiveSources() {
         if (activeSources == null) {
-            activeSources = new LinkedHashMap<String, ParameterizedRemoteEntitySource>();
+            activeSources = new LinkedHashMap<String, ParameterizedHTTPEntitySource>();
             for (RemoteEntitySourceDescriptor descriptor : registeredSourceDescriptors) {
                 String name = descriptor.getName();
                 if (!descriptor.isEnabled() && activeSources.containsKey(name)) {

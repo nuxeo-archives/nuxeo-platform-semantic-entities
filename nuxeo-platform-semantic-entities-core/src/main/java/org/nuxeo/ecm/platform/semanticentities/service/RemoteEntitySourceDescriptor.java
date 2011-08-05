@@ -43,13 +43,16 @@ public class RemoteEntitySourceDescriptor {
     @XNode("typeMapping@default")
     protected String defaultType;
 
-    protected ParameterizedRemoteEntitySource source;
+    protected ParameterizedHTTPEntitySource source;
 
     @XNodeMap(value = "typeMapping/type", key = "@name", type = HashMap.class, componentType = String.class)
     protected Map<String, String> mappedTypes = Collections.emptyMap();
 
     @XNodeMap(value = "propertyMapping/field", key = "@name", type = HashMap.class, componentType = String.class)
     protected Map<String, String> mappedProperties = Collections.emptyMap();
+
+    @XNodeMap(value = "parameters/parameter", key = "@name", type = HashMap.class, componentType = String.class)
+    protected Map<String, String> parameters = Collections.emptyMap();
 
     public String getDefaultType() {
         return defaultType;
@@ -61,6 +64,10 @@ public class RemoteEntitySourceDescriptor {
 
     public Map<String, String> getMappedProperties() {
         return mappedProperties;
+    }
+    
+    public Map<String, String> getParameters() {
+        return parameters;
     }
 
     public String getName() {
@@ -83,7 +90,7 @@ public class RemoteEntitySourceDescriptor {
             throws InstantiationException, IllegalAccessException,
             ClassNotFoundException {
         if (className != null) {
-            source = (ParameterizedRemoteEntitySource) context.loadClass(
+            source = (ParameterizedHTTPEntitySource) context.loadClass(
                     className).newInstance();
             source.setDescriptor(this);
         } else if (enabled) {
@@ -93,7 +100,7 @@ public class RemoteEntitySourceDescriptor {
         }
     }
 
-    public ParameterizedRemoteEntitySource getEntitySource() {
+    public ParameterizedHTTPEntitySource getEntitySource() {
         return source;
     }
 

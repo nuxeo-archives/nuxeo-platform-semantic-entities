@@ -124,7 +124,6 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     protected boolean active = false;
 
-
     // TODO: make the following configurable using an extension point
     protected static final Map<String, String> localTypes = new HashMap<String, String>();
     static {

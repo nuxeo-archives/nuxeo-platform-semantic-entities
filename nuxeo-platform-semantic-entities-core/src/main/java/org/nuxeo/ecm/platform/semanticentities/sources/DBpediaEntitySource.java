@@ -53,15 +53,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.conn.scheme.PlainSocketFactory;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.scheme.SchemeRegistry;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
-import org.apache.http.params.BasicHttpParams;
-import org.apache.http.params.HttpParams;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -72,7 +64,7 @@ import org.nuxeo.ecm.core.schema.types.Type;
 import org.nuxeo.ecm.core.schema.types.primitives.StringType;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
-import org.nuxeo.ecm.platform.semanticentities.service.ParameterizedRemoteEntitySource;
+import org.nuxeo.ecm.platform.semanticentities.service.ParameterizedHTTPEntitySource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -95,11 +87,7 @@ import com.hp.hpl.jena.rdf.model.Resource;
  * queries since the virtuoso implementation arbitrarily truncates the entity
  * graph to around 2000 triples for entities with many properties.
  */
-public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
-
-    public static final String OWL_THING = "http://www.w3.org/2002/07/owl#Thing";
-
-    public static final String RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
 
     private static final Log log = LogFactory.getLog(DBpediaEntitySource.class);
 
@@ -113,31 +101,8 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
 
     protected Map<URI, Model> cachedModels = new WeakHashMap<URI, Model>();
 
-    protected HttpClient httpClient;
-
     public DBpediaEntitySource() {
         initHttpClient();
-    }
-
-    protected void initHttpClient() {
-        // Create and initialize a scheme registry
-        SchemeRegistry schemeRegistry = new SchemeRegistry();
-        schemeRegistry.register(new Scheme("http",
-                PlainSocketFactory.getSocketFactory(), 80));
-
-        // Create an HttpClient with the ThreadSafeClientConnManager.
-        // This connection manager must be used if more than one thread will
-        // be using the HttpClient.
-        HttpParams params = new BasicHttpParams();
-        ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(
-                params, schemeRegistry);
-
-        httpClient = new DefaultHttpClient(cm, params);
-    }
-
-    @Override
-    public boolean canSuggestRemoteEntity() {
-        return true;
     }
 
     @Override

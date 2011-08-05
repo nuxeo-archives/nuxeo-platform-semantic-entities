@@ -76,6 +76,19 @@
       <!-- TODO: remove hardcoded version number -->
       <version>4.0.3</version>
     </dependency>
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-core-asl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-mapper-asl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>javax.ws.rs</groupId>
+      <artifactId>jsr311-api</artifactId>
+    </dependency>
+
     <!--
       jena is required to parse the RDF payload of linked data resources
       only, we do not maintain persistent jena store in this module
