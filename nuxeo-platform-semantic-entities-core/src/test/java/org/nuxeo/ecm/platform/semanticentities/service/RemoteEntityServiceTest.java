@@ -32,7 +32,7 @@ import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.runtime.api.Framework;
 
-public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
+public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
     protected static final URI WIKIPEDIA_LONDON_URI = URI.create("http://en.wikipedia.org/wiki/London");
 
@@ -52,12 +52,8 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
         // semantic entities types
         deployBundle("org.nuxeo.ecm.platform.semanticentities.core");
-
-        // deploy off-line mock DBpedia source to override the default source
-        // that needs an internet connection: comment the following contrib to
-        // test again the real DBpedia server
-        deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
-                "OSGI-INF/test-semantic-entities-remote-entity-contrib.xml");
+        
+        deployRemoteEntityServiceOverride();
 
         // initialize the session field
         openSession();
@@ -69,6 +65,8 @@ public class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         service = Framework.getService(RemoteEntityService.class);
         assertNotNull(service);
     }
+
+    protected abstract void deployRemoteEntityServiceOverride() throws Exception;
 
     public void testSuggestRemoteEntity() throws IOException {
         assertTrue(service.canSuggestRemoteEntity());
