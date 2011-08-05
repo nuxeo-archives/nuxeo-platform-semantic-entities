@@ -19,6 +19,8 @@ package org.nuxeo.ecm.platform.semanticentities.service;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.nuxeo.common.xmap.annotation.XNode;
 import org.nuxeo.common.xmap.annotation.XNodeMap;
@@ -144,6 +146,11 @@ public class RemoteEntitySourceDescriptor {
         } else if (!uriPrefix.equals(other.uriPrefix))
             return false;
         return true;
+    }
+
+    public Map<String, String> getReverseMappedTypes() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

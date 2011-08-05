@@ -22,6 +22,9 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.Map.Entry;
+
 import javax.ws.rs.core.UriBuilder;
 
 import org.apache.commons.logging.Log;
@@ -32,7 +35,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.jboss.remoting.samples.chat.utility.Parameters;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
@@ -44,6 +46,8 @@ import org.nuxeo.ecm.platform.semanticentities.service.RemoteEntitySourceDescrip
  * the EntityHub of a Stanbol instance.
  */
 public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
+
+    public static final String RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 
     private static final Log log = LogFactory.getLog(StanbolEntityHubSource.class);
 
@@ -113,10 +117,25 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Set<String> getAdmissibleTypes(URI remoteEntity)
             throws DereferencingException {
-        // TODO Auto-generated method stub
-        return null;
+        try {
+            Map<String, Object> jsonDescription = fetchJSONDescription(remoteEntity);
+            Map<String, Object> attributes = (Map<String, Object>) jsonDescription.get("representation");
+            List<Map<String, String>> typeInfos = (List<Map<String, String>>) attributes.get(RDF_TYPE);
+            Set<String> admissibleTypes = new TreeSet<String>();
+            Map<String, String> reverseTypeMapping = descriptor.getReverseMappedTypes();
+            for (Map<String, String> typeInfo : typeInfos) {
+                String localType = reverseTypeMapping.get(typeInfo.get("value"));
+                if (localType != null) {
+                    admissibleTypes.add(localType);
+                }
+            }
+            return admissibleTypes;
+        } catch (Exception e) {
+            throw new DereferencingException(e);
+        }
     }
 
     @Override
