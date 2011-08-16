@@ -19,8 +19,7 @@ package org.nuxeo.ecm.platform.semanticentities.service;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
+import java.util.TreeMap;
 
 import org.nuxeo.common.xmap.annotation.XNode;
 import org.nuxeo.common.xmap.annotation.XNodeMap;
@@ -56,6 +55,8 @@ public class RemoteEntitySourceDescriptor {
     @XNodeMap(value = "parameters/parameter", key = "@name", type = HashMap.class, componentType = String.class)
     protected Map<String, String> parameters = Collections.emptyMap();
 
+    protected Map<String, String> reverseMappedTypes;
+
     public String getDefaultType() {
         return defaultType;
     }
@@ -63,11 +64,22 @@ public class RemoteEntitySourceDescriptor {
     public Map<String, String> getMappedTypes() {
         return mappedTypes;
     }
+    
+    public Map<String, String> getReverseMappedTypes() {
+        if (reverseMappedTypes == null) {
+            Map<String, String> reversed = new TreeMap<String, String>();
+            for (Map.Entry<String, String> entry: mappedTypes.entrySet()) {
+                reversed.put(entry.getValue(), entry.getKey());
+            }
+            reverseMappedTypes = reversed;
+        }
+        return reverseMappedTypes;
+    }
 
     public Map<String, String> getMappedProperties() {
         return mappedProperties;
     }
-    
+
     public Map<String, String> getParameters() {
         return parameters;
     }
@@ -146,11 +158,6 @@ public class RemoteEntitySourceDescriptor {
         } else if (!uriPrefix.equals(other.uriPrefix))
             return false;
         return true;
-    }
-
-    public Map<String, String> getReverseMappedTypes() {
-        // TODO Auto-generated method stub
-        return null;
     }
 
 }

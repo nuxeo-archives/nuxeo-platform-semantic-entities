@@ -29,7 +29,7 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -242,8 +242,6 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
     protected void syncPropertiesFromModel(URI remoteEntity, Model rdfModel,
             DocumentModel localEntity, boolean override)
             throws DereferencingException {
-        Set<Entry<String, String>> mapping = new HashSet<Entry<String, String>>(
-                descriptor.getMappedProperties().entrySet());
         Resource resource = rdfModel.getResource(remoteEntity.toString());
 
         // special handling for the entity:sameas property
@@ -280,12 +278,14 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
             throw new DereferencingException(e);
         }
 
+        HashMap<String, String> mapping = new HashMap<String, String>(
+                descriptor.getMappedProperties());
         // as sameas has a special handling, remove it from the list of
         // properties to synchronize the generic way
         mapping.remove("entity:sameas");
 
         // generic handling of mapped properties
-        for (Entry<String, String> mappedProperty : mapping) {
+        for (Entry<String, String> mappedProperty : mapping.entrySet()) {
             String localPropertyName = mappedProperty.getKey();
             String remotePropertyUri = mappedProperty.getValue();
             try {
@@ -315,7 +315,7 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
                                 && "content".equals(type.getName())) {
                             Serializable linkedResource = (Serializable) readLinkedResource(
                                     rdfModel, resource, remotePropertyUri);
-                            if (resource != null) {
+                            if (linkedResource != null) {
                                 localEntity.setPropertyValue(localPropertyName,
                                         linkedResource);
                             }

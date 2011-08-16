@@ -52,7 +52,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
         // semantic entities types
         deployBundle("org.nuxeo.ecm.platform.semanticentities.core");
-        
+
         deployRemoteEntityServiceOverride();
 
         // initialize the session field
@@ -66,7 +66,8 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         assertNotNull(service);
     }
 
-    protected abstract void deployRemoteEntityServiceOverride() throws Exception;
+    protected abstract void deployRemoteEntityServiceOverride()
+            throws Exception;
 
     public void testSuggestRemoteEntity() throws IOException {
         assertTrue(service.canSuggestRemoteEntity());
@@ -124,8 +125,6 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(expectedSummary,
                 summary.substring(0, expectedSummary.length()));
 
-        Calendar birthDate = barackDoc.getProperty("person:birthDate").getValue(
-                Calendar.class);
         List<String> altnames = barackDoc.getProperty("entity:altnames").getValue(
                 List.class);
         assertEquals(4, altnames.size());
@@ -134,6 +133,8 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         // Russian spelling:
         assertTrue(altnames.contains("\u041e\u0431\u0430\u043c\u0430, \u0411\u0430\u0440\u0430\u043a"));
 
+        Calendar birthDate = barackDoc.getProperty("person:birthDate").getValue(
+                Calendar.class);
         assertEquals("Fri Aug 04 01:00:00 CET 1961",
                 birthDate.getTime().toString());
 
