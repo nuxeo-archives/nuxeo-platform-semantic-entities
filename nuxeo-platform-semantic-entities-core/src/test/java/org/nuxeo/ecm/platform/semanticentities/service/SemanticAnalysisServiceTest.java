@@ -68,7 +68,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         // that needs an internet connection: comment the following contrib to
         // test again the real DBpedia server
         deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
-                "OSGI-INF/test-semantic-entities-remote-entity-contrib.xml");
+                "OSGI-INF/test-semantic-entities-dbpedia-entity-contrib.xml");
 
         // CMIS query maker
         deployBundle("org.nuxeo.ecm.core.opencmis.impl");
