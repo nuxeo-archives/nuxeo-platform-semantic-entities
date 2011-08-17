@@ -7,10 +7,10 @@ import java.net.URI;
 
 public class MockStanbolEntityHubSource extends StanbolEntityHubSource {
 
-    static final String DBPEDIA_PREFIX = "http://dbpedia.org/resource/"; 
-    
+    static final String DBPEDIA_PREFIX = "http://dbpedia.org/resource/";
+
     @Override
-    protected InputStream fetchResourceAsStream(URI uri, String format)
+    protected InputStream doHttpGet(URI uri, String format)
             throws MalformedURLException, IOException {
 
         if (uri.toString().endsWith("Obama.jpg")) {
@@ -24,11 +24,16 @@ public class MockStanbolEntityHubSource extends StanbolEntityHubSource {
         throw new IllegalArgumentException(
                 "no mock resource registered for URI " + uri);
     }
-
-    protected InputStream fetchSuggestions(String keywords, int maxSuggestions)
-            throws IOException {
-        // TODO:
-        return null;
+    
+    @Override
+    protected InputStream doHttpPost(URI uri, String accepted, String contentType, String payload)
+            throws MalformedURLException, IOException {
+        if (uri.toString().endsWith("entityhub/site/dbpedia/query")) {
+            return getClass().getResourceAsStream(
+                    "/mock_replies/obama_query_response.json");
+        }
+        throw new IllegalArgumentException(
+                "no mock resource registered for URI " + uri);
     }
 
 }

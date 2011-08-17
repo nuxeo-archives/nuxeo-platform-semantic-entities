@@ -1,15 +1,21 @@
 package org.nuxeo.ecm.platform.semanticentities.service;
 
+import java.io.IOException;
 import java.util.Calendar;
 import java.util.List;
 
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
+import org.nuxeo.runtime.api.Framework;
 
 public class StanbolEntityHubSourceTest extends RemoteEntityServiceTest {
 
     @Override
     protected void deployRemoteEntityServiceOverride() throws Exception {
+        Framework.getProperties().put(
+                "org.nuxeo.ecm.platform.semanticentities.stanbolUrl",
+                "http://localhost:9090/");
         // deploy off-line mock DBpedia source to override the default source
         // that needs an internet connection: comment the following contrib to
         // test again the real Stanbol server
@@ -79,6 +85,33 @@ public class StanbolEntityHubSourceTest extends RemoteEntityServiceTest {
         // changes
         service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true);
         assertEquals("Barack Obama", barackDoc.getTitle());
+    }
+
+    @Override
+    public void testSuggestRemoteEntity() throws IOException {
+        assertTrue(service.canSuggestRemoteEntity());
+        List<RemoteEntity> suggestions = service.suggestRemoteEntity("Obama",
+                "Person", 3);
+        assertNotNull(suggestions);
+        assertEquals(2, suggestions.size());
+
+        RemoteEntity suggested = suggestions.get(0);
+        assertEquals("Barack Obama", suggested.label);
+        assertEquals(DBPEDIA_BARACK_OBAMA_URI, suggested.uri);
+
+//        // this should also work for a null type
+//        suggestions = service.suggestRemoteEntity("Obama", null, 3);
+//        assertNotNull(suggestions);
+//        assertEquals(2, suggestions.size());
+//
+//        suggested = suggestions.get(0);
+//        assertEquals("Barack Obama", suggested.label);
+//        assertEquals(DBPEDIA_BARACK_OBAMA_URI, suggested.uri);
+//
+//        // however no place should match this name
+//        suggestions = service.suggestRemoteEntity("Obama", "Place", 3);
+//        assertNotNull(suggestions);
+//        assertEquals(0, suggestions.size());
     }
 
 }

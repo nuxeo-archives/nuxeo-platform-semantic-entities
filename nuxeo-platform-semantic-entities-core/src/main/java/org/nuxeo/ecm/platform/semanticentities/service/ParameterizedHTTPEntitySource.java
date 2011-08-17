@@ -1,12 +1,20 @@
 package org.nuxeo.ecm.platform.semanticentities.service;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
@@ -56,6 +64,62 @@ public abstract class ParameterizedHTTPEntitySource implements
                 params, schemeRegistry);
     
         httpClient = new DefaultHttpClient(cm, params);
+    }
+
+    protected InputStream doHttpGet(URI uri, String accept) throws IOException {
+        HttpGet get = new HttpGet(uri);
+        try {
+            if (accept != null) {
+                get.setHeader("Accept", accept);
+            }
+            HttpResponse response = httpClient.execute(get);
+            if (response.getStatusLine().getStatusCode() == 200) {
+                return response.getEntity().getContent();
+            } else {
+                String errorMsg = String.format("Error resolving '%s' : ",
+                        uri);
+                errorMsg += response.getStatusLine().toString();
+                throw new IOException(errorMsg);
+            }
+        } catch (ClientProtocolException e) {
+            get.abort();
+            throw e;
+        } catch (IOException e) {
+            get.abort();
+            throw e;
+        }
+    }
+
+    protected InputStream doHttpPost(URI uri, String accept,
+            String contentType, String payload) throws IOException {
+        HttpPost post = new HttpPost(uri);
+        try {
+            if (accept != null) {
+                post.setHeader("Accept", accept);
+            }
+            if (contentType != null) {
+                post.setHeader("Content-Type", contentType);
+            }
+            if (payload != null) {
+                HttpEntity entity = new StringEntity(payload, "UTF-8");
+                post.setEntity(entity);
+            }
+            HttpResponse response = httpClient.execute(post);
+            if (response.getStatusLine().getStatusCode() == 200) {
+                return response.getEntity().getContent();
+            } else {
+                String errorMsg = String.format(
+                        "Error querying '%s' with payload '%s': ", uri, payload);
+                errorMsg += response.getStatusLine().toString();
+                throw new IOException(errorMsg);
+            }
+        } catch (ClientProtocolException e) {
+            post.abort();
+            throw e;
+        } catch (IOException e) {
+            post.abort();
+            throw e;
+        }
     }
 
     @Override

@@ -28,7 +28,7 @@
       <parameters>
         <!-- won't be used in the actual test because of the mock:
            included just for reference  -->
-        <parameter name="stanbolURL">${org.nuxeo.ecm.platform.semanticentities.stanbolUrl?https://stanbol.demo.nuxeo.com/}</parameter>
+        <parameter name="stanbolURL">${org.nuxeo.ecm.platform.semanticentities.stanbolUrl}</parameter>
         <parameter name="site">dbpedia</parameter>
       </parameters>
     </remoteSource>
