@@ -64,7 +64,7 @@ public class RemoteEntitySourceDescriptor {
     public Map<String, String> getMappedTypes() {
         return mappedTypes;
     }
-    
+
     public Map<String, String> getReverseMappedTypes() {
         if (reverseMappedTypes == null) {
             Map<String, String> reversed = new TreeMap<String, String>();

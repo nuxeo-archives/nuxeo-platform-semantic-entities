@@ -185,95 +185,91 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
             // XXX: the following code should be factorized somewhere
             List<String> samesas = new ArrayList<String>();
             List<String> sameasDisplayLabel = new ArrayList<String>();
-            try {
-                Property sameasProp = localEntity.getProperty("entity:sameas");
-                if (sameasProp.getValue() != null) {
-                    samesas.addAll(sameasProp.getValue(List.class));
-                }
-                Property sameasDisplayLabelProp = localEntity.getProperty("entity:sameasDisplayLabel");
-                if (sameasDisplayLabelProp.getValue() != null) {
-                    sameasDisplayLabel.addAll(sameasDisplayLabelProp.getValue(List.class));
-                }
-                if (!samesas.contains(remoteEntity.toString())) {
-                    samesas.add(remoteEntity.toString());
-                    localEntity.setPropertyValue("entity:sameas",
-                            (Serializable) samesas);
+            Property sameasProp = localEntity.getProperty("entity:sameas");
+            if (sameasProp.getValue() != null) {
+                samesas.addAll(sameasProp.getValue(List.class));
+            }
+            Property sameasDisplayLabelProp = localEntity.getProperty("entity:sameasDisplayLabel");
+            if (sameasDisplayLabelProp.getValue() != null) {
+                sameasDisplayLabel.addAll(sameasDisplayLabelProp.getValue(List.class));
+            }
+            if (!samesas.contains(remoteEntity.toString())) {
+                samesas.add(remoteEntity.toString());
+                localEntity.setPropertyValue("entity:sameas",
+                        (Serializable) samesas);
 
-                    String titlePropUri = descriptor.getMappedProperties().get(
-                            "dc:title");
-                    String label = localEntity.getTitle();
-                    label = label != null ? label : "Missing label";
-                    if (titlePropUri != null) {
-                        String labelFromRDF = readDecodedLiteral(
-                                jsonDescription, titlePropUri,
-                                StringType.INSTANCE, "en").toString();
-                        label = labelFromRDF != null ? labelFromRDF : label;
-                    }
-                    sameasDisplayLabel.add(label);
-                    localEntity.setPropertyValue("entity:sameasDisplayLabel",
-                            (Serializable) sameasDisplayLabel);
+                String titlePropUri = descriptor.getMappedProperties().get(
+                        "dc:title");
+                String label = localEntity.getTitle();
+                label = label != null ? label : "Missing label";
+                if (titlePropUri != null) {
+                    String labelFromRDF = readDecodedLiteral(jsonDescription,
+                            titlePropUri, StringType.INSTANCE, "en").toString();
+                    label = labelFromRDF != null ? labelFromRDF : label;
                 }
-                HashMap<String, String> mapping = new HashMap<String, String>(
-                        descriptor.getMappedProperties());
-                // as sameas has a special handling, remove it from the list of
-                // properties to synchronize the generic way
-                mapping.remove("entity:sameas");
+                sameasDisplayLabel.add(label);
+                localEntity.setPropertyValue("entity:sameasDisplayLabel",
+                        (Serializable) sameasDisplayLabel);
+            }
+            HashMap<String, String> mapping = new HashMap<String, String>(
+                    descriptor.getMappedProperties());
+            // as sameas has a special handling, remove it from the list of
+            // properties to synchronize the generic way
+            mapping.remove("entity:sameas");
 
-                // generic handling of mapped properties
-                for (Entry<String, String> mappedProperty : mapping.entrySet()) {
-                    String localPropertyName = mappedProperty.getKey();
-                    String remotePropertyUri = mappedProperty.getValue();
-                    try {
-                        Property localProperty = localEntity.getProperty(localPropertyName);
-                        Type type = localProperty.getType();
-                        if (type.isListType()) {
-                            // only synchronize string lists right now
-                            List<String> newValues = new ArrayList<String>();
-                            if (localProperty.getValue() != null) {
-                                newValues.addAll(localProperty.getValue(List.class));
+            // generic handling of mapped properties
+            for (Entry<String, String> mappedProperty : mapping.entrySet()) {
+                String localPropertyName = mappedProperty.getKey();
+                String remotePropertyUri = mappedProperty.getValue();
+                try {
+                    Property localProperty = localEntity.getProperty(localPropertyName);
+                    Type type = localProperty.getType();
+                    if (type.isListType()) {
+                        // only synchronize string lists right now
+                        List<String> newValues = new ArrayList<String>();
+                        if (localProperty.getValue() != null) {
+                            newValues.addAll(localProperty.getValue(List.class));
+                        }
+                        if (override) {
+                            newValues.clear();
+                        }
+                        for (String value : readStringList(jsonDescription,
+                                remotePropertyUri)) {
+                            if (!newValues.contains(value)) {
+                                newValues.add(value);
                             }
-                            if (override) {
-                                newValues.clear();
-                            }
-                            for (String value : readStringList(jsonDescription,
-                                    remotePropertyUri)) {
-                                if (!newValues.contains(value)) {
-                                    newValues.add(value);
+                        }
+                        localEntity.setPropertyValue(localPropertyName,
+                                (Serializable) newValues);
+                    } else {
+                        if (localProperty.getValue() == null
+                                || "".equals(localProperty.getValue())
+                                || override) {
+                            if (type.isComplexType()
+                                    && "content".equals(type.getName())) {
+                                Serializable linkedResource = (Serializable) readLinkedResource(
+                                        jsonDescription, remotePropertyUri);
+                                if (linkedResource != null) {
+                                    localEntity.setPropertyValue(
+                                            localPropertyName, linkedResource);
                                 }
-                            }
-                            localEntity.setPropertyValue(localPropertyName,
-                                    (Serializable) newValues);
-                        } else {
-                            if (localProperty.getValue() == null
-                                    || "".equals(localProperty.getValue())
-                                    || override) {
-                                if (type.isComplexType()
-                                        && "content".equals(type.getName())) {
-                                    Serializable linkedResource = (Serializable) readLinkedResource(
-                                            jsonDescription, remotePropertyUri);
-                                    if (linkedResource != null) {
-                                        localEntity.setPropertyValue(
-                                                localPropertyName,
-                                                linkedResource);
-                                    }
-                                } else {
-                                    Serializable literal = readDecodedLiteral(
-                                            jsonDescription, remotePropertyUri,
-                                            type, "en");
-                                    if (literal != null) {
-                                        localEntity.setPropertyValue(
-                                                localPropertyName, literal);
-                                    }
+                            } else {
+                                Serializable literal = readDecodedLiteral(
+                                        jsonDescription, remotePropertyUri,
+                                        type, "en");
+                                if (literal != null) {
+                                    localEntity.setPropertyValue(
+                                            localPropertyName, literal);
                                 }
                             }
                         }
-                    } catch (PropertyException e) {
-                        // ignore missing properties
                     }
+                } catch (PropertyException e) {
+                    // ignore missing properties
                 }
-            } catch (Exception e) {
-                throw new DereferencingException(e);
             }
+        } catch (DereferencingException e) {
+            throw e;
         } catch (Exception e) {
             throw new DereferencingException(e);
         }
