@@ -488,9 +488,13 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                     remoteEntity.label, remoteEntity.uri.toString(), type).withScore(1 / invScoreRemote);
             // TODO: optimize me and change the source suggestion API to fetch
             // admissible types up-front instead
-            Set<String> types = Collections.emptySet();
+            Set<String> types = remoteEntity.admissibleTypes != null ? new HashSet<String>(
+                    remoteEntity.admissibleTypes) : null;
             try {
-                types = reService.getAdmissibleTypes(remoteEntity.uri);
+                if (types == null) {
+                    // types where not precomputed, fetch them now
+                    types = reService.getAdmissibleTypes(remoteEntity.uri);
+                }
             } catch (IOException e) {
                 try {
                     Thread.sleep(500);

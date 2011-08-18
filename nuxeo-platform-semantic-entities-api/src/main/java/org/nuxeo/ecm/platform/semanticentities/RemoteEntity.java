@@ -18,7 +18,9 @@ package org.nuxeo.ecm.platform.semanticentities;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -41,20 +43,24 @@ public class RemoteEntity {
 
     public final URI uri;
 
-    public RemoteEntity(String label, URI uri) {
+    public final Set<String> admissibleTypes;
+
+    public RemoteEntity(String label, URI uri, Set<String> admissibleTypes) {
         if (label == null || uri == null) {
             throw new IllegalArgumentException("label and uri must not be null");
         }
         this.label = label;
         this.uri = uri;
+        this.admissibleTypes = admissibleTypes != null ? Collections.unmodifiableSet(admissibleTypes)
+                : null;
+    }
+
+    public RemoteEntity(String label, URI uri) {
+        this(label, uri, null);
     }
 
     public RemoteEntity(String label, String uri) {
-        if (label == null || uri == null) {
-            throw new IllegalArgumentException("label and uri must not be null");
-        }
-        this.label = label;
-        this.uri = URI.create(uri);
+        this(label, URI.create(uri), null);
     }
 
     /**
@@ -90,6 +96,13 @@ public class RemoteEntity {
 
     public URI getUri() {
         return uri;
+    }
+
+    /**
+     * precomputed list of admissible types or null
+     */
+    public Set<String> getAdmissibleTypes() {
+        return admissibleTypes;
     }
 
 }

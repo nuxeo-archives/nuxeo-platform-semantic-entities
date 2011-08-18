@@ -108,12 +108,14 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                 Map.class);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Set<String> getAdmissibleTypes(URI remoteEntity)
             throws DereferencingException {
-        Map<String, Object> jsonDescription;
+        Map<String, Object> representation;
         try {
-            jsonDescription = fetchJSONDescription(remoteEntity);
+            representation = (Map<String, Object>) fetchJSONDescription(
+                    remoteEntity).get("representation");
         } catch (JsonParseException e) {
             throw new DereferencingException(e);
         } catch (JsonMappingException e) {
@@ -121,18 +123,18 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
         } catch (IOException e) {
             throw new DereferencingException(e);
         }
-        return getAdmissibleTypes(jsonDescription);
+        return getAdmissibleTypes(representation);
     }
 
     @SuppressWarnings("unchecked")
-    protected Set<String> getAdmissibleTypes(Map<String, Object> jsonDescription)
+    protected Set<String> getAdmissibleTypes(
+            Map<String, Object> jsonRepresentation)
             throws DereferencingException {
         try {
-            Map<String, Object> attributes = (Map<String, Object>) jsonDescription.get("representation");
-            List<Map<String, String>> typeInfos = (List<Map<String, String>>) attributes.get(RDF_TYPE);
+            List<Map<String, String>> typeInfos = (List<Map<String, String>>) jsonRepresentation.get(RDF_TYPE);
             if (typeInfos == null) {
                 log.warn("Missing type information in JSON description for "
-                        + jsonDescription.get("id"));
+                        + jsonRepresentation.get("id"));
                 return Collections.emptySet();
             }
             Set<String> admissibleTypes = new TreeSet<String>();
@@ -162,7 +164,7 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                                 + " missing 'representation' key: "
                                 + mapper.writeValueAsString(jsonDescription));
             }
-            Set<String> possibleTypes = getAdmissibleTypes(jsonDescription);
+            Set<String> possibleTypes = getAdmissibleTypes(representation);
             if (!possibleTypes.contains(localEntity.getType())) {
                 throw new DereferencingException(String.format(
                         "Remote entity '%s' can be mapped to types:"
@@ -361,12 +363,11 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
             }
             Map<String, String> typeReferenceConstraint = new LinkedHashMap<String, String>();
             typeReferenceConstraint.put("type", "reference");
-            typeReferenceConstraint.put("field",
-                    "http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+            typeReferenceConstraint.put("field", RDF_TYPE);
             typeReferenceConstraint.put("value", remoteType);
             constraints.add(typeReferenceConstraint);
         }
-        List<String> selected = Arrays.asList(namePropertyUri);
+        List<String> selected = Arrays.asList(namePropertyUri, RDF_TYPE);
         query.put("selected", selected);
         query.put("limit", maxSuggestions);
         query.put("constraints", constraints);
@@ -380,7 +381,9 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
         for (Map<String, Object> result : results) {
             String name = readDecodedLiteral(result, namePropertyUri,
                     StringType.INSTANCE, "en").toString();
-            suggestions.add(new RemoteEntity(name, result.get("id").toString()));
+            suggestions.add(new RemoteEntity(name,
+                    URI.create(result.get("id").toString()),
+                    getAdmissibleTypes(result)));
         }
         return suggestions;
     }
