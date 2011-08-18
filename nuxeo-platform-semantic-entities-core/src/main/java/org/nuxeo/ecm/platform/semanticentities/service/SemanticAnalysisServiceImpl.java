@@ -83,9 +83,9 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     private static final String ANY2TEXT = "any2text";
 
-    protected static final String DEFAULT_ENGINE_URL = "https://stanbol.demo.nuxeo.com/engines";
+    protected static final String DEFAULT_STANBOL_URL = "https://stanbol.demo.nuxeo.com/";
 
-    protected static final String ENGINE_URL_PROPERTY = "org.nuxeo.ecm.platform.semanticentities.stanbolUrl";
+    protected static final String STANBOL_URL_PROPERTY = "org.nuxeo.ecm.platform.semanticentities.stanbolUrl";
 
     protected static final String DEFAULT_ENGINE_OUTPUT_FORMAT = "application/rdf+xml";
 
@@ -394,11 +394,15 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         if (effectiveEngineUrl == null) {
             // no Automation Chain configuration available: use the
             // configuration from a properties file
-            effectiveEngineUrl = Framework.getProperty(ENGINE_URL_PROPERTY,
-                    DEFAULT_ENGINE_URL);
+            effectiveEngineUrl = Framework.getProperty(STANBOL_URL_PROPERTY,
+                    DEFAULT_STANBOL_URL);
             if (effectiveEngineUrl.trim().isEmpty()) {
-                effectiveEngineUrl = DEFAULT_ENGINE_URL;
+                effectiveEngineUrl = DEFAULT_STANBOL_URL;
             }
+            if (!effectiveEngineUrl.endsWith("/")) {
+                effectiveEngineUrl += "/";
+            }
+            effectiveEngineUrl += "engines/";
         }
         HttpPost post = new HttpPost(effectiveEngineUrl);
         try {
