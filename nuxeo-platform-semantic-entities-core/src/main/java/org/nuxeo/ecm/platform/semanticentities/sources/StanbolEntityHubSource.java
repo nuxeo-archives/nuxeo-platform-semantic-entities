@@ -130,6 +130,11 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
         try {
             Map<String, Object> attributes = (Map<String, Object>) jsonDescription.get("representation");
             List<Map<String, String>> typeInfos = (List<Map<String, String>>) attributes.get(RDF_TYPE);
+            if (typeInfos == null) {
+                log.warn("Missing type information in JSON description for "
+                        + jsonDescription.get("id"));
+                return Collections.emptySet();
+            }
             Set<String> admissibleTypes = new TreeSet<String>();
             Map<String, String> reverseTypeMapping = descriptor.getReverseMappedTypes();
             for (Map<String, String> typeInfo : typeInfos) {
