@@ -19,8 +19,6 @@ package org.nuxeo.ecm.platform.semanticentities.sources;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -152,6 +150,13 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
             boolean override) throws DereferencingException {
         try {
             Map<String, Object> jsonDescription = fetchJSONDescription(remoteEntity);
+            Map<String, Object> representation = (Map<String, Object>) jsonDescription.get("representation");
+            if (representation == null) {
+                throw new DereferencingException(
+                        "Invalid JSON response from Stanbol server:"
+                                + " missing 'representation' key: "
+                                + mapper.writeValueAsString(jsonDescription));
+            }
             Set<String> possibleTypes = getAdmissibleTypes(jsonDescription);
             if (!possibleTypes.contains(localEntity.getType())) {
                 throw new DereferencingException(String.format(
@@ -182,7 +187,7 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                 String label = localEntity.getTitle();
                 label = label != null ? label : "Missing label";
                 if (titlePropUri != null) {
-                    String labelFromRDF = readDecodedLiteral(jsonDescription,
+                    String labelFromRDF = readDecodedLiteral(representation,
                             titlePropUri, StringType.INSTANCE, "en").toString();
                     label = labelFromRDF != null ? labelFromRDF : label;
                 }
@@ -197,7 +202,6 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
             mapping.remove("entity:sameas");
 
             // generic handling of mapped properties
-            Map<String, Object> representation = (Map<String, Object>) jsonDescription.get("representation");
             for (Entry<String, String> mappedProperty : mapping.entrySet()) {
                 String localPropertyName = mappedProperty.getKey();
                 String remotePropertyUri = mappedProperty.getValue();

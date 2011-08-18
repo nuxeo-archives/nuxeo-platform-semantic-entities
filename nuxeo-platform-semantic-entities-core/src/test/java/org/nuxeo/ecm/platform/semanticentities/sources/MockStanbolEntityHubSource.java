@@ -16,8 +16,10 @@ public class MockStanbolEntityHubSource extends StanbolEntityHubSource {
         if (uri.toString().endsWith("Obama.jpg")) {
             return getClass().getResourceAsStream(
                     "/mock_replies/200px-Official_portrait_of_Barack_Obama.jpg");
-        } else if (uri.toString().startsWith(DBPEDIA_PREFIX)) {
-            String fileName = uri.toString().substring(DBPEDIA_PREFIX.length())
+        }
+        String query = uri.getQuery();
+        if (query.startsWith("id=" + DBPEDIA_PREFIX)) {
+            String fileName = query.substring(("id=" + DBPEDIA_PREFIX).length())
                     + ".json";
             return getClass().getResourceAsStream("/mock_replies/" + fileName);
         }

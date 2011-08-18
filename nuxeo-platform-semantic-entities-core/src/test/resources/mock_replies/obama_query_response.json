@@ -1,0 +1,80 @@
+{
+    "query": {
+        "selected": [
+            "http:\/\/www.iks-project.eu\/ontology\/rick\/query\/score",
+            "http:\/\/www.w3.org\/2000\/01\/rdf-schema#label"
+        ],
+        "constraints": [
+            {
+                "type": "reference",
+                "value": "http:\/\/dbpedia.org\/ontology\/Person",
+                "field": "http:\/\/www.w3.org\/1999\/02\/22-rdf-syntax-ns#type"
+            },
+            {
+                "type": "text",
+                "patternType": "none",
+                "text": "Obama",
+                "field": "http:\/\/www.w3.org\/2000\/01\/rdf-schema#label"
+            }
+        ],
+        "limit": 3,
+        "offset": 0
+    },
+    "results": [
+        {
+            "id": "http:\/\/dbpedia.org\/resource\/Barack_Obama",
+            "http:\/\/www.iks-project.eu\/ontology\/rick\/query\/score": [{
+                "type": "value",
+                "xsd:datatype": "xsd:float",
+                "value": 121.964424
+            }],
+            "http:\/\/www.w3.org\/2000\/01\/rdf-schema#label": [
+                {
+                    "type": "text",
+                    "xml:lang": "de",
+                    "value": "Barack Obama"
+                },
+                {
+                    "type": "text",
+                    "xml:lang": "fr",
+                    "value": "Barack Obama"
+                },
+                {
+                    "type": "text",
+                    "xml:lang": "en",
+                    "value": "Barack Obama"
+                },
+                {
+                    "type": "text",
+                    "xml:lang": "it",
+                    "value": "Barack Obama"
+                }
+            ]
+        },
+        {
+            "id": "http:\/\/dbpedia.org\/resource\/Michelle_Obama",
+            "http:\/\/www.iks-project.eu\/ontology\/rick\/query\/score": [{
+                "type": "value",
+                "xsd:datatype": "xsd:float",
+                "value": 15.408398
+            }],
+            "http:\/\/www.w3.org\/2000\/01\/rdf-schema#label": [
+                {
+                    "type": "text",
+                    "xml:lang": "en",
+                    "value": "Michelle Obama"
+                },
+                {
+                    "type": "text",
+                    "xml:lang": "de",
+                    "value": "Michelle Obama"
+                },
+                {
+                    "type": "text",
+                    "xml:lang": "it",
+                    "value": "Michelle Obama"
+                }
+            ]
+        }
+    ]
+}
