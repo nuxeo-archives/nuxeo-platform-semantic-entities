@@ -102,8 +102,8 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
             throws JsonParseException, JsonMappingException, IOException {
         // TODO: make the format configurable and upgrade to JSON-LD once
         // the spec is stabilizing a bit
-        URI resourceUri = UriBuilder.fromPath(endpointURL).queryParam("id",
-                remoteEntity.toString()).build();
+        URI resourceUri = UriBuilder.fromPath(endpointURL).path("entity").queryParam(
+                "id", remoteEntity.toString()).build();
         return mapper.readValue(doHttpGet(resourceUri, "application/json"),
                 Map.class);
     }

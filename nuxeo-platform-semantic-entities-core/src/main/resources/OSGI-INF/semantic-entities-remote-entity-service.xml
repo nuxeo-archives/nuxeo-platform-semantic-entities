@@ -10,7 +10,7 @@
   <documentation>
     The RemoteEntityService service provides a generic way to register linked data
     sources to lookup up and download attributes of entity definitions from a remote
-    server such as DBpedia for instance.
+    server such as direct DBpedia access or through a Stanbol index for instance.
   </documentation>
 
   <extension-point name="remoteSources">
@@ -19,22 +19,26 @@
 
       <code>
         <remoteSource name="dbpedia" uriPrefix="http://dbpedia.org/resource/"
-          class="org.nuxeo.ecm.platform.semanticentities.sources.DBpediaEntitySource"
+          class="org.nuxeo.ecm.platform.semanticentities.sources.StanbolEntityHubSource"
           enabled="true">
           <typeMapping default="Entity">
-         	<type name="Person">http://dbpedia.org/ontology/Person</type>
-         	<type name="Organization">http://dbpedia.org/ontology/Organisation</type>
-         	<type name="Place">http://dbpedia.org/ontology/Place</type>
+            <type name="Person">http://dbpedia.org/ontology/Person</type>
+            <type name="Organization">http://dbpedia.org/ontology/Organisation</type>
+            <type name="Place">http://dbpedia.org/ontology/Place</type>
             <type name="Entity">http://www.w3.org/2002/07/owl#Thing</type>
           </typeMapping>
           <propertyMapping>
             <field name="dc:title">http://www.w3.org/2000/01/rdf-schema#label</field>
             <field name="entity:summary">http://dbpedia.org/ontology/abstract</field>
             <field name="entity:altnames">http://www.w3.org/2000/01/rdf-schema#label</field>
-            <field name="entity:depiction">http://dbpedia.org/ontology/thumbnail</field>
+            <field name="entity:depiction">http://xmlns.com/foaf/0.1/depiction</field>
             <field name="person:birthDate">http://dbpedia.org/ontology/birthDate</field>
             <field name="person:deathDate">http://dbpedia.org/ontology/deathDate</field>
           </propertyMapping>
+          <parameters>
+            <parameter name="stanbolURL">${org.nuxeo.ecm.platform.semanticentities.stanbolUrl}</parameter>
+            <parameter name="site">dbpedia</parameter>
+          </parameters>
         </remoteSource>
       </code>
     </documentation>
@@ -46,11 +50,12 @@
     point="remoteSources">
 
     <documentation>
-      Default remote source for the DBpedia knowledge base.
+      Default remote source for the DBpedia knowledge indexed on a Stanbol
+      server for faster lookup and offline usage.
     </documentation>
 
     <remoteSource name="dbpedia" uriPrefix="http://dbpedia.org/resource/"
-      class="org.nuxeo.ecm.platform.semanticentities.sources.DBpediaEntitySource"
+      class="org.nuxeo.ecm.platform.semanticentities.sources.StanbolEntityHubSource"
       enabled="true">
       <typeMapping default="Entity">
         <type name="Person">http://dbpedia.org/ontology/Person</type>
@@ -62,10 +67,14 @@
         <field name="dc:title">http://www.w3.org/2000/01/rdf-schema#label</field>
         <field name="entity:summary">http://dbpedia.org/ontology/abstract</field>
         <field name="entity:altnames">http://www.w3.org/2000/01/rdf-schema#label</field>
-        <field name="entity:depiction">http://dbpedia.org/ontology/thumbnail</field>
+        <field name="entity:depiction">http://xmlns.com/foaf/0.1/depiction</field>
         <field name="person:birthDate">http://dbpedia.org/ontology/birthDate</field>
         <field name="person:deathDate">http://dbpedia.org/ontology/deathDate</field>
       </propertyMapping>
+      <parameters>
+        <parameter name="stanbolURL">${org.nuxeo.ecm.platform.semanticentities.stanbolUrl}</parameter>
+        <parameter name="site">dbpedia</parameter>
+      </parameters>
     </remoteSource>
 
   </extension>
