@@ -34,6 +34,7 @@ import java.util.TreeSet;
 
 import javax.ws.rs.core.UriBuilder;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -276,6 +277,10 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
         }
         for (Map<String, String> propInfo : propInfos) {
             String contentURI = propInfo.get("value");
+            if (contentURI.endsWith(".svg")) {
+                // hardcoded skip for vectorial depictions
+                return null;
+            }
             InputStream is = null;
             try {
                 is = doHttpGet(URI.create(contentURI), null);
@@ -290,16 +295,12 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                 }
                 return (Serializable) blob;
             } catch (IOException e) {
+                // DBpedia links to commons.wikimedia.org hosted resources are
+                // not always up to date, skip them without crashing
                 log.warn(e.getMessage());
                 return null;
             } finally {
-                if (is != null) {
-                    try {
-                        is.close();
-                    } catch (IOException e) {
-                        log.error(e, e);
-                    }
-                }
+                IOUtils.closeQuietly(is);
             }
         }
         return null;
