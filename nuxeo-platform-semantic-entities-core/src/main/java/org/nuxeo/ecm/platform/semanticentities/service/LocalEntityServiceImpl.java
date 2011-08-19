@@ -467,10 +467,9 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         remoteEntities.removeAll(mergedRemoteEntities);
         double invScoreRemote = 2.0;
         for (RemoteEntity remoteEntity : remoteEntities) {
-            // TODO: how to escape?
             String query = String.format(
                     "SELECT * FROM Entity WHERE entity:sameas = '%s' ORDER BY dc:modified",
-                    remoteEntity.uri.toString());
+                    remoteEntity.uri.toString().replaceAll("'", "\\'"));
             DocumentModelList localMatchingEntities = session.query(query);
             if (localMatchingEntities.size() > 0) {
                 if (localMatchingEntities.size() > 1) {
