@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -103,8 +104,15 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
             throws JsonParseException, JsonMappingException, IOException {
         // TODO: make the format configurable and upgrade to JSON-LD once
         // the spec is stabilizing a bit
+
+        // force a encoding of the URI that will be passed as a query parameter
+        // since the JAX-RS resource will decode it (once) while UriBuilder will
+        // not 'double' encode occurrences of % followed by 2 hexa digits.
+        String encodedResourceUri = URLEncoder.encode(remoteEntity.toString(),
+                "UTF-8");
+
         URI resourceUri = UriBuilder.fromPath(endpointURL).path("entity").queryParam(
-                "id", remoteEntity.toString()).build();
+                "id", encodedResourceUri).build();
         return mapper.readValue(doHttpGet(resourceUri, "application/json"),
                 Map.class);
     }
