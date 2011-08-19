@@ -105,12 +105,12 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
         // TODO: make the format configurable and upgrade to JSON-LD once
         // the spec is stabilizing a bit
 
-        // force a encoding of the URI that will be passed as a query parameter
-        // since the JAX-RS resource will decode it (once) while UriBuilder will
-        // not 'double' encode occurrences of % followed by 2 hexa digits.
+        // force a %-encoding of the URI that will be passed as a query
+        // parameter since the JAX-RS server will decode it (once) while
+        // UriBuilder will refuse 'double' encode occurrences of % followed by
+        // 2 consecutive hexa digits.
         String encodedResourceUri = URLEncoder.encode(remoteEntity.toString(),
                 "UTF-8");
-
         URI resourceUri = UriBuilder.fromPath(endpointURL).path("entity").queryParam(
                 "id", encodedResourceUri).build();
         return mapper.readValue(doHttpGet(resourceUri, "application/json"),
