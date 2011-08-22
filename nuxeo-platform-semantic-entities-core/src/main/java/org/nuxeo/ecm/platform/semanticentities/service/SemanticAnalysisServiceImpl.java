@@ -101,6 +101,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     protected boolean linkShortPersonNames = false;
 
+    protected boolean prefetchedSuggestion = true;
+
     // use framework property by default and fallback to public nuxeo instance
     protected String engineURL = null;
 
@@ -264,8 +266,15 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 continue;
             }
 
-            List<EntitySuggestion> suggestions = leService.suggestEntity(
-                    session, group.name, group.type, 3);
+            List<EntitySuggestion> suggestions;
+            if (group.hasPrefetchedSuggestions()) {
+                // suggestions were prefetched at analysis time
+                suggestions = group.entitySuggestions;
+            } else {
+                // use remote entity source
+                suggestions = leService.suggestEntity(session, group.name,
+                        group.type, 3);
+            }
 
             if (suggestions.isEmpty() && linkToUnrecognizedEntities) {
                 DocumentModel localEntity = session.createDocumentModel(group.type);
@@ -333,6 +342,9 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                     continue;
                 }
                 group.occurrences.add(subMention);
+            }
+            if (prefetchedSuggestion) {
+                // TODO NXSEM-35
             }
             groups.add(group);
         }
