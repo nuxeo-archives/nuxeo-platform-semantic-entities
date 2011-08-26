@@ -18,6 +18,7 @@ package org.nuxeo.ecm.platform.semanticentities;
 
 import java.io.Serializable;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.nuxeo.ecm.core.api.ClientException;
@@ -26,7 +27,8 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 /**
  * Data transfer object for the name lookup API of the LocalEntityService: it is
  * represent both local entities (DocumentModel) and remote entities that don't
- * have a match in the local repo.
+ * have a match in the local repo represented as in memory DocumentModel or
+ * dereferenceable URIs.
  */
 public class EntitySuggestion implements Comparable<EntitySuggestion>,
         Serializable {
@@ -35,7 +37,7 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
 
     public String label;
 
-    public DocumentModel localEntity;
+    public DocumentModel entity;
 
     public String type;
 
@@ -43,10 +45,16 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
 
     public double score = 0.0;
 
-    public EntitySuggestion(DocumentModel localEntity) throws ClientException {
-        this.localEntity = localEntity;
-        this.label = localEntity.getTitle();
-        this.type = localEntity.getType();
+    public EntitySuggestion(DocumentModel entity) throws ClientException {
+        this.entity = entity;
+        this.label = entity.getTitle();
+        this.type = entity.getType();
+        @SuppressWarnings("unchecked")
+        List<String> remoteEntityUris = entity.getProperty("entity:sameas").getValue(
+                List.class);
+        if (remoteEntityUris != null) {
+            this.remoteEntityUris.addAll(remoteEntityUris);
+        }
     }
 
     public EntitySuggestion(String label, String remoteEntityUri, String type) {
@@ -61,7 +69,7 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
     }
 
     public boolean isLocal() {
-        return localEntity != null;
+        return entity != null && entity.getRef() != null;
     }
 
     @Override
@@ -83,7 +91,7 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
      */
     public String getLocalId() {
         if (isLocal()) {
-            return localEntity.getId();
+            return entity.getId();
         } else {
             return null;
         }

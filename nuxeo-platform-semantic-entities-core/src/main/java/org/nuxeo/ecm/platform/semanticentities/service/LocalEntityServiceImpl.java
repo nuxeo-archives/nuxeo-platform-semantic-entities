@@ -221,13 +221,16 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
 
         DocumentRef entityRef = null;
         if (entitySuggestion.isLocal()) {
-            entityRef = entitySuggestion.localEntity.getRef();
+            entityRef = entitySuggestion.entity.getRef();
         } else {
             // use the recentlyDereferenced cache that is shared among threads
             // and concurrent transaction to avoid dereferencing the same remote
             // entity to duplicated local entities
             for (String uri : entitySuggestion.remoteEntityUris) {
                 entityRef = recentlyDereferenced.get(uri);
+                if (entityRef != null) {
+                    break;
+                }
             }
             if (entityRef == null) {
                 entityRef = asLocalEntity(session, entitySuggestion).getRef();
@@ -578,13 +581,21 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     public DocumentModel asLocalEntity(CoreSession session,
             EntitySuggestion suggestion) throws ClientException, IOException {
         if (suggestion.isLocal()) {
-            return suggestion.localEntity;
+            return suggestion.entity;
         } else if (suggestion.remoteEntityUris.isEmpty()) {
             throw new IllegalArgumentException(
                     "The provided suggestion has neither local"
                             + " entity nor emote entities links");
         }
+        for (String remoteEntityUri : suggestion.remoteEntityUris) {
+            DocumentModel localEntity = getLinkedLocalEntity(session,
+                    URI.create(remoteEntityUri));
+            if (localEntity != null) {
+                return localEntity;
+            }
+        }
 
+        // dereference remote entity as a local entity
         RemoteEntityService reService;
         PathSegmentService psService;
         try {
@@ -594,15 +605,26 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             throw new RuntimeException(e);
         }
         DocumentModel entityContainer = getEntityContainer(session);
-
-        DocumentModel localEntity = session.createDocumentModel(suggestion.type);
-        localEntity.setPropertyValue("dc:title", suggestion.label);
-        String pathSegment = psService.generatePathSegment(localEntity);
-        localEntity.setPathInfo(entityContainer.getPathAsString(), pathSegment);
-
-        for (String remoteEntity : suggestion.remoteEntityUris) {
-            URI uri = URI.create(remoteEntity);
-            reService.dereferenceInto(localEntity, uri, false);
+        DocumentModel localEntity;
+        if (suggestion.entity != null) {
+            // this is pre-fetched in memory representation of a remote entity
+            // that does not already exist in the local repository
+            localEntity = suggestion.entity;
+            // ensure that the parent location and path segment are ok
+            String pathSegment = psService.generatePathSegment(localEntity);
+            localEntity.setPathInfo(entityContainer.getPathAsString(),
+                    pathSegment);
+        } else {
+            // lazy dereferencing into a new local entity document
+            localEntity = session.createDocumentModel(suggestion.type);
+            localEntity.setPropertyValue("dc:title", suggestion.label);
+            String pathSegment = psService.generatePathSegment(localEntity);
+            localEntity.setPathInfo(entityContainer.getPathAsString(),
+                    pathSegment);
+            for (String remoteEntity : suggestion.remoteEntityUris) {
+                URI uri = URI.create(remoteEntity);
+                reService.dereferenceInto(localEntity, uri, false);
+            }
         }
         localEntity = session.createDocument(localEntity);
         for (String remoteEntity : suggestion.remoteEntityUris) {
