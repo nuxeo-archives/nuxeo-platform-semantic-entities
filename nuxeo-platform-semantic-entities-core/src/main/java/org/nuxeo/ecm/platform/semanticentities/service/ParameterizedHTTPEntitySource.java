@@ -2,8 +2,20 @@ package org.nuxeo.ecm.platform.semanticentities.service;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeSet;
 
+import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -19,7 +31,22 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpParams;
+import org.nuxeo.ecm.core.api.Blob;
+import org.nuxeo.ecm.core.api.ClientException;
+import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.impl.blob.StreamingBlob;
+import org.nuxeo.ecm.core.api.model.Property;
+import org.nuxeo.ecm.core.api.model.PropertyException;
+import org.nuxeo.ecm.core.schema.types.Type;
+import org.nuxeo.ecm.core.schema.types.primitives.StringType;
+import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntitySource;
+
+import com.hp.hpl.jena.rdf.model.Literal;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.NodeIterator;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
 
 /**
  * Abstract base class to be used by all contributions to the
@@ -30,6 +57,8 @@ import org.nuxeo.ecm.platform.semanticentities.RemoteEntitySource;
  */
 public abstract class ParameterizedHTTPEntitySource implements
         RemoteEntitySource {
+    
+    private static final Log log = LogFactory.getLog(ParameterizedHTTPEntitySource.class);
     
     public static final String OWL_THING = "http://www.w3.org/2002/07/owl#Thing";
 
@@ -125,6 +154,239 @@ public abstract class ParameterizedHTTPEntitySource implements
     @Override
     public boolean canSuggestRemoteEntity() {
         return true;
+    }
+    
+    // RDF specific handling
+
+    @SuppressWarnings("unchecked")
+    public void dereferenceIntoFromModel(DocumentModel localEntity,
+            URI remoteEntity, Model rdfModel, boolean override)
+            throws DereferencingException {
+
+        // check that the remote entity has a type that is compatible with
+        // the local entity document model
+        Collection<String> possibleTypes = extractMappedTypesFromModel(
+                remoteEntity, rdfModel);
+        if (!possibleTypes.contains(localEntity.getType())) {
+            throw new DereferencingException(String.format(
+                    "Remote entity '%s' can be mapped to types:"
+                            + " ('%s') but not to '%s'", remoteEntity,
+                    StringUtils.join(possibleTypes, "', '"),
+                    localEntity.getType()));
+        }
+
+        Resource resource = rdfModel.getResource(remoteEntity.toString());
+        
+        // special handling for the entity:sameas property
+        List<String> samesas = new ArrayList<String>();
+        List<String> sameasDisplayLabel = new ArrayList<String>();
+        try {
+            Property sameasProp = localEntity.getProperty("entity:sameas");
+            if (sameasProp.getValue() != null) {
+                samesas.addAll(sameasProp.getValue(List.class));
+            }
+            Property sameasDisplayLabelProp = localEntity.getProperty("entity:sameasDisplayLabel");
+            if (sameasDisplayLabelProp.getValue() != null) {
+                sameasDisplayLabel.addAll(sameasDisplayLabelProp.getValue(List.class));
+            }
+            if (!samesas.contains(remoteEntity.toString())) {
+                samesas.add(remoteEntity.toString());
+                localEntity.setPropertyValue("entity:sameas",
+                        (Serializable) samesas);
+
+                String titlePropUri = descriptor.getMappedProperties().get(
+                        "dc:title");
+                String label = localEntity.getTitle();
+                label = label != null ? label : "Missing label";
+                if (titlePropUri != null) {
+                    String labelFromRDF = (String) readDecodedLiteral(rdfModel,
+                            resource, titlePropUri, StringType.INSTANCE, "en");
+                    label = labelFromRDF != null ? labelFromRDF : label;
+                }
+                sameasDisplayLabel.add(label);
+                localEntity.setPropertyValue("entity:sameasDisplayLabel",
+                        (Serializable) sameasDisplayLabel);
+            }
+        } catch (Exception e) {
+            throw new DereferencingException(e);
+        }
+
+        HashMap<String, String> mapping = new HashMap<String, String>(
+                descriptor.getMappedProperties());
+        // as sameas has a special handling, remove it from the list of
+        // properties to synchronize the generic way
+        mapping.remove("entity:sameas");
+
+        // generic handling of mapped properties
+        for (Entry<String, String> mappedProperty : mapping.entrySet()) {
+            String localPropertyName = mappedProperty.getKey();
+            String remotePropertyUri = mappedProperty.getValue();
+            try {
+                Property localProperty = localEntity.getProperty(localPropertyName);
+                Type type = localProperty.getType();
+                if (type.isListType()) {
+                    // only synchronize string lists right now
+                    List<String> newValues = new ArrayList<String>();
+                    if (localProperty.getValue() != null) {
+                        newValues.addAll(localProperty.getValue(List.class));
+                    }
+                    if (override) {
+                        newValues.clear();
+                    }
+                    for (String value : readStringList(rdfModel, resource,
+                            remotePropertyUri)) {
+                        if (!newValues.contains(value)) {
+                            newValues.add(value);
+                        }
+                    }
+                    localEntity.setPropertyValue(localPropertyName,
+                            (Serializable) newValues);
+                } else {
+                    if (localProperty.getValue() == null
+                            || "".equals(localProperty.getValue()) || override) {
+                        if (type.isComplexType()
+                                && "content".equals(type.getName())) {
+                            Serializable linkedResource = (Serializable) readLinkedResource(
+                                    rdfModel, resource, remotePropertyUri);
+                            if (linkedResource != null) {
+                                localEntity.setPropertyValue(localPropertyName,
+                                        linkedResource);
+                            }
+                        } else {
+                            Serializable literal = readDecodedLiteral(rdfModel,
+                                    resource, remotePropertyUri, type, "en");
+                            if (literal != null) {
+                                localEntity.setPropertyValue(localPropertyName,
+                                        literal);
+                            }
+                        }
+                    }
+                }
+            } catch (PropertyException e) {
+                // ignore missing properties
+            } catch (ClientException e) {
+                throw new DereferencingException(e);
+            }
+        }
+    }
+
+    protected Serializable readDecodedLiteral(Model rdfModel,
+            Resource resource, String remotePropertyUri, Type type,
+            String requestedLang) {
+        com.hp.hpl.jena.rdf.model.Property remoteProperty = rdfModel.getProperty(remotePropertyUri);
+        NodeIterator it = rdfModel.listObjectsOfProperty(resource,
+                remoteProperty);
+        while (it.hasNext()) {
+            RDFNode node = it.nextNode();
+            if (node.isLiteral()) {
+                Literal literal = ((Literal) node.as(Literal.class));
+                String lang = literal.getLanguage();
+                if (lang == null || lang.equals("")
+                        || lang.equals(requestedLang)) {
+                    Serializable decoded = (Serializable) type.decode(literal.getString());
+                    if (decoded instanceof String) {
+                        decoded = StringEscapeUtils.unescapeHtml((String) decoded);
+                    }
+                    return decoded;
+                }
+            }
+        }
+        return null;
+    }
+
+    
+    protected Blob readLinkedResource(Model rdfModel, Resource resource,
+            String remotePropertyUri) {
+        // download depictions or other kind of linked
+        // resources
+        com.hp.hpl.jena.rdf.model.Property remoteProperty = rdfModel.getProperty(remotePropertyUri);
+        NodeIterator it = rdfModel.listObjectsOfProperty(resource,
+                remoteProperty);
+        if (it.hasNext()) {
+            String contentURI = ((Resource) it.nextNode().as(Resource.class)).getURI();
+
+            InputStream is = null;
+            try {
+                is = doHttpGet(URI.create(contentURI), null);
+                if (is == null) {
+                    log.warn("failed to fetch resource: " + contentURI);
+                    return null;
+                }
+                Blob blob = StreamingBlob.createFromStream(is).persist();
+                int lastSlashIndex = contentURI.lastIndexOf('/');
+                if (lastSlashIndex != -1) {
+                    blob.setFilename(contentURI.substring(lastSlashIndex + 1));
+                }
+                return blob;
+            } catch (IOException e) {
+                log.warn(e.getMessage());
+                return null;
+            } finally {
+                if (is != null) {
+                    try {
+                        is.close();
+                    } catch (IOException e) {
+                        log.error(e, e);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    protected List<String> readStringList(Model rdfModel, Resource resource,
+            String remotePropertyUri) {
+
+        com.hp.hpl.jena.rdf.model.Property remoteProperty = rdfModel.getProperty(remotePropertyUri);
+        NodeIterator it = rdfModel.listObjectsOfProperty(resource,
+                remoteProperty);
+
+        List<String> collectedValues = new ArrayList<String>();
+        while (it.hasNext()) {
+            RDFNode node = it.nextNode();
+            String value = null;
+            if (node.isLiteral()) {
+                value = ((Literal) node.as(Literal.class)).getString();
+                value = StringEscapeUtils.unescapeHtml(value);
+            } else if (node.isURIResource()) {
+                value = ((Resource) node.as(Resource.class)).getURI();
+            } else {
+                continue;
+            }
+            if (value != null && !collectedValues.contains(value)) {
+                collectedValues.add(value);
+            }
+        }
+        return collectedValues;
+    }
+
+    /**
+     * @param remoteEntity URI of the remote entity
+     * @param rdfModel RDF model describing the remote entity
+     * @return list of local types that are compatible with the remote entity
+     *         according to the type mapping configuration for this source
+     */
+    protected Set<String> extractMappedTypesFromModel(URI remoteEntity,
+            Model rdfModel) {
+        Resource resource = rdfModel.getResource(remoteEntity.toString());
+        com.hp.hpl.jena.rdf.model.Property type = rdfModel.getProperty(RDF_TYPE);
+
+        TreeSet<String> typeURIs = new TreeSet<String>();
+        TreeSet<String> mappedLocalTypes = new TreeSet<String>();
+        NodeIterator it = rdfModel.listObjectsOfProperty(resource, type);
+        while (it.hasNext()) {
+            RDFNode node = it.nextNode();
+            if (node.isURIResource()) {
+                typeURIs.add(((Resource) node.as(Resource.class)).getURI());
+            }
+        }
+        Set<Entry<String, String>> typeMapping = descriptor.getMappedTypes().entrySet();
+        for (Entry<String, String> typeMapEntry : typeMapping) {
+            if (typeURIs.contains(typeMapEntry.getValue())) {
+                mappedLocalTypes.add(typeMapEntry.getKey());
+            }
+        }
+        return mappedLocalTypes;
     }
 
 }

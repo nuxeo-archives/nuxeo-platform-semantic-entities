@@ -23,6 +23,8 @@ import java.util.Set;
 
 import org.nuxeo.ecm.core.api.DocumentModel;
 
+import com.hp.hpl.jena.rdf.model.Model;
+
 public interface RemoteEntitySource {
 
     /**
