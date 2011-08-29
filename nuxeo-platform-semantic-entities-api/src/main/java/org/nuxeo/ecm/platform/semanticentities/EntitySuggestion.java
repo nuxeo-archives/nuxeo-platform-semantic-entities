@@ -46,6 +46,11 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
     public double score = 0.0;
 
     public EntitySuggestion(DocumentModel entity) throws ClientException {
+        this(entity, 0);
+    }
+
+    public EntitySuggestion(DocumentModel entity, double score)
+            throws ClientException {
         this.entity = entity;
         this.label = entity.getTitle();
         this.type = entity.getType();
@@ -55,12 +60,19 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
         if (remoteEntityUris != null) {
             this.remoteEntityUris.addAll(remoteEntityUris);
         }
+        this.score = score;
     }
 
     public EntitySuggestion(String label, String remoteEntityUri, String type) {
+        this(label, remoteEntityUri, type, 0);
+    }
+
+    public EntitySuggestion(String label, String remoteEntityUri, String type,
+            double score) {
         this.label = label;
         this.remoteEntityUris.add(remoteEntityUri);
         this.type = type;
+        this.score = score;
     }
 
     public EntitySuggestion withScore(double score) {
@@ -72,9 +84,16 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
         return entity != null && entity.getRef() != null;
     }
 
+    /*
+     * (non-Javadoc)
+     *
+     * @see java.lang.Comparable#compareTo(java.lang.Object)
+     *
+     * Largest scores fist.
+     */
     @Override
     public int compareTo(EntitySuggestion o) {
-        return (int) Math.signum(score - o.score);
+        return -(int) Math.signum(score - o.score);
     }
 
     // public getters for Seam

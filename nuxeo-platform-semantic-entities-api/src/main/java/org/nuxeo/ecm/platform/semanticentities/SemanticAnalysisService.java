@@ -23,23 +23,30 @@ public interface SemanticAnalysisService {
     /**
      * Synchronous analysis of pre-extracted text content (without linking).
      *
+     * @param session used to create in-memory prefetched entity suggestions if
+     *            available in the analysis engine response.
      * @param textContent the text to send to the engines
      * @return Occurrence suggestions
      * @throws IOException if the engine is not reachable or fails
+     * @throws ClientException if the in-memory creation of prefetched entity
+     *             suggestions fails (very unlikely)
      */
-    List<OccurrenceGroup> analyze(String textContent) throws IOException;
+    List<OccurrenceGroup> analyze(CoreSession session, String textContent)
+            throws IOException, ClientException;
 
     /**
      * Synchronous analysis of a document (without linking).
      *
+     * @param session used to create in-memory prefetched entity suggestions if
+     *            available in the analysis engine response.
      * @param doc the document to analyze (must be attached to an active core
      *            session to extract the text content)
      * @return Occurrence suggestions
      * @throws ClientException if the text extraction fails
      * @throws IOException if the engine is not reachable or fails
      */
-    List<OccurrenceGroup> analyze(DocumentModel doc) throws IOException,
-            ClientException;
+    List<OccurrenceGroup> analyze(CoreSession session, DocumentModel doc)
+            throws IOException, ClientException;
 
     /**
      * Asynchronously save the result of the analyze using a dedicated

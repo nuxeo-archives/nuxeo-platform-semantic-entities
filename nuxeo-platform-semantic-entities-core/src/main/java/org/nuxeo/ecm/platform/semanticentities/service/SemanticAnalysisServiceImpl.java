@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.io.StringReader;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,9 +54,12 @@ import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.utils.BlobsExtractor;
 import org.nuxeo.ecm.platform.semanticentities.AnalysisTask;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
+import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.ProgressStatus;
+import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
+import org.nuxeo.ecm.platform.semanticentities.RemoteEntitySource;
 import org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService;
 import org.nuxeo.ecm.platform.semanticentities.SerializationTask;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
@@ -72,6 +76,7 @@ import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.ResIterator;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.rdf.model.StmtIterator;
 
 public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         SemanticAnalysisService {
@@ -101,7 +106,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     protected boolean linkShortPersonNames = false;
 
-    protected boolean prefetchedSuggestion = true;
+    protected boolean prefetchSuggestion = true;
 
     // use framework property by default and fallback to public nuxeo instance
     protected String engineURL = null;
@@ -125,6 +130,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     protected ThreadPoolExecutor serializationExecutor;
 
     protected boolean active = false;
+
+    protected RemoteEntityService reService;
 
     // TODO: make the following configurable using an extension point
     protected static final Map<String, String> localTypes = new HashMap<String, String>();
@@ -240,7 +247,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                             doc.getRef()),
                     ProgressStatus.STATUS_ANALYSIS_PENDING);
             String textContent = extractText(doc);
-            createLinks(doc, session, analyze(textContent));
+            createLinks(doc, session, analyze(session, textContent));
         } finally {
             states.remove(new DocumentLocationImpl(doc.getRepositoryName(),
                     doc.getRef()));
@@ -295,13 +302,16 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         }
     }
 
-    public List<OccurrenceGroup> findStanbolEntityOccurrences(Model model) {
+    public List<OccurrenceGroup> findStanbolEntityOccurrences(
+            CoreSession session, Model model) throws DereferencingException,
+            ClientException {
         // Retrieve the existing text annotations handling the subsumption
         // relationships
         Property type = model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
         Property entityType = model.getProperty("http://purl.org/dc/terms/type");
         Property dcRelation = model.getProperty("http://purl.org/dc/terms/relation");
         Resource textAnnotationType = model.getResource("http://fise.iks-project.eu/ontology/TextAnnotation");
+
         ResIterator it = model.listSubjectsWithProperty(type,
                 textAnnotationType);
         List<OccurrenceGroup> groups = new ArrayList<OccurrenceGroup>();
@@ -334,19 +344,65 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             ResIterator it2 = model.listSubjectsWithProperty(dcRelation,
                     annotation);
             for (; it2.hasNext();) {
+                Resource linkedResource = it2.nextResource();
                 OccurrenceInfo subMention = getOccurrenceInfo(model,
-                        it2.nextResource());
-                if (subMention == null) {
+                        linkedResource);
+                if (subMention != null) {
+                    // this is a sub-mention
+                    group.occurrences.add(subMention);
                     continue;
                 }
-                group.occurrences.add(subMention);
+                if (prefetchSuggestion) {
+                    // maybe this is a suggestion, try to fetch it
+                    EntitySuggestion suggestion = getEntitySuggestion(session,
+                            model, linkedResource, localType);
+                    if (suggestion != null) {
+                        group.entitySuggestions.add(suggestion);
+                    }
+                }
             }
-            if (prefetchedSuggestion) {
-                // TODO NXSEM-35
-            }
+            // sort by score
+            Collections.sort(group.entitySuggestions);
             groups.add(group);
         }
         return groups;
+    }
+
+    protected EntitySuggestion getEntitySuggestion(CoreSession session,
+            Model model, Resource entitySuggestionResource, String localType)
+            throws DereferencingException, ClientException {
+        Property entityReference = model.getProperty("http://fise.iks-project.eu/ontology/entity-reference");
+        Property scoreProperty = model.getProperty("http://fise.iks-project.eu/ontology/confidence");
+        Property entityLabelProperty = model.getProperty("http://fise.iks-project.eu/ontology/entity-label");
+        Resource linkedResource = entitySuggestionResource.getPropertyResourceValue(entityReference);
+        if (linkedResource == null) {
+            return null;
+        }
+        Statement scoreStmt = entitySuggestionResource.getProperty(scoreProperty);
+        double score = scoreStmt != null ? scoreStmt.getObject().asLiteral().getDouble()
+                : 0.0;
+        // check whether the pre-fetched model has additional info on the linked
+        // resource
+        Property type = model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+        StmtIterator typeIterator = linkedResource.listProperties(type);
+        String remoteEntityUri = linkedResource.getURI();
+        if (typeIterator.hasNext()) {
+            // delegate the pre-fetch the description using the mapping
+            // information from the
+            // remote sources
+            DocumentModel entity = session.createDocumentModel(localType);
+            getRemoteEntityService().dereferenceIntoFromModel(entity,
+                    URI.create(remoteEntityUri), model, true);
+            return new EntitySuggestion(entity, score);
+        } else {
+            // treat the suggestion as a lazily fetched remote entity
+            Statement labelStmt = entitySuggestionResource.getProperty(entityLabelProperty);
+            if (labelStmt != null) {
+                String label = labelStmt.getObject().asLiteral().getString();
+                return new EntitySuggestion(label, remoteEntityUri, localType, score);
+            }
+        }
+        return null;
     }
 
     protected OccurrenceInfo getOccurrenceInfo(Model model, Resource annotation) {
@@ -378,23 +434,24 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         }
     }
 
-    public List<OccurrenceGroup> analyze(String textContent) throws IOException {
+    public List<OccurrenceGroup> analyze(CoreSession session, String textContent)
+            throws IOException, ClientException {
         String output = callSemanticEngine(textContent, outputFormat, 2);
         Model model = ModelFactory.createDefaultModel().read(
                 new StringReader(output), null);
-        return findStanbolEntityOccurrences(model);
+        return findStanbolEntityOccurrences(session, model);
     }
 
     @Override
-    public List<OccurrenceGroup> analyze(DocumentModel doc) throws IOException,
-            ClientException {
+    public List<OccurrenceGroup> analyze(CoreSession session, DocumentModel doc)
+            throws IOException, ClientException {
         states.put(
                 new DocumentLocationImpl(doc.getRepositoryName(), doc.getRef()),
                 ProgressStatus.STATUS_ANALYSIS_PENDING);
         if (shouldSkip(doc)) {
             return Collections.emptyList();
         }
-        return analyze(extractText(doc));
+        return analyze(session, extractText(doc));
     }
 
     public String callSemanticEngine(String textContent, String outputFormat,
@@ -495,7 +552,6 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 }
             }
         }
-
         BlobsExtractor extractor = new BlobsExtractor();
         sb.append(blobsToText(extractor.getBlobs(doc)));
         return sb.toString();
@@ -530,7 +586,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public ProgressStatus getProgressStatus(String repositoryName, DocumentRef docRef) {
+    public ProgressStatus getProgressStatus(String repositoryName,
+            DocumentRef docRef) {
         DocumentLocation loc = new DocumentLocationImpl(repositoryName, docRef);
         String status = states.get(loc);
         if (status == null) {
@@ -596,7 +653,18 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     @Override
     public boolean isActive() {
-        return active ;
+        return active;
+    }
+
+    protected RemoteEntitySource getRemoteEntityService() {
+        if (reService == null) {
+            try {
+                reService = Framework.getService(RemoteEntityService.class);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return reService;
     }
 
 }

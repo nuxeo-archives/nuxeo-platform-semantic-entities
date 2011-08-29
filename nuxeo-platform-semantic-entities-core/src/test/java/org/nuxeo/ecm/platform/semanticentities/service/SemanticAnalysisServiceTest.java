@@ -220,7 +220,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
     public void testSimpleAnalysis() throws Exception {
         DocumentModel doc = createSampleDocumentModel("john-bio1");
-        List<OccurrenceGroup> groups = saService.analyze(doc);
+        List<OccurrenceGroup> groups = saService.analyze(session, doc);
         assertEquals(2, groups.size());
         List<String> expectedEntityNames = Arrays.asList("Liverpool",
                 "John Lennon");

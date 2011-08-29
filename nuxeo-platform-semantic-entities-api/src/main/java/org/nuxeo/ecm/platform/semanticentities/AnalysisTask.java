@@ -59,7 +59,8 @@ public class AnalysisTask implements Runnable {
                 return;
             }
             try {
-                List<OccurrenceGroup> occurrenceGroups = service.analyze(session.getDocument(docRef));
+                List<OccurrenceGroup> occurrenceGroups = service.analyze(
+                        session, session.getDocument(docRef));
                 if (occurrenceGroups.isEmpty()) {
                     service.clearProgressStatus(repositoryName, docRef);
                     return;
