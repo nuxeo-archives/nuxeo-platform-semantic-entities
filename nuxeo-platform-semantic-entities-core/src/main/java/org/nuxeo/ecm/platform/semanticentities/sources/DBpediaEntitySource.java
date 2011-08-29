@@ -45,9 +45,6 @@ import javax.xml.xpath.XPathFactory;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.HttpGet;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
@@ -155,7 +152,7 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
 
             URI sparqlURI = URI.create(String.format(SPARQL_URL_PATTERN,
                     SPARQL_ENDPOINT, encodedQuery, encodedFormat));
-            bodyStream = fetchResourceAsStream(sparqlURI, format);
+            bodyStream = doHttpGet(sparqlURI, format);
 
             rdfModel = ModelFactory.createDefaultModel();
             RDFReader reader = rdfModel.getReader();
@@ -261,33 +258,6 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
             bodyStream.close();
         }
         return suggestions;
-    }
-
-    /*
-     * submethods to be overridden in mock object for the tests
-     */
-    protected InputStream fetchResourceAsStream(URI sparqlURI, String format)
-            throws MalformedURLException, IOException {
-        HttpGet get = new HttpGet(sparqlURI);
-        try {
-            get.setHeader("Accept", format);
-            HttpResponse response = httpClient.execute(get);
-            if (response.getStatusLine().getStatusCode() == 200) {
-                InputStream content = response.getEntity().getContent();
-                return content;
-            } else {
-                String errorMsg = String.format("Error resolving '%s' : ",
-                        sparqlURI);
-                errorMsg += response.getStatusLine().toString();
-                throw new IOException(errorMsg);
-            }
-        } catch (ClientProtocolException e) {
-            get.abort();
-            throw e;
-        } catch (IOException e) {
-            get.abort();
-            throw e;
-        }
     }
 
     protected InputStream fetchSuggestions(String keywords, int maxSuggestions)
