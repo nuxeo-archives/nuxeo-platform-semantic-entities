@@ -36,6 +36,8 @@ import org.nuxeo.ecm.platform.semanticentities.RemoteEntitySource;
 import org.nuxeo.runtime.model.DefaultComponent;
 import org.nuxeo.runtime.model.Extension;
 
+import com.hp.hpl.jena.rdf.model.Model;
+
 /**
  * {@inheritDoc}
  *
@@ -154,6 +156,15 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
             boolean override) throws DereferencingException {
         getSourceFor(remoteEntity).dereferenceInto(localEntity, remoteEntity,
                 override);
+    }
+
+
+    @Override
+    public void dereferenceIntoFromModel(DocumentModel localEntity,
+            URI remoteEntity, Model rdfModel, boolean override)
+            throws DereferencingException {
+        getSourceFor(remoteEntity).dereferenceIntoFromModel(localEntity,
+                remoteEntity, rdfModel, override);
     }
 
     /**

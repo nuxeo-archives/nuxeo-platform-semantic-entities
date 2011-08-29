@@ -71,6 +71,28 @@ public interface RemoteEntitySource {
             boolean override) throws DereferencingException;
 
     /**
+     * Dereference a remote entity into an existing document model from a
+     * pre-fetched RDF description of the entity. Only non empty local fields
+     * are updated, unless {@code override} is set to {@code true}.
+     *
+     * This is typically useful for the SemanticAnalysisService that might
+     * receive pre-fetched entity link suggestion and description from the
+     * enhancement engines.
+     *
+     * It is the responsibility of the method caller to save the updated
+     * document model back to the repository.
+     *
+     * @param localEntity local document model to store a copy of the entity
+     *            attribute
+     * @param remoteEntity the URI of the entity to dereference
+     * @param override replace non-empty local fields with values from the
+     *            remote entity
+     */
+    public void dereferenceIntoFromModel(DocumentModel localEntity,
+            URI remoteEntity, Model rdfModel, boolean override)
+            throws DereferencingException;
+
+    /**
      * Perform query on registered remote entity sources to suggests entity
      * definitions that match the name given as keywords and the requested
      * entity type.
