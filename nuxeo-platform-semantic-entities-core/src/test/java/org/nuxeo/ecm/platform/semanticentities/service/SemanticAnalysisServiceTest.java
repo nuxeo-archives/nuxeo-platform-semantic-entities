@@ -59,11 +59,11 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
         // semantic entities types
         deployBundle("org.nuxeo.ecm.platform.semanticentities.core");
-        
+
         // deploy off-line mock for the semantic analysis service
         deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
                 "OSGI-INF/test-semantic-entities-analysis-service.xml");
-        
+
         // deploy off-line mock DBpedia source to override the default source
         // that needs an internet connection: comment the following contrib to
         // test again the real DBpedia server
@@ -75,7 +75,8 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
         // initialize the session field
         openSession();
-        DocumentModel domain = session.createDocumentModel("/", "default-domain", "Folder");
+        DocumentModel domain = session.createDocumentModel("/",
+                "default-domain", "Folder");
         session.createDocument(domain);
         session.save();
 
@@ -167,7 +168,8 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         Framework.getLocalService(EventService.class).waitForAsyncCompletion();
     }
 
-    public DocumentModel createSampleDocumentModel(String id) throws ClientException {
+    public DocumentModel createSampleDocumentModel(String id)
+            throws ClientException {
         DocumentModel doc = session.createDocumentModel("/", id, "Note");
         doc.setPropertyValue("dc:title", "A short bio for John Lennon");
         doc.setPropertyValue(
@@ -195,7 +197,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         saService.launchAnalysis(doc1.getRepositoryName(), doc1.getRef());
         saService.launchAnalysis(doc2.getRepositoryName(), doc2.getRef());
         saService.launchAnalysis(doc3.getRepositoryName(), doc3.getRef());
-        
+
         // wait for all the analysis to complete
         for (DocumentModel doc : new DocumentModel[] { doc1, doc2, doc3 }) {
             while (saService.getProgressStatus(doc.getRepositoryName(),
@@ -209,19 +211,23 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         checkRelatedEntities(doc2);
         checkRelatedEntities(doc3);
     }
-    
+
     public void testSynchronousAnalysis() throws Exception {
         DocumentModel doc = createSampleDocumentModel("john-bio1");
         saService.launchSynchronousAnalysis(doc, session);
         checkRelatedEntities(doc);
     }
-    
+
     public void testSimpleAnalysis() throws Exception {
         DocumentModel doc = createSampleDocumentModel("john-bio1");
         List<OccurrenceGroup> groups = saService.analyze(doc);
         assertEquals(2, groups.size());
-        assertEquals("Liverpool", groups.get(0).name);
-        assertEquals("John Lennon", groups.get(1).name);
+        List<String> expectedEntityNames = Arrays.asList("Liverpool",
+                "John Lennon");
+        assertTrue(String.format("%s was not expected", groups.get(0).name),
+                expectedEntityNames.contains(groups.get(0).name));
+        assertTrue(String.format("%s was not expected", groups.get(1).name),
+                expectedEntityNames.contains(groups.get(1).name));
     }
 
     protected void checkRelatedEntities(DocumentModel doc)
