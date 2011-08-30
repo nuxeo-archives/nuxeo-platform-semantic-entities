@@ -28,7 +28,7 @@ import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
  * @author ogrisel
  *
  */
-public class OccurrenceGroup {
+public class OccurrenceGroup implements Comparable<OccurrenceGroup> {
 
     public String name;
 
@@ -58,5 +58,10 @@ public class OccurrenceGroup {
 
     public boolean hasPrefetchedSuggestions() {
         return hasPrefetchedSuggestions;
+    }
+
+    @Override
+    public int compareTo(OccurrenceGroup o) {
+        return (type + " " + name).compareTo(o.type + " " + o.name);
     }
 }

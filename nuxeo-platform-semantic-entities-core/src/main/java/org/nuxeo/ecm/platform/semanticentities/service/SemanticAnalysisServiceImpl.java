@@ -361,10 +361,12 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                     }
                 }
             }
-            // sort by score
+            // sort by score for easy display and testing
             Collections.sort(group.entitySuggestions);
             groups.add(group);
         }
+        // sort by alphabetic order for names for easy display and testing
+        Collections.sort(groups);
         return groups;
     }
 

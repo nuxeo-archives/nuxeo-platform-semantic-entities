@@ -178,7 +178,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
                         + "<h1>This is an HTML title</h1>"
                         + "<p>John Lennon was born in Liverpool in 1940. John was a musician."
                         + " This document about John Lennon has many occurrences"
-                        + " of the words 'John' and 'Lennong' hence should rank high"
+                        + " of the words 'John' and 'Lennon' hence should rank high"
                         + " for suggestions on such keywords.</p>"
 
                         + "<!-- this is a HTML comment about Bob Marley. -->"
@@ -222,12 +222,38 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         DocumentModel doc = createSampleDocumentModel("john-bio1");
         List<OccurrenceGroup> groups = saService.analyze(session, doc);
         assertEquals(2, groups.size());
-        List<String> expectedEntityNames = Arrays.asList("Liverpool",
-                "John Lennon");
-        assertTrue(String.format("%s was not expected", groups.get(0).name),
-                expectedEntityNames.contains(groups.get(0).name));
-        assertTrue(String.format("%s was not expected", groups.get(1).name),
-                expectedEntityNames.contains(groups.get(1).name));
+
+        OccurrenceGroup og1 = groups.get(0);
+        assertEquals("John Lennon", og1.name);
+        assertEquals("Person", og1.type);
+
+        assertEquals(5, og1.occurrences.size());
+        assertEquals("John Lennon", og1.occurrences.get(0).mention);
+        assertEquals("John Lennon", og1.occurrences.get(1).mention);
+        assertEquals("John", og1.occurrences.get(2).mention);
+        assertEquals("John", og1.occurrences.get(3).mention);
+        assertEquals("John Lennon", og1.occurrences.get(4).mention);
+
+        assertEquals(1, og1.entitySuggestions.size());
+        assertEquals("John Lennon", og1.entitySuggestions.get(0).label);
+        assertEquals("http://dbpedia.org/resource/John_Lennon",
+                og1.entitySuggestions.get(0).remoteEntityUris.iterator().next());
+        assertFalse(og1.entitySuggestions.get(0).isLocal());
+        assertNull(og1.entitySuggestions.get(0).entity);
+
+        OccurrenceGroup og2 = groups.get(1);
+        assertEquals("Liverpool", og2.name);
+        assertEquals("Place", og2.type);
+
+        assertEquals(1, og2.occurrences.size());
+        assertEquals("Liverpool", og2.occurrences.get(0).mention);
+
+        assertEquals(1, og2.entitySuggestions.size());
+        assertEquals("Liverpool", og2.entitySuggestions.get(0).label);
+        assertEquals("http://dbpedia.org/resource/Liverpool",
+                og2.entitySuggestions.get(0).remoteEntityUris.iterator().next());
+        assertFalse(og2.entitySuggestions.get(0).isLocal());
+        assertNull(og2.entitySuggestions.get(0).entity);
     }
 
     protected void checkRelatedEntities(DocumentModel doc)
