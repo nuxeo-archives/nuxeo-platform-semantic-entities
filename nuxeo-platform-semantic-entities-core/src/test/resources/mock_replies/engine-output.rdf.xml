@@ -2,7 +2,8 @@
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:dc="http://purl.org/dc/terms/"
-    xmlns:sb="http://fise.iks-project.eu/ontology/" > 
+    xmlns:sb="http://fise.iks-project.eu/ontology/"
+    xmlns:dbpedia-ont="http://dbpedia.org/ontology/" >
   <rdf:Description rdf:about="urn:enhancement-a663d097-a396-e410-5453-03ba12233451">
     <sb:entity-type rdf:resource="http://dbpedia.org/ontology/Area"/>
     <sb:entity-type rdf:resource="http://dbpedia.org/ontology/PopulatedPlace"/>
@@ -127,6 +128,7 @@
     <rdfs:label xml:lang="de">Liverpool</rdfs:label>
     <rdfs:label xml:lang="it">Liverpool</rdfs:label>
     <rdfs:label xml:lang="fr">Liverpool</rdfs:label>
+    <dbpedia-ont:abstract xml:lang="en">Fake Liverpool abstract prefetched by the SemanticAnalysisEngine</dbpedia-ont:abstract>
   </rdf:Description>
 
 </rdf:RDF>

@@ -66,9 +66,9 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
         // deploy off-line mock DBpedia source to override the default source
         // that needs an internet connection: comment the following contrib to
-        // test again the real DBpedia server
+        // test again a real Stanbol server
         deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
-                "OSGI-INF/test-semantic-entities-dbpedia-entity-contrib.xml");
+                "OSGI-INF/test-semantic-entities-stanbol-entity-contrib.xml");
 
         // CMIS query maker
         deployBundle("org.nuxeo.ecm.core.opencmis.impl");
@@ -255,10 +255,15 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
                 og2.entitySuggestions.get(0).remoteEntityUris.iterator().next());
         assertFalse(og2.entitySuggestions.get(0).isLocal());
         // there is pre-fetched data in the payload
-        assertNotNull(og2.entitySuggestions.get(0).entity);
-        assertEquals("Liverpool",
-                og2.entitySuggestions.get(0).entity.getTitle());
-        assertEquals("Place", og2.entitySuggestions.get(0).entity.getType());
+        DocumentModel liverpool = og2.entitySuggestions.get(0).entity;
+        assertNotNull(liverpool);
+        assertEquals("Liverpool", liverpool.getTitle());
+        assertEquals("Place", liverpool.getType());
+        assertEquals(Arrays.asList("http://dbpedia.org/resource/Liverpool"),
+                liverpool.getProperty("entity:sameas").getValue(List.class));
+        assertEquals(
+                "Fake Liverpool abstract prefetched by the SemanticAnalysisEngine",
+                liverpool.getPropertyValue("entity:summary"));
     }
 
     protected void checkRelatedEntities(DocumentModel doc)
