@@ -272,15 +272,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                     && group.name.trim().split(" ").length <= 1) {
                 continue;
             }
-            List<EntitySuggestion> suggestions;
-            if (group.hasPrefetchedSuggestions()) {
-                // suggestions were prefetched at analysis time
-                suggestions = group.entitySuggestions;
-            } else {
-                // use remote entity source
-                suggestions = leService.suggestEntity(session, group.name,
-                        group.type, 3);
-            }
+            List<EntitySuggestion> suggestions = leService.suggestEntity(session, group, 3);
             if (suggestions.isEmpty() && linkToUnrecognizedEntities) {
                 DocumentModel localEntity = session.createDocumentModel(group.type);
                 localEntity.setPropertyValue("dc:title", group.name);

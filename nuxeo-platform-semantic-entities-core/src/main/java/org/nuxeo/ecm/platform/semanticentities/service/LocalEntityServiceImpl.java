@@ -56,6 +56,7 @@ import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
+import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceInfo;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
 import org.nuxeo.runtime.api.Framework;
@@ -401,6 +402,13 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 Constants.ENTITY_TYPE, cleanupKeywords(keywords),
                 StringUtils.join(entityTypeNames, "', '"), maxSuggestions);
         return session.query(q);
+    }
+
+    @Override
+    public List<EntitySuggestion> suggestEntity(CoreSession session,
+            OccurrenceGroup group, int maxSuggestions) {
+        // TODO Implement me!
+        return Collections.emptyList();
     }
 
     @SuppressWarnings("unchecked")
