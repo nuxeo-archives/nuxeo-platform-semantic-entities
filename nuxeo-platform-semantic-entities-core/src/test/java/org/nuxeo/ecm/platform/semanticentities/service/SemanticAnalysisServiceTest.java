@@ -239,6 +239,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         assertEquals("http://dbpedia.org/resource/John_Lennon",
                 og1.entitySuggestions.get(0).remoteEntityUris.iterator().next());
         assertFalse(og1.entitySuggestions.get(0).isLocal());
+        // no pre-fetched info in the payload
         assertNull(og1.entitySuggestions.get(0).entity);
 
         OccurrenceGroup og2 = groups.get(1);
@@ -253,7 +254,11 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         assertEquals("http://dbpedia.org/resource/Liverpool",
                 og2.entitySuggestions.get(0).remoteEntityUris.iterator().next());
         assertFalse(og2.entitySuggestions.get(0).isLocal());
-        assertNull(og2.entitySuggestions.get(0).entity);
+        // there is pre-fetched data in the payload
+        assertNotNull(og2.entitySuggestions.get(0).entity);
+        assertEquals("Liverpool",
+                og2.entitySuggestions.get(0).entity.getTitle());
+        assertEquals("Place", og2.entitySuggestions.get(0).entity.getType());
     }
 
     protected void checkRelatedEntities(DocumentModel doc)
