@@ -477,7 +477,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         try {
             post.setHeader("Accept", outputFormat);
             // TODO: fix the Stanbol engine handling of charset in mimetype
-            // negociation
+            // Negotiation
             // post.setHeader("Content-Type", "text/plain; charset=utf-8");
             post.setHeader("Content-Type", "text/plain");
             post.setEntity(new ByteArrayEntity(textContent.getBytes("utf-8")));
