@@ -115,4 +115,10 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
             return null;
         }
     }
+
+    @Override
+    public String toString() {
+        return String.format("EntitySuggestion(%s, %s, %s)", label,
+                getRemoteURI(), type);
+    }
 }
