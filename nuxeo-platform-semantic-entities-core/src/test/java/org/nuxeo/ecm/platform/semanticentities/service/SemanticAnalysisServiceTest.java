@@ -91,6 +91,12 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         makeSomeEntities();
     }
 
+    @Override
+    public void tearDown() throws Exception {
+        closeSession();
+        super.tearDown();
+    }
+
     public void makeSomeEntities() throws ClientException {
         DocumentModel container = leService.getEntityContainer(session);
         assertNotNull(container);
