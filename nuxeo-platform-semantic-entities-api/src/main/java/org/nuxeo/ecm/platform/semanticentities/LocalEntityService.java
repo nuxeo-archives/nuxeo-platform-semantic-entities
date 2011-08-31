@@ -55,10 +55,10 @@ public interface LocalEntityService {
 
     /**
      * Helper method to suggest entities by keyword match on names.
-     * 
+     *
      * This method will call both the local entity lookup and the remote entity
      * lookup and merge the results based on the sameas relationship.
-     * 
+     *
      * @param session an active CoreSession used for local entity queries.
      * @param keywords keywords to match the entity names
      * @param type the Nuxeo type name of entity to match (or null)
@@ -68,16 +68,16 @@ public interface LocalEntityService {
     List<EntitySuggestion> suggestEntity(CoreSession session, String keywords,
             String type, int maxSuggestions) throws ClientException,
             DereferencingException;
-    
+
     /**
      * Helper method to suggest entities by keyword match on names.
-     * 
+     *
      * This method will call both the local entity lookup and the remote entity
      * lookup and merge the results based on the sameas relationship. This
      * method allows to pass an OccurrenceGroup instance directly. If the group
      * has pre-fetched remote entities some calls to the remote sources are
      * spared to reduce performance hits induced by network latency.
-     * 
+     *
      * @param session an active CoreSession used for local entity queries.
      * @param group a group of occurrence pointing to a supposedly unique entity
      *            to be resolved in the various local and remote entity sources.
@@ -85,7 +85,8 @@ public interface LocalEntityService {
      * @return a list of maximum maxSuggestions matching entities
      */
     List<EntitySuggestion> suggestEntity(CoreSession session,
-            OccurrenceGroup group, int maxSuggestions);
+            OccurrenceGroup group, int maxSuggestions)
+            throws DereferencingException, ClientException;
 
     /**
      * Helper method to suggest local entities by keyword match on names.

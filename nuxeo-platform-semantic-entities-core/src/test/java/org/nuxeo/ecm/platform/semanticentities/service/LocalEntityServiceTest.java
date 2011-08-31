@@ -80,6 +80,12 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         makeSomeDocuments();
     }
 
+    @Override
+    public void tearDown() throws Exception {
+        closeSession();
+        super.tearDown();
+    }
+
     public void makeSomeDocuments() throws ClientException {
         doc1 = session.createDocumentModel("/", "doc1", "File");
         doc1.setPropertyValue("dc:title", "A short bio for John");

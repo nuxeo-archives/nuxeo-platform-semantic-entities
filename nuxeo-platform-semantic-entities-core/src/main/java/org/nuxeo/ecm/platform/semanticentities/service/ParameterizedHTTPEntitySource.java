@@ -3,6 +3,7 @@ package org.nuxeo.ecm.platform.semanticentities.service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -57,9 +58,9 @@ import com.hp.hpl.jena.rdf.model.Resource;
  */
 public abstract class ParameterizedHTTPEntitySource implements
         RemoteEntitySource {
-    
+
     private static final Log log = LogFactory.getLog(ParameterizedHTTPEntitySource.class);
-    
+
     public static final String OWL_THING = "http://www.w3.org/2002/07/owl#Thing";
 
     public static final String RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
@@ -84,14 +85,14 @@ public abstract class ParameterizedHTTPEntitySource implements
                 PlainSocketFactory.getSocketFactory(), 80));
         schemeRegistry.register(new Scheme("https",
                 SSLSocketFactory.getSocketFactory(), 443));
-    
+
         // Create an HttpClient with the ThreadSafeClientConnManager.
         // This connection manager must be used if more than one thread will
         // be using the HttpClient.
         HttpParams params = new BasicHttpParams();
         ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(
                 params, schemeRegistry);
-    
+
         httpClient = new DefaultHttpClient(cm, params);
     }
 
@@ -155,13 +156,14 @@ public abstract class ParameterizedHTTPEntitySource implements
     public boolean canSuggestRemoteEntity() {
         return true;
     }
-    
+
     // RDF specific handling
 
+    @Override
     @SuppressWarnings("unchecked")
     public void dereferenceIntoFromModel(DocumentModel localEntity,
-            URI remoteEntity, Model rdfModel, boolean override)
-            throws DereferencingException {
+            URI remoteEntity, Model rdfModel, boolean override,
+            boolean lazyResourceFetch) throws DereferencingException {
 
         // check that the remote entity has a type that is compatible with
         // the local entity document model
@@ -176,7 +178,7 @@ public abstract class ParameterizedHTTPEntitySource implements
         }
 
         Resource resource = rdfModel.getResource(remoteEntity.toString());
-        
+
         // special handling for the entity:sameas property
         List<String> samesas = new ArrayList<String>();
         List<String> sameasDisplayLabel = new ArrayList<String>();
@@ -247,7 +249,8 @@ public abstract class ParameterizedHTTPEntitySource implements
                         if (type.isComplexType()
                                 && "content".equals(type.getName())) {
                             Serializable linkedResource = (Serializable) readLinkedResource(
-                                    rdfModel, resource, remotePropertyUri);
+                                    rdfModel, resource, remotePropertyUri,
+                                    lazyResourceFetch);
                             if (linkedResource != null) {
                                 localEntity.setPropertyValue(localPropertyName,
                                         linkedResource);
@@ -279,7 +282,7 @@ public abstract class ParameterizedHTTPEntitySource implements
         while (it.hasNext()) {
             RDFNode node = it.nextNode();
             if (node.isLiteral()) {
-                Literal literal = ((Literal) node.as(Literal.class));
+                Literal literal = node.as(Literal.class);
                 String lang = literal.getLanguage();
                 if (lang == null || lang.equals("")
                         || lang.equals(requestedLang)) {
@@ -294,17 +297,35 @@ public abstract class ParameterizedHTTPEntitySource implements
         return null;
     }
 
-    
+
     protected Blob readLinkedResource(Model rdfModel, Resource resource,
-            String remotePropertyUri) {
+            String remotePropertyUri, boolean lazyFetch) {
         // download depictions or other kind of linked
         // resources
         com.hp.hpl.jena.rdf.model.Property remoteProperty = rdfModel.getProperty(remotePropertyUri);
         NodeIterator it = rdfModel.listObjectsOfProperty(resource,
                 remoteProperty);
         if (it.hasNext()) {
-            String contentURI = ((Resource) it.nextNode().as(Resource.class)).getURI();
+            String contentURI = it.nextNode().as(Resource.class).getURI();
 
+            int lastSlashIndex = contentURI.lastIndexOf('/');
+            String filename = null;
+            if (lastSlashIndex != -1) {
+                filename = contentURI.substring(lastSlashIndex + 1);
+            }
+            if (lazyFetch) {
+                // lazy reference to the resource content
+                try {
+                    StreamingBlob blob = StreamingBlob.createFromURL(URI.create(
+                            contentURI).toURL());
+                    blob.setFilename(filename);
+                    return blob;
+                } catch (MalformedURLException e) {
+                    log.warn("Invalid resource URL: " + contentURI);
+                    return null;
+                }
+            }
+            // greedy fetch of the referenced content
             InputStream is = null;
             try {
                 is = doHttpGet(URI.create(contentURI), null);
@@ -313,10 +334,7 @@ public abstract class ParameterizedHTTPEntitySource implements
                     return null;
                 }
                 Blob blob = StreamingBlob.createFromStream(is).persist();
-                int lastSlashIndex = contentURI.lastIndexOf('/');
-                if (lastSlashIndex != -1) {
-                    blob.setFilename(contentURI.substring(lastSlashIndex + 1));
-                }
+                blob.setFilename(filename);
                 return blob;
             } catch (IOException e) {
                 log.warn(e.getMessage());
@@ -346,10 +364,10 @@ public abstract class ParameterizedHTTPEntitySource implements
             RDFNode node = it.nextNode();
             String value = null;
             if (node.isLiteral()) {
-                value = ((Literal) node.as(Literal.class)).getString();
+                value = node.as(Literal.class).getString();
                 value = StringEscapeUtils.unescapeHtml(value);
             } else if (node.isURIResource()) {
-                value = ((Resource) node.as(Resource.class)).getURI();
+                value = node.as(Resource.class).getURI();
             } else {
                 continue;
             }
@@ -377,7 +395,7 @@ public abstract class ParameterizedHTTPEntitySource implements
         while (it.hasNext()) {
             RDFNode node = it.nextNode();
             if (node.isURIResource()) {
-                typeURIs.add(((Resource) node.as(Resource.class)).getURI());
+                typeURIs.add(node.as(Resource.class).getURI());
             }
         }
         Set<Entry<String, String>> typeMapping = descriptor.getMappedTypes().entrySet();

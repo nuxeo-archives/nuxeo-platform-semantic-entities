@@ -41,38 +41,27 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
 
     public String type;
 
+    public final Set<String> alternativeNames = new LinkedHashSet<String>();
+
     public final Set<String> remoteEntityUris = new LinkedHashSet<String>();
 
     public double score = 0.0;
 
+    @SuppressWarnings("unchecked")
     public EntitySuggestion(DocumentModel entity) throws ClientException {
-        this(entity, 0);
-    }
-
-    public EntitySuggestion(DocumentModel entity, double score)
-            throws ClientException {
         this.entity = entity;
-        this.label = entity.getTitle();
-        this.type = entity.getType();
-        @SuppressWarnings("unchecked")
-        List<String> remoteEntityUris = entity.getProperty("entity:sameas").getValue(
-                List.class);
-        if (remoteEntityUris != null) {
-            this.remoteEntityUris.addAll(remoteEntityUris);
-        }
-        this.score = score;
+        label = entity.getTitle();
+        type = entity.getType();
+        remoteEntityUris.addAll(entity.getProperty("entity:sameas").getValue(
+                List.class));
+        alternativeNames.addAll(entity.getProperty("entity:altnames").getValue(
+                List.class));
     }
 
     public EntitySuggestion(String label, String remoteEntityUri, String type) {
-        this(label, remoteEntityUri, type, 0);
-    }
-
-    public EntitySuggestion(String label, String remoteEntityUri, String type,
-            double score) {
         this.label = label;
-        this.remoteEntityUris.add(remoteEntityUri);
         this.type = type;
-        this.score = score;
+        remoteEntityUris.add(remoteEntityUri);
     }
 
     public EntitySuggestion withScore(double score) {

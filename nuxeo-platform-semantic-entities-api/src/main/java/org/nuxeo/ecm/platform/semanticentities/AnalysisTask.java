@@ -89,9 +89,9 @@ public class AnalysisTask implements Runnable {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.lang.Object#equals(java.lang.Object)
-     * 
+     *
      * Override to make it possible to lookup the position of a document in the
      * queue and remove duplicates
      */

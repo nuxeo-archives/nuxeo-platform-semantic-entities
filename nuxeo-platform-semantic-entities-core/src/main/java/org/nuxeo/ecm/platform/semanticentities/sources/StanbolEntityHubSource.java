@@ -19,6 +19,7 @@ package org.nuxeo.ecm.platform.semanticentities.sources;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -163,7 +164,8 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
     @SuppressWarnings("unchecked")
     @Override
     public void dereferenceInto(DocumentModel localEntity, URI remoteEntity,
-            boolean override) throws DereferencingException {
+            boolean override, boolean lazyResourceFetch)
+            throws DereferencingException {
         try {
             Map<String, Object> jsonDescription = fetchJSONDescription(remoteEntity);
             Map<String, Object> representation = (Map<String, Object>) jsonDescription.get("representation");
@@ -247,8 +249,8 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                                 || override) {
                             if (type.isComplexType()
                                     && "content".equals(type.getName())) {
-                                Serializable linkedResource = (Serializable) readLinkedResource(
-                                        representation, remotePropertyUri);
+                                Serializable linkedResource = readLinkedResource(
+                                        representation, remotePropertyUri, lazyResourceFetch);
                                 if (linkedResource != null) {
                                     localEntity.setPropertyValue(
                                             localPropertyName, linkedResource);
@@ -277,7 +279,7 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
 
     @SuppressWarnings("unchecked")
     protected Serializable readLinkedResource(
-            Map<String, Object> jsonRepresentation, String propertyUri) {
+            Map<String, Object> jsonRepresentation, String propertyUri, boolean lazyDownload) {
         // download depictions or other kind of linked resources
         List<Map<String, String>> propInfos = (List<Map<String, String>>) jsonRepresentation.get(propertyUri);
         if (propInfos == null) {
@@ -289,6 +291,25 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                 // hardcoded skip for vectorial depictions
                 return null;
             }
+            int lastSlashIndex = contentURI.lastIndexOf('/');
+            String filename = null;
+            if (lastSlashIndex != -1) {
+                filename = contentURI.substring(lastSlashIndex + 1);
+            }
+            if (lazyDownload) {
+                // lazy reference to the resource content
+                try {
+                    StreamingBlob blob = StreamingBlob.createFromURL(URI.create(
+                            contentURI).toURL());
+                    blob.setFilename(filename);
+                    return blob;
+                } catch (MalformedURLException e) {
+                    log.warn("Invalid resource URL: " + contentURI);
+                    return null;
+                }
+            }
+
+            // greedy pre-fetch the resource content
             InputStream is = null;
             try {
                 is = doHttpGet(URI.create(contentURI), null);
@@ -297,10 +318,7 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                     return null;
                 }
                 Blob blob = StreamingBlob.createFromStream(is).persist();
-                int lastSlashIndex = contentURI.lastIndexOf('/');
-                if (lastSlashIndex != -1) {
-                    blob.setFilename(contentURI.substring(lastSlashIndex + 1));
-                }
+                blob.setFilename(filename);
                 return (Serializable) blob;
             } catch (IOException e) {
                 // DBpedia links to commons.wikimedia.org hosted resources are

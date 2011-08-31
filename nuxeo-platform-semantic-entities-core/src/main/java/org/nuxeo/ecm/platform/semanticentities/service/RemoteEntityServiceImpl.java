@@ -153,18 +153,18 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
 
     @Override
     public void dereferenceInto(DocumentModel localEntity, URI remoteEntity,
-            boolean override) throws DereferencingException {
+            boolean override, boolean lazyResourceFetch)
+            throws DereferencingException {
         getSourceFor(remoteEntity).dereferenceInto(localEntity, remoteEntity,
-                override);
+                override, lazyResourceFetch);
     }
-
 
     @Override
     public void dereferenceIntoFromModel(DocumentModel localEntity,
-            URI remoteEntity, Model rdfModel, boolean override)
-            throws DereferencingException {
+            URI remoteEntity, Model rdfModel, boolean override,
+            boolean lazyResourceFetch) throws DereferencingException {
         getSourceFor(remoteEntity).dereferenceIntoFromModel(localEntity,
-                remoteEntity, rdfModel, override);
+                remoteEntity, rdfModel, override, lazyResourceFetch);
     }
 
     /**

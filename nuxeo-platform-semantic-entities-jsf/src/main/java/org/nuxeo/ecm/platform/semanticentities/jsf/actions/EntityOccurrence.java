@@ -25,11 +25,11 @@ public class EntityOccurrence {
     public EntityOccurrence(DocumentModel doc, DocumentModel entity,
             DocumentModel occurrence, List<OccurrenceInfo> occurrences,
             int maxDisplayedOccurrences) {
-        this.documentModel = doc;
-        this.entityModel = entity;
-        this.occurrenceModel = occurrence;
+        documentModel = doc;
+        entityModel = entity;
+        occurrenceModel = occurrence;
         this.occurrences.addAll(occurrences);
-        this.maxDisplayedOccurences = maxDisplayedOccurrences;
+        maxDisplayedOccurences = maxDisplayedOccurrences;
     }
 
     // Getters for Seam / JSF

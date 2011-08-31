@@ -406,16 +406,30 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
 
     @Override
     public List<EntitySuggestion> suggestEntity(CoreSession session,
-            OccurrenceGroup group, int maxSuggestions) {
-        // TODO Implement me!
-        return Collections.emptyList();
+            OccurrenceGroup group, int maxSuggestions)
+            throws DereferencingException, ClientException {
+        if (group.hasPrefetchedSuggestions()) {
+            return suggestEntity(session, group.name, group.type,
+                    group.entitySuggestions, maxSuggestions);
+        } else {
+            return suggestEntity(session, group.name, group.type, null,
+                    maxSuggestions);
+        }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public List<EntitySuggestion> suggestEntity(CoreSession session,
             String keywords, String type, int maxSuggestions)
             throws ClientException, DereferencingException {
+        return suggestEntity(session, keywords, type, null,
+                maxSuggestions);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected List<EntitySuggestion> suggestEntity(CoreSession session,
+            String keywords, String type,
+            List<EntitySuggestion> precomputedRemoteSuggestions,
+            int maxSuggestions) throws ClientException, DereferencingException {
         // lookup remote entities
         RemoteEntityService reService;
         try {
@@ -424,7 +438,8 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             throw new RuntimeException(e);
         }
         List<RemoteEntity> remoteEntities = Collections.emptyList();
-        if (reService.canSuggestRemoteEntity()) {
+        if (precomputedRemoteSuggestions == null
+                && reService.canSuggestRemoteEntity()) {
             try {
                 remoteEntities = reService.suggestRemoteEntity(keywords, type,
                         maxSuggestions);
@@ -533,7 +548,6 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             }
         }
         Collections.sort(suggestions);
-        Collections.reverse(suggestions);
         return suggestions;
     }
 
@@ -631,7 +645,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                     pathSegment);
             for (String remoteEntity : suggestion.remoteEntityUris) {
                 URI uri = URI.create(remoteEntity);
-                reService.dereferenceInto(localEntity, uri, false);
+                reService.dereferenceInto(localEntity, uri, false, false);
             }
         }
         localEntity = session.createDocument(localEntity);

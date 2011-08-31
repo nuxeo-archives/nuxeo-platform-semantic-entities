@@ -26,7 +26,7 @@ public class MockStanbolEntityHubSource extends StanbolEntityHubSource {
         throw new IllegalArgumentException(
                 "no mock resource registered for URI " + uri);
     }
-    
+
     @Override
     protected InputStream doHttpPost(URI uri, String accepted, String contentType, String payload)
             throws MalformedURLException, IOException {

@@ -254,6 +254,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         }
     }
 
+    @Override
     public void createLinks(DocumentModel doc, CoreSession session,
             List<OccurrenceGroup> groups) throws ClientException, IOException {
         if (groups.isEmpty()) {
@@ -318,7 +319,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             if (typeStmt == null || !typeStmt.getObject().isURIResource()) {
                 continue;
             }
-            Resource typeResouce = (Resource) typeStmt.getObject().as(
+            Resource typeResouce = typeStmt.getObject().as(
                     Resource.class);
             String localType = localTypes.get(typeResouce.getURI());
             if (localType == null) {
@@ -386,14 +387,14 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             // remote sources
             DocumentModel entity = session.createDocumentModel(localType);
             getRemoteEntityService().dereferenceIntoFromModel(entity,
-                    URI.create(remoteEntityUri), model, true);
-            return new EntitySuggestion(entity, score);
+                    URI.create(remoteEntityUri), model, true, true);
+            return new EntitySuggestion(entity).withScore(score);
         } else {
             // treat the suggestion as a lazily fetched remote entity
             Statement labelStmt = entitySuggestionResource.getProperty(entityLabelProperty);
             if (labelStmt != null) {
                 String label = labelStmt.getObject().asLiteral().getString();
-                return new EntitySuggestion(label, remoteEntityUri, localType, score);
+                return new EntitySuggestion(label, remoteEntityUri, localType).withScore(score);
             }
         }
         return null;
@@ -405,14 +406,14 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         if (mentionStmt == null || !mentionStmt.getObject().isLiteral()) {
             return null;
         }
-        Literal mentionLiteral = (Literal) mentionStmt.getObject().as(
+        Literal mentionLiteral = mentionStmt.getObject().as(
                 Literal.class);
         String mention = mentionLiteral.getString().trim();
 
         Property contextProp = model.getProperty("http://fise.iks-project.eu/ontology/selection-context");
         Statement contextStmt = annotation.getProperty(contextProp);
         if (contextStmt != null && contextStmt.getObject().isLiteral()) {
-            Literal contextLiteral = (Literal) contextStmt.getObject().as(
+            Literal contextLiteral = contextStmt.getObject().as(
                     Literal.class);
             // TODO: normalize whitespace
             String context = contextLiteral.getString().trim();
@@ -428,6 +429,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         }
     }
 
+    @Override
     public List<OccurrenceGroup> analyze(CoreSession session, String textContent)
             throws IOException, ClientException {
         String output = callSemanticEngine(textContent, outputFormat, 2);

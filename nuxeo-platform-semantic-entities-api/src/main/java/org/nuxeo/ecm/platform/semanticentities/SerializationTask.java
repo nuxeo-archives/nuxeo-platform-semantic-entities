@@ -43,7 +43,7 @@ public class SerializationTask implements Runnable {
         this.repositoryName = repositoryName;
         this.docRef = docRef;
         this.occurrenceGroups = occurrenceGroups;
-        this.location = new DocumentLocationImpl(repositoryName, docRef);
+        location = new DocumentLocationImpl(repositoryName, docRef);
         this.service = service;
         try {
             manager = Framework.getService(RepositoryManager.class);

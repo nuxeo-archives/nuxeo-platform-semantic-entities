@@ -66,6 +66,12 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         assertNotNull(service);
     }
 
+    @Override
+    public void tearDown() throws Exception {
+        closeSession();
+        super.tearDown();
+    }
+
     protected abstract void deployRemoteEntityServiceOverride()
             throws Exception;
 
@@ -113,7 +119,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
     @SuppressWarnings("unchecked")
     public void testDerefenceRemoteEntity() throws Exception {
         DocumentModel barackDoc = session.createDocumentModel("Person");
-        service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true);
+        service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true, false);
 
         // the title and birth date are fetched from the remote entity
         // description
@@ -154,7 +160,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         barackDoc.setPropertyValue("dc:title", "B. Obama");
         barackDoc.setPropertyValue("person:birthDate", null);
 
-        service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, false);
+        service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, false, false);
 
         assertEquals("B. Obama", barackDoc.getTitle());
         birthDate = barackDoc.getProperty("person:birthDate").getValue(
@@ -168,14 +174,16 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
         // later dereferencing with override == true does not preserve local
         // changes
-        service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true);
+        service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true,
+                false);
         assertEquals("Barack Obama", barackDoc.getTitle());
     }
 
     public void testDerefencingTypeConsistency() throws Exception {
         DocumentModel barackDoc = session.createDocumentModel("Organization");
         try {
-            service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true);
+            service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true,
+                    false);
             fail("should have thrown DereferencingException");
         } catch (DereferencingException e) {
             assertEquals(

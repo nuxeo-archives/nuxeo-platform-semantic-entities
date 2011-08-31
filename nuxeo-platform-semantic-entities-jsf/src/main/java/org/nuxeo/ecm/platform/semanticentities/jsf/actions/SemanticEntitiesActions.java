@@ -213,7 +213,7 @@ public class SemanticEntitiesActions {
     /**
      * Return occurrence information to the local entities linked to the given
      * document.
-     * 
+     *
      * TODO: make it a provider to enable pagination TODO: make it possible to
      * choose the type of relation (occurrence, topic, ...)
      */
@@ -266,7 +266,7 @@ public class SemanticEntitiesActions {
     }
 
     public void setSelectedSuggestion(EntitySuggestion suggestion) {
-        this.selectedEntitySuggestion = suggestion;
+        selectedEntitySuggestion = suggestion;
     }
 
     public void addNewOccurrenceRelation() {
@@ -443,7 +443,7 @@ public class SemanticEntitiesActions {
             ClientException {
         RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
         if (remoteEntityService.canDereference(uri)) {
-            remoteEntityService.dereferenceInto(doc, uri, fullSync);
+            remoteEntityService.dereferenceInto(doc, uri, fullSync, false);
         }
         doc = documentManager.saveDocument(doc);
         documentManager.save();
