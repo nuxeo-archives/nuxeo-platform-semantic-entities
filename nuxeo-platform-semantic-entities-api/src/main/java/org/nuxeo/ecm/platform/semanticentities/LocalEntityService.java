@@ -96,7 +96,7 @@ public interface LocalEntityService {
      * @param maxSuggestions maximum number of entities to suggest
      * @return a list of maximum maxSuggestions matching entities
      */
-    List<DocumentModel> suggestLocalEntity(CoreSession session,
+    List<EntitySuggestion> suggestLocalEntity(CoreSession session,
             String keywords, String type, int maxSuggestions)
             throws ClientException;
 

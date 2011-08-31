@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
+import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.runtime.api.Framework;
 
 public class StanbolEntityHubSourceTest extends RemoteEntityServiceTest {
@@ -93,14 +93,14 @@ public class StanbolEntityHubSourceTest extends RemoteEntityServiceTest {
     @Override
     public void testSuggestRemoteEntity() throws IOException {
         assertTrue(service.canSuggestRemoteEntity());
-        List<RemoteEntity> suggestions = service.suggestRemoteEntity("Obama",
+        List<EntitySuggestion> suggestions = service.suggestRemoteEntity("Obama",
                 "Person", 3);
         assertNotNull(suggestions);
         assertEquals(2, suggestions.size());
 
-        RemoteEntity suggested = suggestions.get(0);
+        EntitySuggestion suggested = suggestions.get(0);
         assertEquals("Barack Obama", suggested.label);
-        assertEquals(DBPEDIA_BARACK_OBAMA_URI, suggested.uri);
+        assertEquals(DBPEDIA_BARACK_OBAMA_URI.toString(), suggested.getRemoteURI());
 
 //        // this should also work for a null type
 //        suggestions = service.suggestRemoteEntity("Obama", null, 3);
@@ -109,7 +109,7 @@ public class StanbolEntityHubSourceTest extends RemoteEntityServiceTest {
 //
 //        suggested = suggestions.get(0);
 //        assertEquals("Barack Obama", suggested.label);
-//        assertEquals(DBPEDIA_BARACK_OBAMA_URI, suggested.uri);
+//        assertEquals(DBPEDIA_BARACK_OBAMA_URI.toString(), suggested.uri);
 //
 //        // however no place should match this name
 //        suggestions = service.suggestRemoteEntity("Obama", "Place", 3);

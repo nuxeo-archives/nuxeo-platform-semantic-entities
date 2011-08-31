@@ -54,7 +54,6 @@ import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
-import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceInfo;
@@ -378,7 +377,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public List<DocumentModel> suggestLocalEntity(CoreSession session,
+    public List<EntitySuggestion> suggestLocalEntity(CoreSession session,
             String keywords, String type, int maxSuggestions)
             throws ClientException {
         Set<String> entityTypeNames = new TreeSet<String>();
@@ -401,7 +400,13 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                         + " ORDER BY entity:popularity DESC, dc:title LIMIT %d",
                 Constants.ENTITY_TYPE, cleanupKeywords(keywords),
                 StringUtils.join(entityTypeNames, "', '"), maxSuggestions);
-        return session.query(q);
+
+        // TODO: read the score info as well
+        List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
+        for (DocumentModel doc: session.query(q)) {
+            suggestions.add(new EntitySuggestion(doc));
+        }
+        return suggestions;
     }
 
     @Override
@@ -425,7 +430,6 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 maxSuggestions);
     }
 
-    @SuppressWarnings("unchecked")
     protected List<EntitySuggestion> suggestEntity(CoreSession session,
             String keywords, String type,
             List<EntitySuggestion> precomputedRemoteSuggestions,
@@ -437,117 +441,42 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        List<RemoteEntity> remoteEntities = Collections.emptyList();
-        if (precomputedRemoteSuggestions == null
-                && reService.canSuggestRemoteEntity()) {
-            try {
-                remoteEntities = reService.suggestRemoteEntity(keywords, type,
-                        maxSuggestions);
-            } catch (IOException e) {
-                // wait a bit
+        List<EntitySuggestion> remoteSuggestions = precomputedRemoteSuggestions;
+        if (remoteSuggestions == null) {
+            if (reService.canSuggestRemoteEntity()) {
                 try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e1) {
-                    throw new RuntimeException(e1);
-                }
-                // retry once
-                try {
-                    remoteEntities = reService.suggestRemoteEntity(keywords,
+                    remoteSuggestions = reService.suggestRemoteEntity(keywords,
                             type, maxSuggestions);
-                } catch (IOException e2) {
+                } catch (IOException e) {
                     log.warn(String.format(
                             "failed to suggest remote entity for '%s' with type '%s': %s",
                             keywords, type, e.getMessage()));
+                    remoteSuggestions = Collections.emptyList();
                 }
+            } else {
+                remoteSuggestions = Collections.emptyList();
             }
         }
         // lookup local entities
-        List<DocumentModel> localEntities = suggestLocalEntity(session,
+        List<EntitySuggestion> suggestions = suggestLocalEntity(session,
                 keywords, type, maxSuggestions);
-
-        // TODO: refactor this code to make it simpler
-
-        List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
-        double invScoreLocal = 10.0;
-        Set<RemoteEntity> mergedRemoteEntities = new HashSet<RemoteEntity>();
-        for (DocumentModel localEntity : localEntities) {
-            EntitySuggestion suggestion = new EntitySuggestion(localEntity).withScore(1 / invScoreLocal);
-            suggestions.add(suggestion);
-            List<String> sameas = localEntity.getProperty("entity:sameas").getValue(
-                    List.class);
-            if (sameas == null) {
-                sameas = Collections.emptyList();
-            }
-            double invScoreRemote = 2.0;
-            for (RemoteEntity remoteEntity : remoteEntities) {
-                if (sameas.contains(remoteEntity.getUri().toString())) {
-                    suggestion.remoteEntityUris.add(remoteEntity.uri.toString());
-                    suggestion.score += 1 / invScoreRemote;
-                    mergedRemoteEntities.add(remoteEntity);
-                }
-                invScoreRemote += 1.0;
-            }
-            invScoreLocal += 1.0;
+        Set<String> alreadySeenRemoteUris = new HashSet<String>();
+        for (EntitySuggestion suggestion: suggestions) {
+            alreadySeenRemoteUris.addAll(suggestion.remoteEntityUris);
         }
 
-        remoteEntities.removeAll(mergedRemoteEntities);
-        double invScoreRemote = 2.0;
-        for (RemoteEntity remoteEntity : remoteEntities) {
-            String query = String.format(
-                    "SELECT * FROM Entity WHERE entity:sameas = '%s' ORDER BY dc:modified",
-                    remoteEntity.uri.toString().replaceAll("'", "\\'"));
-            DocumentModelList localMatchingEntities = session.query(query);
-            if (localMatchingEntities.size() > 0) {
-                if (localMatchingEntities.size() > 1) {
-                    log.warn("found multiple local entities matching query: "
-                            + query);
-                }
-                DocumentModel localEntity = localMatchingEntities.get(0);
-                EntitySuggestion suggestion = new EntitySuggestion(localEntity).withScore(2 / invScoreRemote);
-                suggestion.remoteEntityUris.add(remoteEntity.uri.toString());
-                suggestions.add(suggestion);
+        for (EntitySuggestion remoteSuggestion : remoteSuggestions) {
+            String remoteUri = remoteSuggestion.getRemoteURI();
+            if (alreadySeenRemoteUris.contains(remoteUri)) {
+                // filter out remote suggestions that already have a match
+                // in the local suggestions
+                // TODO: how to account for a rank boost?
                 continue;
             }
-
-            EntitySuggestion suggestion = new EntitySuggestion(
-                    remoteEntity.label, remoteEntity.uri.toString(), type).withScore(1 / invScoreRemote);
-            // TODO: optimize me and change the source suggestion API to fetch
-            // admissible types up-front instead
-            Set<String> types = remoteEntity.admissibleTypes != null ? new HashSet<String>(
-                    remoteEntity.admissibleTypes) : null;
-            try {
-                if (types == null) {
-                    // types where not precomputed, fetch them now
-                    types = reService.getAdmissibleTypes(remoteEntity.uri);
-                }
-            } catch (IOException e) {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e1) {
-                    throw new RuntimeException(e1);
-                }
-                // retry once
-                try {
-                    types = reService.getAdmissibleTypes(remoteEntity.uri);
-                } catch (IOException e1) {
-                    log.warn(String.format(
-                            "failed to resolve admissible type for '%s': %s",
-                            remoteEntity.uri, e1.getMessage()));
-                }
-            }
-
-            // quick hack to filter out entities with overly generic types (such
-            // as Entity) or entities without any admissible local types
-            if (types.contains(Constants.ENTITY_TYPE)) {
-                types.remove(Constants.ENTITY_TYPE);
-            }
-            if (types.size() > 0) {
-                suggestion.type = types.iterator().next();
-                suggestions.add(suggestion);
-                invScoreRemote += 1.0;
-            }
+            suggestions.add(remoteSuggestion);
         }
-        Collections.sort(suggestions);
+
+        // TODO: re-rank results to boost exact name matches
         return suggestions;
     }
 

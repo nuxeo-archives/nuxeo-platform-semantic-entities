@@ -1,5 +1,6 @@
 package org.nuxeo.ecm.platform.semanticentities.sources;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -31,13 +32,17 @@ public class MockStanbolEntityHubSource extends StanbolEntityHubSource {
     protected InputStream doHttpPost(URI uri, String accepted,
             String contentType, String payload) throws MalformedURLException,
             IOException {
-        if (uri.toString().endsWith("entityhub/site/dbpedia/query")
-                && payload.toLowerCase().contains("obama")) {
-            return getClass().getResourceAsStream(
-                    "/mock_replies/obama_query_response.json");
+        if (uri.toString().endsWith("entityhub/site/dbpedia/query")) {
+            if (payload.toLowerCase().contains("obama")) {
+                return getClass().getResourceAsStream(
+                        "/mock_replies/obama_query_response.json");
+            }
+            // TODO: add mock replies for John Lennon and Liverpool instead
+            return new ByteArrayInputStream("{'results': []}".getBytes());
         }
         throw new IllegalArgumentException(
-                "no mock resource registered for URI " + uri);
+                "no mock resource registered for URI " + uri + " and payload: "
+                        + payload);
     }
 
 }

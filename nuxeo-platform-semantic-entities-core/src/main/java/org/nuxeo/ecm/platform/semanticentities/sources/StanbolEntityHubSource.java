@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -53,7 +52,7 @@ import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.core.schema.types.Type;
 import org.nuxeo.ecm.core.schema.types.primitives.StringType;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
-import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
+import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.service.ParameterizedHTTPEntitySource;
 import org.nuxeo.ecm.platform.semanticentities.service.RemoteEntitySourceDescriptor;
 
@@ -372,7 +371,7 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
 
     @SuppressWarnings("unchecked")
     @Override
-    public List<RemoteEntity> suggestRemoteEntity(String keywords, String type,
+    public List<EntitySuggestion> suggestRemoteEntity(String keywords, String type,
             int maxSuggestions) throws IOException {
         // build a field query on the entity hub
         Map<String, Object> query = new LinkedHashMap<String, Object>();
@@ -405,13 +404,17 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                         "application/json", "application/json", queryPayload),
                 Map.class);
         List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("results");
-        List<RemoteEntity> suggestions = new ArrayList<RemoteEntity>();
+        if (results == null) {
+            throw new DereferencingException(
+                    "Stanbol EntityHub is missing a 'response' key: "
+                            + response);
+        }
+        List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
         for (Map<String, Object> result : results) {
             String name = readDecodedLiteral(result, namePropertyUri,
                     StringType.INSTANCE, "en").toString();
-            suggestions.add(new RemoteEntity(name,
-                    URI.create(result.get("id").toString()),
-                    new HashSet<String>(Arrays.asList(type))));
+            suggestions.add(new EntitySuggestion(name,
+                    result.get("id").toString(), type));
         }
         return suggestions;
     }

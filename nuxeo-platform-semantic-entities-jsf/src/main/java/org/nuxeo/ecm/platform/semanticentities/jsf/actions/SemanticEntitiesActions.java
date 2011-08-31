@@ -47,7 +47,6 @@ import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.ProgressStatus;
-import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
@@ -359,9 +358,9 @@ public class SemanticEntitiesActions {
      */
 
     @Factory(scope = ScopeType.EVENT, value = "currentEntitySameAs")
-    public List<RemoteEntity> getCurrentEntitySameAs() {
+    public List<EntitySuggestion> getCurrentEntitySameAs() {
         try {
-            return RemoteEntity.fromDocument(navigationContext.getCurrentDocument());
+            return EntitySuggestion.fromDocument(navigationContext.getCurrentDocument());
         } catch (ClientException e) {
             log.error(e, e);
             facesMessages.add(StatusMessage.Severity.ERROR,
@@ -378,13 +377,13 @@ public class SemanticEntitiesActions {
         return isRemoteEntitySearchDisplayed;
     }
 
-    public List<RemoteEntity> suggestRemoteEntity(Object input) {
+    public List<EntitySuggestion> suggestRemoteEntity(Object input) {
         String type = navigationContext.getCurrentDocument().getType();
         String keywords = (String) input;
         try {
             RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
-            List<RemoteEntity> filteredSuggestions = new ArrayList<RemoteEntity>();
-            List<RemoteEntity> suggestions = remoteEntityService.suggestRemoteEntity(
+            List<EntitySuggestion> filteredSuggestions = new ArrayList<EntitySuggestion>();
+            List<EntitySuggestion> suggestions = remoteEntityService.suggestRemoteEntity(
                     keywords, type, 5);
             // TODO: filter out entities that already have a local entity synced
             // to them
@@ -412,13 +411,11 @@ public class SemanticEntitiesActions {
             // TODO: display some user friendly warning
             return;
         }
-        RemoteEntity re = new RemoteEntity(selectedEntitySuggestionLabel,
-                selectedEntitySuggestionUri);
         DocumentModel doc = navigationContext.getChangeableDocument();
         try {
             // TODO: once the UI allows to set multiple links to several remote
             // sources we should set override back to false
-            syncAndSaveDocument(doc, re.uri, true);
+            syncAndSaveDocument(doc, selectedEntitySuggestionUri, true);
         } catch (Exception e) {
             log.error(e, e);
             facesMessages.add(StatusMessage.Severity.ERROR,

@@ -47,7 +47,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
-import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
+import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.service.ParameterizedHTTPEntitySource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -180,8 +180,8 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
     }
 
     @Override
-    public List<RemoteEntity> suggestRemoteEntity(String keywords, String type,
-            int maxSuggestions) throws IOException {
+    public List<EntitySuggestion> suggestRemoteEntity(String keywords,
+            String type, int maxSuggestions) throws IOException {
 
         Set<String> acceptedTypes = new TreeSet<String>();
         if (type != null) {
@@ -203,7 +203,7 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
         String content = IOUtils.toString(bodyStream);
         log.debug(content);
 
-        List<RemoteEntity> suggestions = new ArrayList<RemoteEntity>();
+        List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
         try {
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
             Document document = builder.parse(new ByteArrayInputStream(
@@ -214,7 +214,7 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
             for (int i = 0; i < resultNodes.getLength(); i++) {
                 Node resultNode = resultNodes.item(i);
                 String label = null;
-                URI uri = null;
+                String uri = null;
                 boolean hasMatchingType = false;
                 Node labelNode = (Node) xpath.evaluate("Label/text()",
                         resultNode, XPathConstants.NODE);
@@ -224,7 +224,7 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
                 Node uriNode = (Node) xpath.evaluate("URI/text()", resultNode,
                         XPathConstants.NODE);
                 if (uriNode != null) {
-                    uri = URI.create(uriNode.getNodeValue());
+                    uri = uriNode.getNodeValue();
                 }
                 NodeList typeNodes = (NodeList) xpath.evaluate(
                         "Classes/Class/URI/text()", resultNode,
@@ -237,7 +237,7 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
                     }
                 }
                 if (hasMatchingType && label != null && uri != null) {
-                    suggestions.add(new RemoteEntity(label, uri));
+                    suggestions.add(new EntitySuggestion(label, uri, type));
                     if (suggestions.size() >= maxSuggestions) {
                         break;
                     }

@@ -28,7 +28,7 @@ import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
-import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
+import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.runtime.api.Framework;
 
@@ -77,14 +77,15 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
     public void testSuggestRemoteEntity() throws IOException {
         assertTrue(service.canSuggestRemoteEntity());
-        List<RemoteEntity> suggestions = service.suggestRemoteEntity("Obama",
+        List<EntitySuggestion> suggestions = service.suggestRemoteEntity("Obama",
                 "Person", 3);
         assertNotNull(suggestions);
         assertEquals(1, suggestions.size());
 
-        RemoteEntity suggested = suggestions.get(0);
+        EntitySuggestion suggested = suggestions.get(0);
         assertEquals("Barack Obama", suggested.label);
-        assertEquals(DBPEDIA_BARACK_OBAMA_URI, suggested.uri);
+        assertEquals(DBPEDIA_BARACK_OBAMA_URI.toString(),
+                suggested.getRemoteURI());
 
         // this should also work for a null type
         suggestions = service.suggestRemoteEntity("Obama", null, 3);
@@ -93,7 +94,8 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
         suggested = suggestions.get(0);
         assertEquals("Barack Obama", suggested.label);
-        assertEquals(DBPEDIA_BARACK_OBAMA_URI, suggested.uri);
+        assertEquals(DBPEDIA_BARACK_OBAMA_URI.toString(),
+                suggested.getRemoteURI());
 
         // however no place should match this name
         suggestions = service.suggestRemoteEntity("Obama", "Place", 3);
