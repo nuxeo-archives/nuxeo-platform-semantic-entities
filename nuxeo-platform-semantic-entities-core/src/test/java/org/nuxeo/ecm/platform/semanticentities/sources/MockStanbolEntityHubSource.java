@@ -28,9 +28,11 @@ public class MockStanbolEntityHubSource extends StanbolEntityHubSource {
     }
 
     @Override
-    protected InputStream doHttpPost(URI uri, String accepted, String contentType, String payload)
-            throws MalformedURLException, IOException {
-        if (uri.toString().endsWith("entityhub/site/dbpedia/query")) {
+    protected InputStream doHttpPost(URI uri, String accepted,
+            String contentType, String payload) throws MalformedURLException,
+            IOException {
+        if (uri.toString().endsWith("entityhub/site/dbpedia/query")
+                && payload.toLowerCase().contains("obama")) {
             return getClass().getResourceAsStream(
                     "/mock_replies/obama_query_response.json");
         }
