@@ -45,6 +45,7 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.nuxeo.ecm.core.api.Blob;
+import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.impl.blob.StreamingBlob;
 import org.nuxeo.ecm.core.api.model.Property;
@@ -166,9 +167,10 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
     public void dereferenceInto(DocumentModel localEntity, URI remoteEntity,
             boolean override, boolean lazyResourceFetch)
             throws DereferencingException {
+        Map<String, Object> representation = Collections.emptyMap();
         try {
             Map<String, Object> jsonDescription = fetchJSONDescription(remoteEntity);
-            Map<String, Object> representation = (Map<String, Object>) jsonDescription.get("representation");
+            representation = (Map<String, Object>) jsonDescription.get("representation");
             if (representation == null) {
                 throw new DereferencingException(
                         "Invalid JSON response from Stanbol server:"
@@ -213,73 +215,80 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                 localEntity.setPropertyValue("entity:sameasDisplayLabel",
                         (Serializable) sameasDisplayLabel);
             }
-            HashMap<String, String> mapping = new HashMap<String, String>(
-                    descriptor.getMappedProperties());
-            // as sameas has a special handling, remove it from the list of
-            // properties to synchronize the generic way
-            mapping.remove("entity:sameas");
-
-            // generic handling of mapped properties
-            for (Entry<String, String> mappedProperty : mapping.entrySet()) {
-                String localPropertyName = mappedProperty.getKey();
-                String remotePropertyUri = mappedProperty.getValue();
-                try {
-                    Property localProperty = localEntity.getProperty(localPropertyName);
-                    Type type = localProperty.getType();
-                    if (type.isListType()) {
-                        // only synchronize string lists right now
-                        List<String> newValues = new ArrayList<String>();
-                        if (localProperty.getValue() != null) {
-                            newValues.addAll(localProperty.getValue(List.class));
-                        }
-                        if (override) {
-                            newValues.clear();
-                        }
-                        for (String value : readStringList(representation,
-                                remotePropertyUri)) {
-                            if (!newValues.contains(value)) {
-                                newValues.add(value);
-                            }
-                        }
-                        localEntity.setPropertyValue(localPropertyName,
-                                (Serializable) newValues);
-                    } else {
-                        if (localProperty.getValue() == null
-                                || "".equals(localProperty.getValue())
-                                || override) {
-                            if (type.isComplexType()
-                                    && "content".equals(type.getName())) {
-                                Serializable linkedResource = readLinkedResource(
-                                        representation, remotePropertyUri, lazyResourceFetch);
-                                if (linkedResource != null) {
-                                    localEntity.setPropertyValue(
-                                            localPropertyName, linkedResource);
-                                }
-                            } else {
-                                Serializable literal = readDecodedLiteral(
-                                        representation, remotePropertyUri,
-                                        type, "en");
-                                if (literal != null) {
-                                    localEntity.setPropertyValue(
-                                            localPropertyName, literal);
-                                }
-                            }
-                        }
-                    }
-                } catch (PropertyException e) {
-                    // ignore missing properties
-                }
-            }
         } catch (DereferencingException e) {
             throw e;
         } catch (Exception e) {
             throw new DereferencingException(e);
         }
+        HashMap<String, String> mapping = new HashMap<String, String>(
+                descriptor.getMappedProperties());
+        // as sameas has a special handling, remove it from the list of
+        // properties to synchronize the generic way
+        mapping.remove("entity:sameas");
+
+        // generic handling of mapped properties
+        for (Entry<String, String> mappedProperty : mapping.entrySet()) {
+            String localPropertyName = mappedProperty.getKey();
+            String remotePropertyUri = mappedProperty.getValue();
+            try {
+                Property localProperty = localEntity.getProperty(localPropertyName);
+                Type type = localProperty.getType();
+                if (type.isListType()) {
+                    // only synchronize string lists right now
+                    List<String> newValues = new ArrayList<String>();
+                    if (localProperty.getValue() != null) {
+                        newValues.addAll(localProperty.getValue(List.class));
+                    }
+                    if (override) {
+                        newValues.clear();
+                    }
+                    for (String value : readStringList(representation,
+                            remotePropertyUri)) {
+                        if (!newValues.contains(value)) {
+                            newValues.add(value);
+                        }
+                    }
+                    localEntity.setPropertyValue(localPropertyName,
+                            (Serializable) newValues);
+                } else {
+                    if (localProperty.getValue() == null
+                            || "".equals(localProperty.getValue()) || override) {
+                        if (type.isComplexType()
+                                && "content".equals(type.getName())) {
+                            if (lazyResourceFetch) {
+                                // TODO: store the resource and property
+                                // info in a DocumentModel context data entry to
+                                // be used later by the entity serializer
+                            } else {
+                                Serializable linkedResource = readLinkedResource(
+                                        representation, remotePropertyUri);
+                                if (linkedResource != null) {
+                                    localEntity.setPropertyValue(
+                                            localPropertyName, linkedResource);
+                                }
+                            }
+                        } else {
+                            Serializable literal = readDecodedLiteral(
+                                    representation, remotePropertyUri, type,
+                                    "en");
+                            if (literal != null) {
+                                localEntity.setPropertyValue(localPropertyName,
+                                        literal);
+                            }
+                        }
+                    }
+                }
+            } catch (PropertyException e) {
+                // ignore missing properties
+            } catch (ClientException e) {
+                throw new DereferencingException(e);
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")
     protected Serializable readLinkedResource(
-            Map<String, Object> jsonRepresentation, String propertyUri, boolean lazyDownload) {
+            Map<String, Object> jsonRepresentation, String propertyUri) {
         // download depictions or other kind of linked resources
         List<Map<String, String>> propInfos = (List<Map<String, String>>) jsonRepresentation.get(propertyUri);
         if (propInfos == null) {
@@ -296,20 +305,6 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
             if (lastSlashIndex != -1) {
                 filename = contentURI.substring(lastSlashIndex + 1);
             }
-            if (lazyDownload) {
-                // lazy reference to the resource content
-                try {
-                    StreamingBlob blob = StreamingBlob.createFromURL(URI.create(
-                            contentURI).toURL());
-                    blob.setFilename(filename);
-                    return blob;
-                } catch (MalformedURLException e) {
-                    log.warn("Invalid resource URL: " + contentURI);
-                    return null;
-                }
-            }
-
-            // greedy pre-fetch the resource content
             InputStream is = null;
             try {
                 is = doHttpGet(URI.create(contentURI), null);
@@ -371,8 +366,8 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
 
     @SuppressWarnings("unchecked")
     @Override
-    public List<EntitySuggestion> suggestRemoteEntity(String keywords, String type,
-            int maxSuggestions) throws IOException {
+    public List<EntitySuggestion> suggestRemoteEntity(String keywords,
+            String type, int maxSuggestions) throws IOException {
         // build a field query on the entity hub
         Map<String, Object> query = new LinkedHashMap<String, Object>();
         List<Map<String, String>> constraints = new ArrayList<Map<String, String>>();
@@ -425,8 +420,7 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                 // instead
                 type = admissibleTypes.iterator().next();
             }
-            suggestions.add(new EntitySuggestion(name,
-                    uri, type));
+            suggestions.add(new EntitySuggestion(name, uri, type));
         }
         return suggestions;
     }

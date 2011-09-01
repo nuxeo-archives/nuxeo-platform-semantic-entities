@@ -248,12 +248,17 @@ public abstract class ParameterizedHTTPEntitySource implements
                             || "".equals(localProperty.getValue()) || override) {
                         if (type.isComplexType()
                                 && "content".equals(type.getName())) {
-                            Serializable linkedResource = (Serializable) readLinkedResource(
-                                    rdfModel, resource, remotePropertyUri,
-                                    lazyResourceFetch);
-                            if (linkedResource != null) {
-                                localEntity.setPropertyValue(localPropertyName,
-                                        linkedResource);
+                            if (lazyResourceFetch) {
+                                // TODO: store the resource and property info in
+                                // a DocumentModel context data entry to be used
+                                // later by the entity serializer
+                            } else {
+                                Serializable linkedResource = (Serializable) readLinkedResource(
+                                        rdfModel, resource, remotePropertyUri);
+                                if (linkedResource != null) {
+                                    localEntity.setPropertyValue(
+                                            localPropertyName, linkedResource);
+                                }
                             }
                         } else {
                             Serializable literal = readDecodedLiteral(rdfModel,
@@ -299,9 +304,8 @@ public abstract class ParameterizedHTTPEntitySource implements
 
 
     protected Blob readLinkedResource(Model rdfModel, Resource resource,
-            String remotePropertyUri, boolean lazyFetch) {
-        // download depictions or other kind of linked
-        // resources
+            String remotePropertyUri) {
+        // download depictions or other kind of linked resources
         com.hp.hpl.jena.rdf.model.Property remoteProperty = rdfModel.getProperty(remotePropertyUri);
         NodeIterator it = rdfModel.listObjectsOfProperty(resource,
                 remoteProperty);
@@ -313,19 +317,6 @@ public abstract class ParameterizedHTTPEntitySource implements
             if (lastSlashIndex != -1) {
                 filename = contentURI.substring(lastSlashIndex + 1);
             }
-            if (lazyFetch) {
-                // lazy reference to the resource content
-                try {
-                    StreamingBlob blob = StreamingBlob.createFromURL(URI.create(
-                            contentURI).toURL());
-                    blob.setFilename(filename);
-                    return blob;
-                } catch (MalformedURLException e) {
-                    log.warn("Invalid resource URL: " + contentURI);
-                    return null;
-                }
-            }
-            // greedy fetch of the referenced content
             InputStream is = null;
             try {
                 is = doHttpGet(URI.create(contentURI), null);
