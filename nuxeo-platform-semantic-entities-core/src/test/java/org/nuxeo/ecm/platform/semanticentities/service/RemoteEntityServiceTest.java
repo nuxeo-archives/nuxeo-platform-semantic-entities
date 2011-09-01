@@ -40,6 +40,8 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
     protected static final URI DBPEDIA_BARACK_OBAMA_URI = URI.create("http://dbpedia.org/resource/Barack_Obama");
 
+    protected static final URI DBPEDIA_MICHELLE_OBAMA_URI = URI.create("http://dbpedia.org/resource/Michelle_Obama");
+
     RemoteEntityService service;
 
     @Override
@@ -85,7 +87,9 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         EntitySuggestion suggested = suggestions.get(0);
         assertEquals("Barack Obama", suggested.label);
         assertEquals(DBPEDIA_BARACK_OBAMA_URI.toString(),
-                suggested.getRemoteURI());
+                suggested.getRemoteUri());
+        assertEquals("Person", suggested.type);
+        assertFalse(suggested.isLocal());
 
         // this should also work for a null type
         suggestions = service.suggestRemoteEntity("Obama", null, 3);
@@ -95,7 +99,9 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         suggested = suggestions.get(0);
         assertEquals("Barack Obama", suggested.label);
         assertEquals(DBPEDIA_BARACK_OBAMA_URI.toString(),
-                suggested.getRemoteURI());
+                suggested.getRemoteUri());
+        assertEquals("Person", suggested.type);
+        assertFalse(suggested.isLocal());
 
         // however no place should match this name
         suggestions = service.suggestRemoteEntity("Obama", "Place", 3);
@@ -111,7 +117,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
     public void testGetAdmissibleTypes() throws Exception {
         Set<String> admissibleTypes = service.getAdmissibleTypes(DBPEDIA_BARACK_OBAMA_URI);
         assertNotNull(admissibleTypes);
-        assertEquals("Entity, Person", StringUtils.join(admissibleTypes, ", "));
+        assertEquals("Person", StringUtils.join(admissibleTypes, ", "));
 
         admissibleTypes = service.getAdmissibleTypes(WIKIPEDIA_LONDON_URI);
         assertNotNull(admissibleTypes);
@@ -190,7 +196,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         } catch (DereferencingException e) {
             assertEquals(
                     "Remote entity 'http://dbpedia.org/resource/Barack_Obama'"
-                            + " can be mapped to types: ('Entity', 'Person')"
+                            + " can be mapped to types: ('Person')"
                             + " but not to 'Organization'", e.getMessage());
         }
     }

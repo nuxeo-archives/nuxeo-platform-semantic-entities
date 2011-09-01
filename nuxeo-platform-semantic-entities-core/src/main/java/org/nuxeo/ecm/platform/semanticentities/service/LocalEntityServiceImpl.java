@@ -466,7 +466,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         }
 
         for (EntitySuggestion remoteSuggestion : remoteSuggestions) {
-            String remoteUri = remoteSuggestion.getRemoteURI();
+            String remoteUri = remoteSuggestion.getRemoteUri();
             if (alreadySeenRemoteUris.contains(remoteUri)) {
                 // filter out remote suggestions that already have a match
                 // in the local suggestions

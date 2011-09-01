@@ -121,7 +121,7 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
     /**
      * @return the first registered remote URI or null
      */
-    public String getRemoteURI() {
+    public String getRemoteUri() {
         if (!remoteEntityUris.isEmpty()) {
             return remoteEntityUris.iterator().next();
         } else {
@@ -132,7 +132,7 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
     @Override
     public String toString() {
         return String.format("EntitySuggestion(%s, %s, %s)", label,
-                getRemoteURI(), type);
+                getRemoteUri(), type);
     }
 
     /**

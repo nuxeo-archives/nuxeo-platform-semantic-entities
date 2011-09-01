@@ -33,12 +33,15 @@ public class MockStanbolEntityHubSource extends StanbolEntityHubSource {
             String contentType, String payload) throws MalformedURLException,
             IOException {
         if (uri.toString().endsWith("entityhub/site/dbpedia/query")) {
-            if (payload.toLowerCase().contains("obama")) {
+            if (payload.toLowerCase().contains("obama")
+                    && !payload.toLowerCase().contains("place")) {
+                // poorman's way to emulate the server behavior based on the
+                // JSON payload content of the query
                 return getClass().getResourceAsStream(
                         "/mock_replies/obama_query_response.json");
             }
             // TODO: add mock replies for John Lennon and Liverpool instead
-            return new ByteArrayInputStream("{'results': []}".getBytes());
+            return new ByteArrayInputStream("{\"results\": []}".getBytes());
         }
         throw new IllegalArgumentException(
                 "no mock resource registered for URI " + uri + " and payload: "

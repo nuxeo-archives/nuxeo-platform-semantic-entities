@@ -393,6 +393,9 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(suggestions.size(), 1);
         EntitySuggestion firstGuess = suggestions.get(0);
         assertEquals("Barack Obama", firstGuess.label);
+        assertEquals("http://dbpedia.org/resource/Barack_Obama",
+                firstGuess.getRemoteUri());
+        assertEquals("Person", firstGuess.type);
         assertFalse(firstGuess.isLocal());
 
         // synchronize the remote entity as a local entity
@@ -407,6 +410,46 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(suggestions.size(), 1);
         firstGuess = suggestions.get(0);
         assertEquals("Barack Obama", firstGuess.label);
+        assertEquals("http://dbpedia.org/resource/Barack_Obama",
+                firstGuess.getRemoteUri());
+        assertEquals("Person", firstGuess.type);
+        assertTrue(firstGuess.isLocal());
+    }
+
+    public void testSuggestEntitiesWithoutTypeRestriction() throws Exception {
+        // deploy off-line mock DBpedia source to override the default source
+        // that needs an internet connection: comment the following contrib to
+        // test again the real DBpedia server
+        deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
+                "OSGI-INF/test-semantic-entities-dbpedia-entity-contrib.xml");
+
+        // empty local KB, only remote source output
+        List<EntitySuggestion> suggestions = service.suggestEntity(session,
+                "Barack Obama", null, 3);
+        assertNotNull(suggestions);
+        assertEquals(suggestions.size(), 1);
+        EntitySuggestion firstGuess = suggestions.get(0);
+        assertEquals("Barack Obama", firstGuess.label);
+        assertEquals("http://dbpedia.org/resource/Barack_Obama",
+                firstGuess.getRemoteUri());
+        assertEquals("Person", firstGuess.type);
+        assertFalse(firstGuess.isLocal());
+
+        // synchronize the remote entity as a local entity
+        DocumentModel localEntity = service.asLocalEntity(session, firstGuess);
+        assertEquals(localEntity.getTitle(), "Barack Obama");
+
+        // perform the same suggestion query again: this time the result is
+        // local
+        suggestions = service.suggestEntity(session, "Barack Obama", "Person",
+                3);
+        assertNotNull(suggestions);
+        assertEquals(suggestions.size(), 1);
+        firstGuess = suggestions.get(0);
+        assertEquals("Barack Obama", firstGuess.label);
+        assertEquals("http://dbpedia.org/resource/Barack_Obama",
+                firstGuess.getRemoteUri());
+        assertEquals("Person", firstGuess.type);
         assertTrue(firstGuess.isLocal());
     }
 

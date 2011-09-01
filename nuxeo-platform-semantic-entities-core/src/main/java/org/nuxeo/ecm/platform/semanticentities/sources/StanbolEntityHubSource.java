@@ -151,7 +151,7 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
             Map<String, String> reverseTypeMapping = descriptor.getReverseMappedTypes();
             for (Map<String, String> typeInfo : typeInfos) {
                 String localType = reverseTypeMapping.get(typeInfo.get("value"));
-                if (localType != null) {
+                if (localType != null && !"Entity".equals(localType)) {
                     admissibleTypes.add(localType);
                 }
             }
@@ -399,9 +399,10 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
         query.put("limit", maxSuggestions);
         query.put("constraints", constraints);
         String queryPayload = mapper.writeValueAsString(query);
-        Map<String, Object> response = mapper.readValue(
-                doHttpPost(URI.create(endpointURL + "query"),
-                        "application/json", "application/json", queryPayload),
+        InputStream responseStream = doHttpPost(
+                URI.create(endpointURL + "query"), "application/json",
+                "application/json", queryPayload);
+        Map<String, Object> response = mapper.readValue(responseStream,
                 Map.class);
         List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("results");
         if (results == null) {
@@ -413,8 +414,19 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
         for (Map<String, Object> result : results) {
             String name = readDecodedLiteral(result, namePropertyUri,
                     StringType.INSTANCE, "en").toString();
+            String uri = result.get("id").toString();
+            if (type == null) {
+                Set<String> admissibleTypes = getAdmissibleTypes(result);
+                if (admissibleTypes.isEmpty()) {
+                    continue;
+                }
+                // primary type assignment is currently arbitrary: planned fix
+                // it to use secondary types with "Entity" as primary types
+                // instead
+                type = admissibleTypes.iterator().next();
+            }
             suggestions.add(new EntitySuggestion(name,
-                    result.get("id").toString(), type));
+                    uri, type));
         }
         return suggestions;
     }

@@ -404,6 +404,7 @@ public abstract class ParameterizedHTTPEntitySource implements
                 mappedLocalTypes.add(typeMapEntry.getKey());
             }
         }
+        mappedLocalTypes.remove("Entity");
         return mappedLocalTypes;
     }
 

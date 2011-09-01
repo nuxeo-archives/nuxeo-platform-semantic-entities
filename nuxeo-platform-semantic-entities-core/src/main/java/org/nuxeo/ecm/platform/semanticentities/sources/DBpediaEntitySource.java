@@ -183,12 +183,15 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
     public List<EntitySuggestion> suggestRemoteEntity(String keywords,
             String type, int maxSuggestions) throws IOException {
 
-        Set<String> acceptedTypes = new TreeSet<String>();
+        Map<String, String> localTypes = descriptor.getReverseMappedTypes();
+        Set<String> acceptedLocalTypes = new TreeSet<String>();
         if (type != null) {
-            acceptedTypes.add(descriptor.getMappedTypes().get(type));
+            acceptedLocalTypes.add(type);
         } else {
-            acceptedTypes.addAll(descriptor.getMappedTypes().values());
+            acceptedLocalTypes.addAll(localTypes.values());
         }
+        // remove the overly generic type Entity for now
+        acceptedLocalTypes.remove("Entity");
 
         // fetch more suggestions than requested since we will do type
         // post-filtering afterwards
@@ -215,7 +218,6 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
                 Node resultNode = resultNodes.item(i);
                 String label = null;
                 String uri = null;
-                boolean hasMatchingType = false;
                 Node labelNode = (Node) xpath.evaluate("Label/text()",
                         resultNode, XPathConstants.NODE);
                 if (labelNode != null) {
@@ -229,15 +231,19 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
                 NodeList typeNodes = (NodeList) xpath.evaluate(
                         "Classes/Class/URI/text()", resultNode,
                         XPathConstants.NODESET);
+                String matchingLocalType = null;
                 for (int k = 0; k < typeNodes.getLength(); k++) {
                     Node typeNode = typeNodes.item(k);
-                    if (acceptedTypes.contains(typeNode.getNodeValue())) {
-                        hasMatchingType = true;
+                    String localType = localTypes.get(typeNode.getNodeValue());
+                    if (localType != null
+                            && acceptedLocalTypes.contains(localType)) {
+                        matchingLocalType = localType;
                         break;
                     }
                 }
-                if (hasMatchingType && label != null && uri != null) {
-                    suggestions.add(new EntitySuggestion(label, uri, type));
+                if (matchingLocalType != null && label != null && uri != null) {
+                    suggestions.add(new EntitySuggestion(label, uri,
+                            matchingLocalType));
                     if (suggestions.size() >= maxSuggestions) {
                         break;
                     }

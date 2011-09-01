@@ -93,28 +93,48 @@ public class StanbolEntityHubSourceTest extends RemoteEntityServiceTest {
     @Override
     public void testSuggestRemoteEntity() throws IOException {
         assertTrue(service.canSuggestRemoteEntity());
-        List<EntitySuggestion> suggestions = service.suggestRemoteEntity("Obama",
-                "Person", 3);
+        List<EntitySuggestion> suggestions = service.suggestRemoteEntity(
+                "Obama", "Person", 3);
         assertNotNull(suggestions);
         assertEquals(2, suggestions.size());
 
         EntitySuggestion suggested = suggestions.get(0);
         assertEquals("Barack Obama", suggested.label);
-        assertEquals(DBPEDIA_BARACK_OBAMA_URI.toString(), suggested.getRemoteURI());
+        assertEquals(DBPEDIA_BARACK_OBAMA_URI.toString(),
+                suggested.getRemoteUri());
+        assertEquals("Person", suggested.type);
+        assertFalse(suggested.isLocal());
 
-//        // this should also work for a null type
-//        suggestions = service.suggestRemoteEntity("Obama", null, 3);
-//        assertNotNull(suggestions);
-//        assertEquals(2, suggestions.size());
-//
-//        suggested = suggestions.get(0);
-//        assertEquals("Barack Obama", suggested.label);
-//        assertEquals(DBPEDIA_BARACK_OBAMA_URI.toString(), suggested.uri);
-//
-//        // however no place should match this name
-//        suggestions = service.suggestRemoteEntity("Obama", "Place", 3);
-//        assertNotNull(suggestions);
-//        assertEquals(0, suggestions.size());
+        suggested = suggestions.get(1);
+        assertEquals("Michelle Obama", suggested.label);
+        assertEquals(DBPEDIA_MICHELLE_OBAMA_URI.toString(),
+                suggested.getRemoteUri());
+        assertEquals("Person", suggested.type);
+        assertFalse(suggested.isLocal());
+
+        // this should also work for a null type
+        suggestions = service.suggestRemoteEntity("Obama", null, 3);
+        assertNotNull(suggestions);
+        assertEquals(2, suggestions.size());
+
+        suggested = suggestions.get(0);
+        assertEquals("Barack Obama", suggested.label);
+        assertEquals(DBPEDIA_BARACK_OBAMA_URI.toString(),
+                suggested.getRemoteUri());
+        assertEquals("Person", suggested.type);
+        assertFalse(suggested.isLocal());
+
+        suggested = suggestions.get(1);
+        assertEquals("Michelle Obama", suggested.label);
+        assertEquals(DBPEDIA_MICHELLE_OBAMA_URI.toString(),
+                suggested.getRemoteUri());
+        assertEquals("Person", suggested.type);
+        assertFalse(suggested.isLocal());
+
+        // however no place should match this name
+        suggestions = service.suggestRemoteEntity("Obama", "Place", 3);
+        assertNotNull(suggestions);
+        assertEquals(0, suggestions.size());
     }
 
 }
