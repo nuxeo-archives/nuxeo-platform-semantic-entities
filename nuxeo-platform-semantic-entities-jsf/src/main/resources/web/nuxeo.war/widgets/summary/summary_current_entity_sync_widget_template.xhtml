@@ -21,7 +21,7 @@
     <nxu:column>
       <a4j:commandLink id="syncWithSameAsLink"
         reRender="documentViewPanel"
-        action="#{semanticEntitiesActions.syncWithSameAsLink(remoteEntity.uri)}"
+        action="#{semanticEntitiesActions.syncWithSameAsLink(remoteEntity.remoteUri)}"
         rendered="#{documentManager.hasPermission(currentDocument.ref, 'WRITE_PROPERTIES')}">
         <h:graphicImage value="/icons/refresh.png" />
       </a4j:commandLink>
@@ -29,7 +29,7 @@
     <nxu:column>
       <a4j:commandLink id="removeSameAsLink" immediate="true"
         reRender="remoteEntitySuggestionPanel"
-        action="#{semanticEntitiesActions.removeSameAsLink(remoteEntity.uri)}"
+        action="#{semanticEntitiesActions.removeSameAsLink(remoteEntity.remoteUri)}"
         rendered="#{documentManager.hasPermission(currentDocument.ref, 'WRITE_PROPERTIES')}">
         <h:graphicImage value="/icons/action_delete_mini_over.png" />
       </a4j:commandLink>

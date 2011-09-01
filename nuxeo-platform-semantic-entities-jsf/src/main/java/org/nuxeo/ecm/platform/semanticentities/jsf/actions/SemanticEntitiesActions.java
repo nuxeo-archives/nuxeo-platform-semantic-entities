@@ -87,7 +87,7 @@ public class SemanticEntitiesActions {
 
     protected boolean isRemoteEntitySearchDisplayed = false;
 
-    protected URI selectedEntitySuggestionUri;
+    protected String selectedEntitySuggestionUri;
 
     protected String selectedEntitySuggestionLabel;
 
@@ -397,7 +397,7 @@ public class SemanticEntitiesActions {
         }
     }
 
-    public void setSelectedEntitySuggestionUri(URI uri) {
+    public void setSelectedEntitySuggestionUri(String uri) {
         selectedEntitySuggestionUri = uri;
     }
 
@@ -412,10 +412,15 @@ public class SemanticEntitiesActions {
             return;
         }
         DocumentModel doc = navigationContext.getChangeableDocument();
+        if (doc == null) {
+            // we are not on the edit view
+            doc = navigationContext.getCurrentDocument();
+        }
         try {
             // TODO: once the UI allows to set multiple links to several remote
             // sources we should set override back to false
-            syncAndSaveDocument(doc, selectedEntitySuggestionUri, true);
+            syncAndSaveDocument(doc, URI.create(selectedEntitySuggestionUri),
+                    true);
         } catch (Exception e) {
             log.error(e, e);
             facesMessages.add(StatusMessage.Severity.ERROR,
@@ -426,8 +431,12 @@ public class SemanticEntitiesActions {
 
     public void syncWithSameAsLink(String uri) {
         try {
-            syncAndSaveDocument(navigationContext.getChangeableDocument(),
-                    URI.create(uri), true);
+            DocumentModel doc = navigationContext.getChangeableDocument();
+            if (doc == null) {
+                // we are not on the edit view
+                doc = navigationContext.getCurrentDocument();
+            }
+            syncAndSaveDocument(doc, URI.create(uri), true);
         } catch (Exception e) {
             log.error(e, e);
             facesMessages.add(StatusMessage.Severity.ERROR,
