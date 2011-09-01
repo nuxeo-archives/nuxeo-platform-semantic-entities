@@ -19,7 +19,6 @@ package org.nuxeo.ecm.platform.semanticentities.sources;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.util.ArrayList;
