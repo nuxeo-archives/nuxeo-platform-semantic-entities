@@ -23,6 +23,8 @@ import java.util.Set;
 
 import org.nuxeo.ecm.core.api.DocumentModel;
 
+import com.hp.hpl.jena.rdf.model.Model;
+
 public interface RemoteEntitySource {
 
     /**
@@ -53,8 +55,8 @@ public interface RemoteEntitySource {
 
     /**
      * Dereference a remote entity into an existing document model. Only non
-     * empty local fields are updated, unless {@code override} is set to {@code
-     * true}.
+     * empty local fields are updated, unless {@code override} is set to
+     * {@code true}.
      *
      * It is the responsibility of the method caller to save the updated
      * document model back to the repository.
@@ -64,9 +66,36 @@ public interface RemoteEntitySource {
      * @param remoteEntity the URI of the entity to dereference
      * @param override replace non-empty local fields with values from the
      *            remote entity
+     * @param lazyResourceFetch if true, delay the fetch of the content of
+     *            referenced resources (e.g. JPEG images) to first access.
      */
     void dereferenceInto(DocumentModel localEntity, URI remoteEntity,
-            boolean override) throws DereferencingException;
+            boolean override, boolean lazyResourceFetch)
+            throws DereferencingException;
+
+    /**
+     * Dereference a remote entity into an existing document model from a
+     * pre-fetched RDF description of the entity. Only non empty local fields
+     * are updated, unless {@code override} is set to {@code true}.
+     *
+     * This is typically useful for the SemanticAnalysisService that might
+     * receive pre-fetched entity link suggestion and description from the
+     * enhancement engines.
+     *
+     * It is the responsibility of the method caller to save the updated
+     * document model back to the repository.
+     *
+     * @param localEntity local document model to store a copy of the entity
+     *            attribute
+     * @param remoteEntity the URI of the entity to dereference
+     * @param override replace non-empty local fields with values from the
+     *            remote entity
+     * @param lazyResourceFetch if true, delay the fetch of the content of
+     *            referenced resources (e.g. JPEG images) to first access.
+     */
+    public void dereferenceIntoFromModel(DocumentModel localEntity,
+            URI remoteEntity, Model rdfModel, boolean override,
+            boolean lazyResourceFetch) throws DereferencingException;
 
     /**
      * Perform query on registered remote entity sources to suggests entity
@@ -80,7 +109,7 @@ public interface RemoteEntitySource {
      * The suggestion backend should order the results by a mix of keyword
      * relevance and popularity.
      */
-    List<RemoteEntity> suggestRemoteEntity(String keywords, String type,
+    List<EntitySuggestion> suggestRemoteEntity(String keywords, String type,
             int maxSuggestions) throws IOException;
 
 }

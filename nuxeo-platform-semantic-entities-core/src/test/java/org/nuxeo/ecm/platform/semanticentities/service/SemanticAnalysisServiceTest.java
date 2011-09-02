@@ -59,23 +59,24 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
         // semantic entities types
         deployBundle("org.nuxeo.ecm.platform.semanticentities.core");
-        
+
         // deploy off-line mock for the semantic analysis service
         deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
                 "OSGI-INF/test-semantic-entities-analysis-service.xml");
-        
+
         // deploy off-line mock DBpedia source to override the default source
         // that needs an internet connection: comment the following contrib to
-        // test again the real DBpedia server
+        // test again a real Stanbol server
         deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
-                "OSGI-INF/test-semantic-entities-dbpedia-entity-contrib.xml");
+                "OSGI-INF/test-semantic-entities-stanbol-entity-contrib.xml");
 
         // CMIS query maker
         deployBundle("org.nuxeo.ecm.core.opencmis.impl");
 
         // initialize the session field
         openSession();
-        DocumentModel domain = session.createDocumentModel("/", "default-domain", "Folder");
+        DocumentModel domain = session.createDocumentModel("/",
+                "default-domain", "Folder");
         session.createDocument(domain);
         session.save();
 
@@ -88,6 +89,12 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         saService = Framework.getService(SemanticAnalysisService.class);
         assertNotNull(saService);
         makeSomeEntities();
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+        closeSession();
+        super.tearDown();
     }
 
     public void makeSomeEntities() throws ClientException {
@@ -167,7 +174,8 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         Framework.getLocalService(EventService.class).waitForAsyncCompletion();
     }
 
-    public DocumentModel createSampleDocumentModel(String id) throws ClientException {
+    public DocumentModel createSampleDocumentModel(String id)
+            throws ClientException {
         DocumentModel doc = session.createDocumentModel("/", id, "Note");
         doc.setPropertyValue("dc:title", "A short bio for John Lennon");
         doc.setPropertyValue(
@@ -176,7 +184,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
                         + "<h1>This is an HTML title</h1>"
                         + "<p>John Lennon was born in Liverpool in 1940. John was a musician."
                         + " This document about John Lennon has many occurrences"
-                        + " of the words 'John' and 'Lennong' hence should rank high"
+                        + " of the words 'John' and 'Lennon' hence should rank high"
                         + " for suggestions on such keywords.</p>"
 
                         + "<!-- this is a HTML comment about Bob Marley. -->"
@@ -195,7 +203,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         saService.launchAnalysis(doc1.getRepositoryName(), doc1.getRef());
         saService.launchAnalysis(doc2.getRepositoryName(), doc2.getRef());
         saService.launchAnalysis(doc3.getRepositoryName(), doc3.getRef());
-        
+
         // wait for all the analysis to complete
         for (DocumentModel doc : new DocumentModel[] { doc1, doc2, doc3 }) {
             while (saService.getProgressStatus(doc.getRepositoryName(),
@@ -209,19 +217,59 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         checkRelatedEntities(doc2);
         checkRelatedEntities(doc3);
     }
-    
+
     public void testSynchronousAnalysis() throws Exception {
         DocumentModel doc = createSampleDocumentModel("john-bio1");
         saService.launchSynchronousAnalysis(doc, session);
         checkRelatedEntities(doc);
     }
-    
+
     public void testSimpleAnalysis() throws Exception {
         DocumentModel doc = createSampleDocumentModel("john-bio1");
-        List<OccurrenceGroup> groups = saService.analyze(doc);
+        List<OccurrenceGroup> groups = saService.analyze(session, doc);
         assertEquals(2, groups.size());
-        assertEquals("Liverpool", groups.get(0).name);
-        assertEquals("John Lennon", groups.get(1).name);
+
+        OccurrenceGroup og1 = groups.get(0);
+        assertEquals("John Lennon", og1.name);
+        assertEquals("Person", og1.type);
+
+        assertEquals(5, og1.occurrences.size());
+        assertEquals("John Lennon", og1.occurrences.get(0).mention);
+        assertEquals("John Lennon", og1.occurrences.get(1).mention);
+        assertEquals("John", og1.occurrences.get(2).mention);
+        assertEquals("John", og1.occurrences.get(3).mention);
+        assertEquals("John Lennon", og1.occurrences.get(4).mention);
+
+        assertEquals(1, og1.entitySuggestions.size());
+        assertEquals("John Lennon", og1.entitySuggestions.get(0).label);
+        assertEquals("http://dbpedia.org/resource/John_Lennon",
+                og1.entitySuggestions.get(0).remoteEntityUris.iterator().next());
+        assertFalse(og1.entitySuggestions.get(0).isLocal());
+        // no pre-fetched info in the payload
+        assertNull(og1.entitySuggestions.get(0).entity);
+
+        OccurrenceGroup og2 = groups.get(1);
+        assertEquals("Liverpool", og2.name);
+        assertEquals("Place", og2.type);
+
+        assertEquals(1, og2.occurrences.size());
+        assertEquals("Liverpool", og2.occurrences.get(0).mention);
+
+        assertEquals(1, og2.entitySuggestions.size());
+        assertEquals("Liverpool", og2.entitySuggestions.get(0).label);
+        assertEquals("http://dbpedia.org/resource/Liverpool",
+                og2.entitySuggestions.get(0).remoteEntityUris.iterator().next());
+        assertFalse(og2.entitySuggestions.get(0).isLocal());
+        // there is pre-fetched data in the payload
+        DocumentModel liverpool = og2.entitySuggestions.get(0).entity;
+        assertNotNull(liverpool);
+        assertEquals("Liverpool", liverpool.getTitle());
+        assertEquals("Place", liverpool.getType());
+        assertEquals(Arrays.asList("http://dbpedia.org/resource/Liverpool"),
+                liverpool.getProperty("entity:sameas").getValue(List.class));
+        assertEquals(
+                "Fake Liverpool abstract prefetched by the SemanticAnalysisEngine",
+                liverpool.getPropertyValue("entity:summary"));
     }
 
     protected void checkRelatedEntities(DocumentModel doc)

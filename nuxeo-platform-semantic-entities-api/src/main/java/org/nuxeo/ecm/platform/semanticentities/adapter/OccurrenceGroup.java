@@ -19,6 +19,8 @@ package org.nuxeo.ecm.platform.semanticentities.adapter;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
+
 /**
  * Data Transfer Object to suggest the creation of entities that do not yet
  * exist in the local DB along with the list of mentions
@@ -26,13 +28,17 @@ import java.util.List;
  * @author ogrisel
  *
  */
-public class OccurrenceGroup {
+public class OccurrenceGroup implements Comparable<OccurrenceGroup> {
 
     public String name;
 
     public String type;
 
     public final List<OccurrenceInfo> occurrences = new ArrayList<OccurrenceInfo>();
+
+    public final List<EntitySuggestion> entitySuggestions = new ArrayList<EntitySuggestion>();
+
+    protected boolean hasPrefetchedSuggestions = false;
 
     public OccurrenceGroup(String name, String type) {
         this.name = name;
@@ -42,5 +48,20 @@ public class OccurrenceGroup {
     @Override
     public String toString() {
         return String.format("OccurrenceGroup(\"%s\", \"%s\")", name, type);
+    }
+
+    public void setPretchedSuggestions(List<EntitySuggestion> entitySuggestions) {
+        entitySuggestions.clear();
+        entitySuggestions.addAll(entitySuggestions);
+        hasPrefetchedSuggestions = true;
+    }
+
+    public boolean hasPrefetchedSuggestions() {
+        return hasPrefetchedSuggestions;
+    }
+
+    @Override
+    public int compareTo(OccurrenceGroup o) {
+        return (type + " " + name).compareTo(o.type + " " + o.name);
     }
 }

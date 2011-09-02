@@ -2,6 +2,7 @@
     "query": {
         "selected": [
             "http:\/\/www.iks-project.eu\/ontology\/rick\/query\/score",
+            "http:\/\/www.w3.org\/1999\/02\/22-rdf-syntax-ns#type",
             "http:\/\/www.w3.org\/2000\/01\/rdf-schema#label"
         ],
         "constraints": [
@@ -26,8 +27,30 @@
             "http:\/\/www.iks-project.eu\/ontology\/rick\/query\/score": [{
                 "type": "value",
                 "xsd:datatype": "xsd:float",
-                "value": 121.964424
+                "value": 121.964645
             }],
+            "http:\/\/www.w3.org\/1999\/02\/22-rdf-syntax-ns#type": [
+                {
+                    "type": "reference",
+                    "xsd:datatype": "xsd:anyURI",
+                    "value": "http:\/\/www.w3.org\/2002\/07\/owl#Thing"
+                },
+                {
+                    "type": "reference",
+                    "xsd:datatype": "xsd:anyURI",
+                    "value": "http:\/\/dbpedia.org\/ontology\/OfficeHolder"
+                },
+                {
+                    "type": "reference",
+                    "xsd:datatype": "xsd:anyURI",
+                    "value": "http:\/\/dbpedia.org\/ontology\/Person"
+                },
+                {
+                    "type": "reference",
+                    "xsd:datatype": "xsd:anyURI",
+                    "value": "http:\/\/xmlns.com\/foaf\/0.1\/Person"
+                }
+            ],
             "http:\/\/www.w3.org\/2000\/01\/rdf-schema#label": [
                 {
                     "type": "text",
@@ -56,8 +79,30 @@
             "http:\/\/www.iks-project.eu\/ontology\/rick\/query\/score": [{
                 "type": "value",
                 "xsd:datatype": "xsd:float",
-                "value": 15.408398
+                "value": 15.408425
             }],
+            "http:\/\/www.w3.org\/1999\/02\/22-rdf-syntax-ns#type": [
+                {
+                    "type": "reference",
+                    "xsd:datatype": "xsd:anyURI",
+                    "value": "http:\/\/www.w3.org\/2002\/07\/owl#Thing"
+                },
+                {
+                    "type": "reference",
+                    "xsd:datatype": "xsd:anyURI",
+                    "value": "http:\/\/dbpedia.org\/ontology\/OfficeHolder"
+                },
+                {
+                    "type": "reference",
+                    "xsd:datatype": "xsd:anyURI",
+                    "value": "http:\/\/dbpedia.org\/ontology\/Person"
+                },
+                {
+                    "type": "reference",
+                    "xsd:datatype": "xsd:anyURI",
+                    "value": "http:\/\/xmlns.com\/foaf\/0.1\/Person"
+                }
+            ],
             "http:\/\/www.w3.org\/2000\/01\/rdf-schema#label": [
                 {
                     "type": "text",

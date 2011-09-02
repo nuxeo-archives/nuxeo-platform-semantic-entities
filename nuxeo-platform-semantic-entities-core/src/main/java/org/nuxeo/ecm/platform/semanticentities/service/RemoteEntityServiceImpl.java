@@ -30,11 +30,13 @@ import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
-import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
+import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntitySource;
 import org.nuxeo.runtime.model.DefaultComponent;
 import org.nuxeo.runtime.model.Extension;
+
+import com.hp.hpl.jena.rdf.model.Model;
 
 /**
  * {@inheritDoc}
@@ -151,9 +153,18 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
 
     @Override
     public void dereferenceInto(DocumentModel localEntity, URI remoteEntity,
-            boolean override) throws DereferencingException {
+            boolean override, boolean lazyResourceFetch)
+            throws DereferencingException {
         getSourceFor(remoteEntity).dereferenceInto(localEntity, remoteEntity,
-                override);
+                override, lazyResourceFetch);
+    }
+
+    @Override
+    public void dereferenceIntoFromModel(DocumentModel localEntity,
+            URI remoteEntity, Model rdfModel, boolean override,
+            boolean lazyResourceFetch) throws DereferencingException {
+        getSourceFor(remoteEntity).dereferenceIntoFromModel(localEntity,
+                remoteEntity, rdfModel, override, lazyResourceFetch);
     }
 
     /**
@@ -164,9 +175,9 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
      * be larger than {@literal maxSuggestions}
      */
     @Override
-    public List<RemoteEntity> suggestRemoteEntity(String keywords, String type,
+    public List<EntitySuggestion> suggestRemoteEntity(String keywords, String type,
             int maxSuggestions) throws IOException {
-        List<RemoteEntity> suggestions = new ArrayList<RemoteEntity>();
+        List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
         for (RemoteEntitySource source : getActiveSources().values()) {
             if (source.canSuggestRemoteEntity()) {
                 suggestions.addAll(source.suggestRemoteEntity(keywords, type,
@@ -191,15 +202,15 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
     @Override
     public void removeSameAsLink(DocumentModel doc, URI uriToRemove)
             throws ClientException {
-        if (doc.getPropertyValue(RemoteEntity.SAMEAS_URI_PROPERTY) == null) {
+        if (doc.getPropertyValue(EntitySuggestion.SAMEAS_URI_PROPERTY) == null) {
             return;
         }
         String uriAsString = uriToRemove.toString();
         ArrayList<String> filteredURIs = new ArrayList<String>();
         ArrayList<String> filteredLabels = new ArrayList<String>();
-        String[] oldURIs = doc.getProperty(RemoteEntity.SAMEAS_URI_PROPERTY).getValue(
+        String[] oldURIs = doc.getProperty(EntitySuggestion.SAMEAS_URI_PROPERTY).getValue(
                 String[].class);
-        String[] oldLabels = doc.getProperty(RemoteEntity.SAMEAS_LABEL_PROPERTY).getValue(
+        String[] oldLabels = doc.getProperty(EntitySuggestion.SAMEAS_LABEL_PROPERTY).getValue(
                 String[].class);
 
         boolean changed = false;
@@ -212,8 +223,8 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
             }
         }
         if (changed) {
-            doc.setPropertyValue(RemoteEntity.SAMEAS_URI_PROPERTY, filteredURIs);
-            doc.setPropertyValue(RemoteEntity.SAMEAS_LABEL_PROPERTY,
+            doc.setPropertyValue(EntitySuggestion.SAMEAS_URI_PROPERTY, filteredURIs);
+            doc.setPropertyValue(EntitySuggestion.SAMEAS_LABEL_PROPERTY,
                     filteredLabels);
         }
     }

@@ -133,30 +133,40 @@ public class RemoteEntitySourceDescriptor {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         RemoteEntitySourceDescriptor other = (RemoteEntitySourceDescriptor) obj;
         if (className == null) {
-            if (other.className != null)
+            if (other.className != null) {
                 return false;
-        } else if (!className.equals(other.className))
+            }
+        } else if (!className.equals(other.className)) {
             return false;
-        if (enabled != other.enabled)
+        }
+        if (enabled != other.enabled) {
             return false;
+        }
         if (name == null) {
-            if (other.name != null)
+            if (other.name != null) {
                 return false;
-        } else if (!name.equals(other.name))
+            }
+        } else if (!name.equals(other.name)) {
             return false;
+        }
         if (uriPrefix == null) {
-            if (other.uriPrefix != null)
+            if (other.uriPrefix != null) {
                 return false;
-        } else if (!uriPrefix.equals(other.uriPrefix))
+            }
+        } else if (!uriPrefix.equals(other.uriPrefix)) {
             return false;
+        }
         return true;
     }
 

@@ -68,7 +68,7 @@ public class CMISQLDocumentPageProvider extends
     public CMISQLDocumentPageProvider(CoreSession session, String query,
             String docIdColumnName, String providerName) throws ClientException {
         this.session = session;
-        this.rootDocId = session.getRootDocument().getId();
+        rootDocId = session.getRootDocument().getId();
         this.query = query;
         this.docIdColumnName = docIdColumnName;
         pageSize = 10;

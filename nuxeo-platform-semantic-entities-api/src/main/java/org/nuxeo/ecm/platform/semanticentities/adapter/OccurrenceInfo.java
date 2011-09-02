@@ -89,7 +89,7 @@ public class OccurrenceInfo {
                             endPosInContext, context.length()));
         }
         this.context = context;
-        this.mention = context.substring(startPosInContext, endPosInContext);
+        mention = context.substring(startPosInContext, endPosInContext);
         this.startPosInContext = startPosInContext;
         this.endPosInContext = endPosInContext;
     }
@@ -148,7 +148,7 @@ public class OccurrenceInfo {
     public String toString() {
         return String.format("OccurrenceInfo(\"%s\", \"%s\")", mention, context);
     }
-    
+
     public String getMention() {
         return mention;
     }

@@ -7,7 +7,7 @@ import org.apache.commons.io.IOUtils;
 
 public class MockSemanticAnalysisServiceImpl extends
         SemanticAnalysisServiceImpl {
-    
+
     @Override
     public String callSemanticEngine(String textContent, String outputFormat,
             int retry) throws IOException {
