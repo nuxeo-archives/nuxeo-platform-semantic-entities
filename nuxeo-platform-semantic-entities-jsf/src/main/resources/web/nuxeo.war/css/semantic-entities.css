@@ -1,6 +1,7 @@
 .entityOccurrences .entityDepictionSmallContainer {
   float: left;
   width: 40px;
+  height: 40px;
 }
 
 .entityOccurrences img.entityDepiction {
