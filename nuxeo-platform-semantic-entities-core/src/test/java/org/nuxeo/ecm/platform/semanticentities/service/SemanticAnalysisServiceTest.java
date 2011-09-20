@@ -17,10 +17,13 @@
 package org.nuxeo.ecm.platform.semanticentities.service;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.GregorianCalendar;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.event.EventService;
@@ -34,6 +37,8 @@ import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
 import org.nuxeo.runtime.api.Framework;
 
 public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
+
+    private static final Log log = LogFactory.getLog(SemanticAnalysisServiceTest.class);
 
     private DocumentModel john;
 
@@ -176,6 +181,11 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
     public DocumentModel createSampleDocumentModel(String id)
             throws ClientException {
+        return createSampleDocumentModel(id, true);
+    }
+
+    public DocumentModel createSampleDocumentModel(String id, boolean saveAndWait)
+            throws ClientException {
         DocumentModel doc = session.createDocumentModel("/", id, "Note");
         doc.setPropertyValue("dc:title", "A short bio for John Lennon");
         doc.setPropertyValue(
@@ -190,32 +200,43 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
                         + "<!-- this is a HTML comment about Bob Marley. -->"
                         + " </body></html>");
         doc = session.createDocument(doc);
-        session.save(); // force write to SQL backend
-        Framework.getLocalService(EventService.class).waitForAsyncCompletion(
-                1000 * 10);
+        if (saveAndWait) {
+            session.save(); // force write to SQL backend
+            Framework.getLocalService(EventService.class).waitForAsyncCompletion(
+                    1000 * 10);
+        }
         return doc;
     }
 
     public void testAsyncAnalysis() throws Exception {
-        DocumentModel doc1 = createSampleDocumentModel("john-bio1");
-        DocumentModel doc2 = createSampleDocumentModel("john-bio2");
-        DocumentModel doc3 = createSampleDocumentModel("john-bio3");
-        saService.launchAnalysis(doc1.getRepositoryName(), doc1.getRef());
-        saService.launchAnalysis(doc2.getRepositoryName(), doc2.getRef());
-        saService.launchAnalysis(doc3.getRepositoryName(), doc3.getRef());
+        EventService es = Framework.getLocalService(EventService.class);
+        List<DocumentModel> docs = new ArrayList<DocumentModel>();
+        for (int i = 0; i < 5; i++) {
+            docs.add(createSampleDocumentModel(String.format("john-bio-%d", i),
+                    false));
+        }
+        session.save(); // force write to SQL backend
+        es.waitForAsyncCompletion();
+
+        // launch asynchronous analysis on each documents (in concurrently using
+        // the thread pool executors)
+        for (DocumentModel doc : docs) {
+            saService.launchAnalysis(doc.getRepositoryName(), doc.getRef());
+        }
 
         // wait for all the analysis to complete
-        for (DocumentModel doc : new DocumentModel[] { doc1, doc2, doc3 }) {
+        for (DocumentModel doc : docs) {
             while (saService.getProgressStatus(doc.getRepositoryName(),
                     doc.getRef()) != null) {
                 Thread.sleep(200);
             }
         }
-        Framework.getLocalService(EventService.class).waitForAsyncCompletion();
+        es.waitForAsyncCompletion();
 
-        checkRelatedEntities(doc1);
-        checkRelatedEntities(doc2);
-        checkRelatedEntities(doc3);
+        // check the results of the analysis
+        for (DocumentModel doc : docs) {
+            checkRelatedEntities(doc);
+        }
     }
 
     public void testSynchronousAnalysis() throws Exception {
@@ -277,7 +298,10 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         PageProvider<DocumentModel> relatedPeople = leService.getRelatedEntities(
                 session, doc.getRef(), "Person");
         List<DocumentModel> firstPeople = relatedPeople.getCurrentPage();
-        assertEquals(1, firstPeople.size());
+        assertEquals(
+                String.format(doc.getPathAsString()
+                        + " should have been linked to an entity"), 1,
+                firstPeople.size());
         assertEquals("John Lennon", firstPeople.get(0).getTitle());
 
         PageProvider<DocumentModel> relatedPlaces = leService.getRelatedEntities(

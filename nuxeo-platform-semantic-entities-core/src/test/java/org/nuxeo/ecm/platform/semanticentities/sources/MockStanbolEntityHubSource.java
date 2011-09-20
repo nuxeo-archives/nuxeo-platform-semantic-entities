@@ -6,9 +6,22 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.nuxeo.ecm.platform.semanticentities.service.RemoteEntitySourceDescriptor;
+
 public class MockStanbolEntityHubSource extends StanbolEntityHubSource {
 
+    private static final Log log = LogFactory.getLog(MockStanbolEntityHubSource.class);
+
     static final String DBPEDIA_PREFIX = "http://dbpedia.org/resource/";
+
+    @Override
+    public void setDescriptor(RemoteEntitySourceDescriptor descriptor) {
+        descriptor.getParameters().put("stanbolURL", "http://fakehost/");
+        super.setDescriptor(descriptor);
+        log.info("Registered mocked descriptor for StanbolEntityHubSource");
+    }
 
     @Override
     protected InputStream doHttpGet(URI uri, String format)

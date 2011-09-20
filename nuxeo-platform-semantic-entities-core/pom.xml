@@ -10,7 +10,7 @@
   </parent>
 
   <artifactId>nuxeo-platform-semantic-entities-core</artifactId>
-  <name>Nuxeo Semantic Entities - schema and type defintions and adapters</name>
+  <name>Nuxeo Semantic Entities - schema and type definitions and adapters</name>
 
   <dependencies>
     <dependency>
@@ -109,6 +109,11 @@
       <artifactId>nuxeo-core-convert-api</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>javax.transaction</groupId>
+      <artifactId>jta</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.nuxeo.ecm.core</groupId>
       <artifactId>nuxeo-core-event</artifactId>
