@@ -29,7 +29,7 @@
           </typeMapping>
           <propertyMapping>
             <field name="dc:title">http://www.w3.org/2000/01/rdf-schema#label</field>
-            <field name="entity:summary">http://dbpedia.org/ontology/abstract</field>
+            <field name="entity:summary">http://www.w3.org/2000/01/rdf-schema#comment</field>
             <field name="entity:altnames">http://www.w3.org/2000/01/rdf-schema#label</field>
             <field name="entity:depiction">http://xmlns.com/foaf/0.1/depiction</field>
             <field name="person:birthDate">http://dbpedia.org/ontology/birthDate</field>
@@ -65,7 +65,7 @@
       </typeMapping>
       <propertyMapping>
         <field name="dc:title">http://www.w3.org/2000/01/rdf-schema#label</field>
-        <field name="entity:summary">http://dbpedia.org/ontology/abstract</field>
+        <field name="entity:summary">http://www.w3.org/2000/01/rdf-schema#comment</field>
         <field name="entity:altnames">http://www.w3.org/2000/01/rdf-schema#label</field>
         <field name="entity:depiction">http://xmlns.com/foaf/0.1/depiction</field>
         <field name="person:birthDate">http://dbpedia.org/ontology/birthDate</field>
