@@ -459,6 +459,10 @@ public class SemanticEntitiesActions {
     public void removeSameAsLink(String uri) {
         try {
             DocumentModel doc = navigationContext.getChangeableDocument();
+            if (doc == null) {
+                // we are not on the edit view
+                doc = navigationContext.getCurrentDocument();
+            }
             RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
             remoteEntityService.removeSameAsLink(doc, URI.create(uri));
             doc = documentManager.saveDocument(doc);

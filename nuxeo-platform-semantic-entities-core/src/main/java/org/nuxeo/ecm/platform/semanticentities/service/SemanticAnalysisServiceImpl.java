@@ -95,8 +95,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     protected static final String DEFAULT_ENGINE_OUTPUT_FORMAT = "application/rdf+xml";
 
     // TODO: turn the following fields into configurable parameters set by a
-    // contribution to an extension
-    // point
+    // contribution to an extension point
 
     protected String outputFormat = DEFAULT_ENGINE_OUTPUT_FORMAT;
 
