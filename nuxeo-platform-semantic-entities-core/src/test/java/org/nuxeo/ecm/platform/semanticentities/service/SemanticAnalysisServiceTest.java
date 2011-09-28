@@ -28,7 +28,6 @@ import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.event.EventService;
 import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
-import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
@@ -38,6 +37,7 @@ import org.nuxeo.runtime.api.Framework;
 
 public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
+    @SuppressWarnings("unused")
     private static final Log log = LogFactory.getLog(SemanticAnalysisServiceTest.class);
 
     private DocumentModel john;
@@ -61,6 +61,10 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         deployBundle("org.nuxeo.ecm.core.convert.api");
         deployBundle("org.nuxeo.ecm.core.convert");
         deployBundle("org.nuxeo.ecm.core.convert.plugins");
+
+        // dublincore contributors are required to check whether non system
+        // users have edited an entity or not
+        deployBundle("org.nuxeo.ecm.platform.dublincore");
 
         // semantic entities types
         deployBundle("org.nuxeo.ecm.platform.semanticentities.core");
@@ -93,7 +97,6 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
         saService = Framework.getService(SemanticAnalysisService.class);
         assertNotNull(saService);
-        makeSomeEntities();
     }
 
     @Override
@@ -235,6 +238,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
         // check the results of the analysis
         for (DocumentModel doc : docs) {
+            // the same entities are linked to all the docs
             checkRelatedEntities(doc);
         }
     }
@@ -242,10 +246,12 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
     public void testSynchronousAnalysis() throws Exception {
         DocumentModel doc = createSampleDocumentModel("john-bio1");
         saService.launchSynchronousAnalysis(doc, session);
-        checkRelatedEntities(doc);
+        checkRemoveRelatedEntities(doc);
     }
 
     public void testSimpleAnalysis() throws Exception {
+        makeSomeEntities();
+
         DocumentModel doc = createSampleDocumentModel("john-bio1");
         List<OccurrenceGroup> groups = saService.analyze(session, doc);
         assertEquals(2, groups.size());
@@ -295,19 +301,58 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
     protected void checkRelatedEntities(DocumentModel doc)
             throws ClientException {
-        PageProvider<DocumentModel> relatedPeople = leService.getRelatedEntities(
-                session, doc.getRef(), "Person");
-        List<DocumentModel> firstPeople = relatedPeople.getCurrentPage();
+        List<DocumentModel> relatedPeople = leService.getRelatedEntities(
+                session, doc.getRef(), "Person").getCurrentPage();
         assertEquals(
                 String.format(doc.getPathAsString()
                         + " should have been linked to an entity"), 1,
-                firstPeople.size());
-        assertEquals("John Lennon", firstPeople.get(0).getTitle());
+                relatedPeople.size());
+        DocumentModel firstPerson = relatedPeople.get(0);
+        assertEquals("John Lennon", firstPerson.getTitle());
 
-        PageProvider<DocumentModel> relatedPlaces = leService.getRelatedEntities(
-                session, doc.getRef(), "Place");
-        List<DocumentModel> firstPlaces = relatedPlaces.getCurrentPage();
-        assertEquals(1, firstPlaces.size());
-        assertEquals("Liverpool", firstPlaces.get(0).getTitle());
+        List<DocumentModel> relatedPlaces = leService.getRelatedEntities(
+                session, doc.getRef(), "Place").getCurrentPage();
+        assertEquals(1, relatedPlaces.size());
+        assertEquals("Liverpool", relatedPlaces.get(0).getTitle());
+    }
+
+    /**
+     * Check that the expected relations are there and that removal of the link
+     * also remove automatically created entities
+     */
+    protected void checkRemoveRelatedEntities(DocumentModel doc)
+            throws ClientException {
+        List<DocumentModel> relatedPeople = leService.getRelatedEntities(
+                session, doc.getRef(), "Person").getCurrentPage();
+        assertEquals(
+                String.format(doc.getPathAsString()
+                        + " should have been linked to an entity"), 1,
+                relatedPeople.size());
+        DocumentModel firstPerson = relatedPeople.get(0);
+        assertEquals("John Lennon", firstPerson.getTitle());
+
+        // check removal of the link
+        leService.removeOccurrences(session, doc.getRef(), firstPerson.getRef());
+        if (session.exists(firstPerson.getRef())) {
+            assertEquals("deleted",
+                    session.getCurrentLifeCycleState(firstPerson.getRef()));
+        } else {
+            fail(firstPerson.getTitle() + " should have been deleted");
+        }
+
+        List<DocumentModel> relatedPlaces = leService.getRelatedEntities(
+                session, doc.getRef(), "Place").getCurrentPage();
+        assertEquals(1, relatedPlaces.size());
+        DocumentModel firstPlace = relatedPlaces.get(0);
+        assertEquals("Liverpool", firstPlace.getTitle());
+
+        // check removal of the link
+        leService.removeOccurrences(session, doc.getRef(), firstPlace.getRef());
+        if (session.exists(firstPlace.getRef())) {
+            assertEquals("deleted",
+                    session.getCurrentLifeCycleState(firstPlace.getRef()));
+        } else {
+            fail(firstPlace.getTitle() + " should have been deleted");
+        }
     }
 }

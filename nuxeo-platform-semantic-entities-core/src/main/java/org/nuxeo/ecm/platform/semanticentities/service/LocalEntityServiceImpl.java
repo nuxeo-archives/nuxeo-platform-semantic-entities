@@ -49,6 +49,7 @@ import org.nuxeo.ecm.core.api.security.ACP;
 import org.nuxeo.ecm.core.api.security.SecurityConstants;
 import org.nuxeo.ecm.core.api.security.impl.ACPImpl;
 import org.nuxeo.ecm.core.schema.SchemaManager;
+import org.nuxeo.ecm.core.trash.TrashService;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
@@ -176,6 +177,65 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     public OccurrenceRelation getOccurrenceRelation(CoreSession session,
             DocumentRef docRef, DocumentRef entityRef) throws ClientException {
         return getOccurrenceRelation(session, docRef, entityRef, false);
+    }
+
+    @Override
+    public void removeOccurrences(CoreSession session, DocumentRef docRef,
+            final DocumentRef entityRef) throws ClientException {
+        OccurrenceRelation rel = getOccurrenceRelation(session, docRef, entityRef, false);
+        if (rel == null) {
+            return;
+        }
+        // mark the relation document for deletion
+        DocumentModel relDoc = rel.getOccurrenceDocument();
+        final List<DocumentRef> docToDelete = new ArrayList<DocumentRef>();
+        docToDelete.add(relDoc.getRef());
+
+        // find the linked entity to check whether it was automatically created
+        // by the system
+        PageProvider<DocumentModel> relatedDocuments = getRelatedDocuments(
+                session, entityRef, null);
+        if (relatedDocuments.getCurrentPage().size() == 1
+                && relatedDocuments.getCurrentEntry().getRef().equals(docRef)) {
+            // only related to the current document
+            DocumentModel entity = session.getDocument(entityRef);
+            Boolean auto = entity.getProperty("entity:automaticallyCreated").getValue(
+                    Boolean.class);
+            @SuppressWarnings("unchecked")
+            List<String> contributors = entity.getProperty("dc:contributors").getValue(
+                    List.class);
+            if (auto && contributors.size() <= 1) {
+                // remove the automatically created entity as well
+                docToDelete.add(entity.getRef());
+            }
+        }
+        final DocumentRef[] docToDeleteArray = docToDelete.toArray(new DocumentRef[docToDelete.size()]);
+        UnrestrictedSessionRunner runner = new UnrestrictedSessionRunner(
+                session) {
+
+            @Override
+            public void run() throws ClientException {
+                if (!docToDelete.contains(entityRef)) {
+                    // update the popularity count of the entity
+                    DocumentModel entity = session.getDocument(entityRef);
+                    Long newPopularity = entity.getProperty("entity:popularity").getValue(
+                            Long.class) - 1;
+                    entity.setPropertyValue("entity:popularity", newPopularity);
+                    session.saveDocument(entity);
+                }
+
+                // perform the actual deletion using the trash service
+                try {
+                    TrashService trashService = Framework.getService(TrashService.class);
+                    trashService.trashDocuments(session.getDocuments(docToDeleteArray));
+                } catch (Exception e) {
+                    // the trash service is not deployed
+                    session.removeDocuments(docToDeleteArray);
+                }
+
+            }
+        };
+        runner.runUnrestricted();
     }
 
     public OccurrenceRelation getOccurrenceRelation(CoreSession session,
@@ -569,6 +629,8 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             // lazy dereferencing into a new local entity document
             localEntity = session.createDocumentModel(suggestion.type);
             localEntity.setPropertyValue("dc:title", suggestion.label);
+            localEntity.setPropertyValue("entity:automaticallyCreated",
+                    suggestion.automaticallyCreated);
             String pathSegment = psService.generatePathSegment(localEntity);
             localEntity.setPathInfo(entityContainer.getPathAsString(),
                     pathSegment);

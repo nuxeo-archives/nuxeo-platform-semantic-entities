@@ -166,6 +166,25 @@ public interface LocalEntityService {
             throws ClientException, IOException;
 
     /**
+     * Remove any occurrence information of an entity on the specified
+     * documents. If the entity was automatically created (by the "system"
+     * principal) and nobody else edited it, it is also removed from the entity
+     * base.
+     * 
+     * If the trash service if applicable. Otherwise the related document(s) are
+     * simply deleted from the repository.
+     * 
+     * @param session active session to the repository holding the document and
+     *            entities
+     * @param docRef the id of the document referring to the entity
+     * @param entityRef the id of the entity to remove occurrences for
+     * @throws ClientException if the repository fails or the document does not
+     *             exist.
+     */
+    void removeOccurrences(CoreSession session, DocumentRef docRef,
+            DocumentRef entityRef) throws ClientException;
+
+    /**
      * Find the occurrence relation instance linking a document to an entity.
      * Return null if no such relation exist in the repository.
      *

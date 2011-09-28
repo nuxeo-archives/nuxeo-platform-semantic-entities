@@ -266,16 +266,18 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         for (OccurrenceGroup group : groups) {
 
             // hardcoded trick to avoid linking to persons just based on their
-            // first name or last names for
-            // instance
+            // first name or last names for instance
             if (!linkShortPersonNames && "Person".equals(group.type)
                     && group.name.trim().split(" ").length <= 1) {
                 continue;
             }
-            List<EntitySuggestion> suggestions = leService.suggestEntity(session, group, 3);
+            List<EntitySuggestion> suggestions = leService.suggestEntity(
+                    session, group, 3);
             if (suggestions.isEmpty() && linkToUnrecognizedEntities) {
                 DocumentModel localEntity = session.createDocumentModel(group.type);
                 localEntity.setPropertyValue("dc:title", group.name);
+                localEntity.setPropertyValue("entity:automaticallyCreated",
+                        true);
                 String pathSegment = pathService.generatePathSegment(localEntity);
                 localEntity.setPathInfo(entityContainer.getPathAsString(),
                         pathSegment);
@@ -288,7 +290,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                     continue;
                 }
                 EntitySuggestion bestGuess = suggestions.get(0);
-                leService.addOccurrences(session, doc.getRef(), bestGuess,
+                leService.addOccurrences(session, doc.getRef(),
+                        bestGuess.withAutomaticallyCreated(true),
                         group.occurrences);
             }
         }
@@ -349,7 +352,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                     EntitySuggestion suggestion = getEntitySuggestion(session,
                             model, linkedResource, localType);
                     if (suggestion != null) {
-                        group.entitySuggestions.add(suggestion);
+                        group.entitySuggestions.add(suggestion.withAutomaticallyCreated(
+                                true));
                     }
                 }
             }

@@ -41,7 +41,6 @@ import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.IdRef;
-import org.nuxeo.ecm.core.trash.TrashService;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
@@ -315,9 +314,13 @@ public class SemanticEntitiesActions {
             }
 
             // delete the old relation
-            removeOccurrenceRelation(
-                    oldRelation.getSourceDocumentRef().toString(),
-                    oldRelation.getTargetEntityRef().toString());
+            DocumentRef oldEntityRef = oldRelation.getTargetEntityRef();
+            DocumentRef newEntityRef = updatedRelation.getTargetEntityRef();
+            if (!oldEntityRef.equals(newEntityRef)) {
+                removeOccurrenceRelation(
+                        oldRelation.getSourceDocumentRef().toString(),
+                        oldEntityRef.toString());
+            }
         } catch (Exception e) {
             log.error(e, e);
             facesMessages.add(StatusMessage.Severity.ERROR,
@@ -327,24 +330,9 @@ public class SemanticEntitiesActions {
     }
 
     public void removeOccurrenceRelation(String docId, String entityId) {
-        OccurrenceRelation rel;
         try {
-            rel = getLocalEntityService().getOccurrenceRelation(
-                    documentManager, new IdRef(docId), new IdRef(entityId));
-            if (rel != null) {
-                // TODO: define an invalidate transition to be used by default
-                // for explicitly handling human correction of false positives
-                DocumentModel relDoc = rel.getOccurrenceDocument();
-                List<DocumentModel> docToDelete = Arrays.asList(relDoc);
-                TrashService trashService = Framework.getService(TrashService.class);
-                if (trashService.canDelete(docToDelete,
-                        documentManager.getPrincipal(), false)) {
-                    trashService.trashDocuments(docToDelete);
-                } else {
-                    facesMessages.add(StatusMessage.Severity.WARN,
-                            messages.get("error.removingRelation"));
-                }
-            }
+            getLocalEntityService().removeOccurrences(documentManager,
+                    new IdRef(docId), new IdRef(entityId));
         } catch (Exception e) {
             log.error(e, e);
             facesMessages.add(StatusMessage.Severity.ERROR,

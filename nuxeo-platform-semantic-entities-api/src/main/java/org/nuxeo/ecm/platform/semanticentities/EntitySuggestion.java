@@ -59,6 +59,8 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
 
     public double score = 0.0;
 
+    public boolean automaticallyCreated = false;
+
     @SuppressWarnings("unchecked")
     public EntitySuggestion(DocumentModel entity) throws ClientException {
         this.entity = entity;
@@ -78,6 +80,12 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
 
     public EntitySuggestion withScore(double score) {
         this.score = score;
+        return this;
+    }
+
+    public EntitySuggestion withAutomaticallyCreated(
+            boolean automaticallyCreated) {
+        this.automaticallyCreated  = automaticallyCreated;
         return this;
     }
 

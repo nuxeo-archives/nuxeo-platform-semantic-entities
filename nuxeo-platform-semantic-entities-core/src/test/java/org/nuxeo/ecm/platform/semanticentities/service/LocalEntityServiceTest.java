@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.VersioningOption;
 import org.nuxeo.ecm.core.event.EventService;
 import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
@@ -61,6 +62,10 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         deployBundle("org.nuxeo.ecm.core.convert.api");
         deployBundle("org.nuxeo.ecm.core.convert");
         deployBundle("org.nuxeo.ecm.core.convert.plugins");
+
+        // dublincore contributors are required to check whether non system
+        // users have edited an entity or not
+        deployBundle("org.nuxeo.ecm.platform.dublincore");
 
         // semantic entities types
         deployBundle("org.nuxeo.ecm.platform.semanticentities.core");
@@ -317,16 +322,16 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     public void testSuggestLocalEntitiesEmptyKB() throws ClientException {
-        List<EntitySuggestion> suggestions = service.suggestLocalEntity(session,
-                "John", null, 3);
+        List<EntitySuggestion> suggestions = service.suggestLocalEntity(
+                session, "John", null, 3);
         assertTrue(suggestions.isEmpty());
     }
 
     public void testSuggestLocalEntities() throws ClientException {
         makeSomeEntities();
 
-        List<EntitySuggestion> suggestions = service.suggestLocalEntity(session,
-                "John", "Person", 3);
+        List<EntitySuggestion> suggestions = service.suggestLocalEntity(
+                session, "John", "Person", 3);
         assertEquals(2, suggestions.size());
         // by default the popularities are identical hence the ordering is
         // undefined
@@ -472,14 +477,21 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(mentions, relation.getOccurrences());
     }
 
-    public void testAddOccurrenceRelationWithEmptyOccurrenceData()
+    public void testAddRemoveOccurrenceRelationWithEmptyOccurrenceData()
             throws Exception {
         makeSomeEntities();
         OccurrenceRelation relation = service.getOccurrenceRelation(session,
                 doc1.getRef(), john.getRef());
         assertNull(relation);
+        assertEquals(0.0,
+                john.getProperty("entity:popularity").getValue(Double.class));
 
         service.addOccurrences(session, doc1.getRef(), john.getRef(), null);
+
+        // check the popularity of john
+        john = session.getDocument(john.getRef());
+        assertEquals(1.0,
+                john.getProperty("entity:popularity").getValue(Double.class));
 
         relation = service.getOccurrenceRelation(session, doc1.getRef(),
                 john.getRef());
@@ -487,6 +499,28 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(doc1.getRef(), relation.getSourceDocumentRef());
         assertEquals(john.getRef(), relation.getTargetEntityRef());
         assertEquals(Arrays.asList(), relation.getOccurrences());
+
+        // check removal of relation
+        service.removeOccurrences(session, doc1.getRef(), john.getRef());
+
+        // check that the relation has been removed
+        DocumentRef relationRef = relation.getOccurrenceDocument().getRef();
+        if (session.exists(relationRef)) {
+            assertEquals("deleted",
+                    session.getCurrentLifeCycleState(relationRef));
+        }
+
+        // check that john has not been deleted (john was not created by the
+        // system user)
+        assertTrue(session.exists(john.getRef()));
+        assertFalse(
+                "Entity should not have been marked as deleted",
+                "deleted".equals(session.getCurrentLifeCycleState(john.getRef())));
+
+        // check the popularity of john
+        john = session.getDocument(john.getRef());
+        assertEquals(0.0,
+                john.getProperty("entity:popularity").getValue(Double.class));
     }
 
     public void testSuggestDocument() throws Exception {

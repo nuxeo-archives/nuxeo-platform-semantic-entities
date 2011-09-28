@@ -348,8 +348,16 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
         if (propInfos == null) {
             return null;
         }
+        Serializable defaultLiteralValue = null;
         for (Map<String, String> propInfo : propInfos) {
             String lang = propInfo.get("xml:lang");
+            if (lang == null) {
+                String value = propInfo.get("value");
+                defaultLiteralValue = (Serializable) type.decode(value);
+                if (defaultLiteralValue instanceof String) {
+                    defaultLiteralValue = StringEscapeUtils.unescapeHtml((String) defaultLiteralValue);
+                }
+            }
             if (lang != null && !filterLang.equals(lang)) {
                 continue;
             }
@@ -360,7 +368,7 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
             }
             return decoded;
         }
-        return null;
+        return defaultLiteralValue;
     }
 
     @SuppressWarnings("unchecked")
@@ -406,8 +414,12 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
         }
         List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
         for (Map<String, Object> result : results) {
-            String name = readDecodedLiteral(result, namePropertyUri,
-                    StringType.INSTANCE, "en").toString();
+            Serializable nameLiteral = readDecodedLiteral(result, namePropertyUri,
+                    StringType.INSTANCE, "en");
+            if (nameLiteral == null) {
+                continue;
+            }
+            String name = nameLiteral.toString();
             String uri = result.get("id").toString();
             if (type == null) {
                 Set<String> admissibleTypes = getAdmissibleTypes(result);
