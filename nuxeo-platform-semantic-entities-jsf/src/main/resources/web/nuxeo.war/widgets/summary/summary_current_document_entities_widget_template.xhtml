@@ -20,7 +20,7 @@
 <a4j:outputPanel id="relatedEntitiesPanel">
 
 <a4j:poll interval="5000" eventsQueue="entitiesQueue"
-  reRender="relatedEntitiesPanel" ignoreDupResponses="true"
+  reRender="relatedEntitiesPanel,relatedEntitiesButtonsPanel" ignoreDupResponses="true"
   enabled="#{!empty semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}" />
 
 <f:subview rendered="#{!empty semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}">
@@ -30,15 +30,6 @@
         #{semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}
     </div>
   </div>
-</f:subview>
-
-<f:subview rendered="#{false and empty semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}">
-  <a4j:commandButton value="#{messages['label.button.launchSemanticAnalysis']}"
-   action="#{semanticEntitiesActions.launchAsyncAnalysis}"
-   rendered="#{documentManager.hasPermission(currentDocument.ref, 'WriteProperties')}"
-   onclick="this.disabled=true"
-   oncomplete="this.disabled=false"
-   reRender="relatedEntitiesPanel" />
 </f:subview>
 
 <f:subview rendered="#{!empty relatedPeopleOccurrences}">
@@ -125,11 +116,15 @@ jQuery(document).ready(function() {
 </script>
 
 </a4j:outputPanel>
-</a4j:region>
 
-<h3 class="summaryTitle">#{messages['heading.linkToEntity']}</h3>
+<h3 class="summaryTitle">#{messages['heading.manageLinks']}</h3>
+
+<p>
+<h:outputText value="#{messages['label.button.addLink']}" />
+<span style="width: 1em" />
 <h:inputText id="entitySuggestionKeywords" styleClass="searchField"
   onkeydown="if (event.keyCode == 13 || event.keyCode == 9) {return false;}" />
+
 <a4j:status>
   <f:facet name="start">
     <h:graphicImage value="/img/standart_waiter.gif" />
@@ -140,7 +135,8 @@ jQuery(document).ready(function() {
   for="entitySuggestionKeywords"
   nothingLabel="${messages['label.results.noMatchingEntity']}"
   eventsQueue="entitiesQueue"
-  ajaxSingle="true">
+  ajaxSingle="true"
+  width="500">
   <a4j:support event="onselect"
     reRender="relatedEntitiesPanel"
     eventsQueue="entitiesQueue"
@@ -157,5 +153,29 @@ jQuery(document).ready(function() {
     #{entitySuggestion.label}
   </h:column>
 </rich:suggestionbox>
+</p>
+
+<a4j:outputPanel id="relatedEntitiesButtonsPanel">
+<p>
+<f:subview rendered="#{empty semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}">
+  <a4j:commandButton value="#{messages['label.button.launchSemanticAnalysis']}"
+   action="#{semanticEntitiesActions.launchAsyncAnalysis}"
+   rendered="#{documentManager.hasPermission(currentDocument.ref, 'WriteProperties')}"
+   onclick="this.disabled=true"
+   oncomplete="this.disabled=false"
+   reRender="relatedEntitiesPanel,relatedEntitiesButtonsPanel" />
+
+  <span style="width: 1em" />
+
+  <a4j:commandButton value="#{messages['label.button.removeAllLinks']}"
+   action="#{semanticEntitiesActions.removeAllLinks}"
+   rendered="#{documentManager.hasPermission(currentDocument.ref, 'WriteProperties')}"
+   onclick="this.disabled=true"
+   oncomplete="this.disabled=false"
+   reRender="relatedEntitiesPanel,relatedEntitiesButtonsPanel" />
+</f:subview>
+</p>
+</a4j:outputPanel>
+</a4j:region>
 
 </div>

@@ -47,9 +47,7 @@ public class SemanticEntitiesCoreListener implements PostCommitEventListener {
         CoreSession session = null;
         Set<Serializable> ids = new HashSet<Serializable>();
         for (Event event : events) {
-            if (!event.getName().equals(DocumentEventTypes.DOCUMENT_UPDATED)
-                    && !event.getName().equals(
-                            DocumentEventTypes.DOCUMENT_CREATED)) {
+            if (!event.getName().equals(DocumentEventTypes.DOCUMENT_CREATED)) {
                 continue;
             }
             EventContext eventContext = event.getContext();

@@ -332,7 +332,8 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         assertEquals("John Lennon", firstPerson.getTitle());
 
         // check removal of the link
-        leService.removeOccurrences(session, doc.getRef(), firstPerson.getRef());
+        leService.removeOccurrences(session, doc.getRef(),
+                firstPerson.getRef(), false);
         if (session.exists(firstPerson.getRef())) {
             assertEquals("deleted",
                     session.getCurrentLifeCycleState(firstPerson.getRef()));
@@ -347,7 +348,8 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         assertEquals("Liverpool", firstPlace.getTitle());
 
         // check removal of the link
-        leService.removeOccurrences(session, doc.getRef(), firstPlace.getRef());
+        leService.removeOccurrences(session, doc.getRef(), firstPlace.getRef(),
+                false);
         if (session.exists(firstPlace.getRef())) {
             assertEquals("deleted",
                     session.getCurrentLifeCycleState(firstPlace.getRef()));

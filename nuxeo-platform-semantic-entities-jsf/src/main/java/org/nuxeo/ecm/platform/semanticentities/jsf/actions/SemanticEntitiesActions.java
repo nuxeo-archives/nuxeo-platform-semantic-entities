@@ -112,11 +112,15 @@ public class SemanticEntitiesActions {
         return saService;
     }
 
+    public String getSemanticWorkInProgressMessageKey(String docId) {
+        return "semanticWorkInProgressMessageFor--" + docId;
+    }
+
     public String getSemanticWorkInProgressMessageFor(String docId) {
         if (docId == null) {
             return null;
         }
-        String contextKey = "semanticWorkInProgressMessageFor--" + docId;
+        String contextKey = getSemanticWorkInProgressMessageKey(docId);
         String i18nStatus = (String) Contexts.getEventContext().get(contextKey);
         if (i18nStatus == null) {
             DocumentRef docRef = new IdRef(docId);
@@ -160,6 +164,8 @@ public class SemanticEntitiesActions {
         getSemanticAnalysisService().launchAnalysis(doc.getRepositoryName(),
                 doc.getRef());
         invalidateCurrentDocumentProviders();
+        String key = getSemanticWorkInProgressMessageKey(doc.getId());
+        Contexts.getEventContext().remove(key);
     }
 
     public String goToEntityContainer() throws Exception {
@@ -332,13 +338,40 @@ public class SemanticEntitiesActions {
     public void removeOccurrenceRelation(String docId, String entityId) {
         try {
             getLocalEntityService().removeOccurrences(documentManager,
-                    new IdRef(docId), new IdRef(entityId));
+                    new IdRef(docId), new IdRef(entityId), false);
         } catch (Exception e) {
             log.error(e, e);
             facesMessages.add(StatusMessage.Severity.ERROR,
                     messages.get("error.removingRelation"));
         }
         invalidateCurrentDocumentProviders();
+    }
+
+    public void removeAllLinks() {
+        DocumentModel doc = navigationContext.getCurrentDocument();
+        try {
+            DocumentRef docRef = doc.getRef();
+            PageProvider<DocumentModel> relatedEntities = getLocalEntityService().getRelatedEntities(
+                    documentManager, docRef, null);
+            DocumentModel currentEntity = relatedEntities.getCurrentEntry();
+            while (currentEntity != null) {
+                getLocalEntityService().removeOccurrences(documentManager,
+                        docRef, currentEntity.getRef(), true);
+                if (relatedEntities.isNextEntryAvailable()) {
+                    relatedEntities.nextEntry();
+                    currentEntity = relatedEntities.getCurrentEntry();;
+                } else {
+                    currentEntity = null;
+                }
+            }
+        } catch (Exception e) {
+            log.error(e, e);
+            facesMessages.add(StatusMessage.Severity.ERROR,
+                    messages.get("error.removingRelation"));
+        }
+        invalidateCurrentDocumentProviders();
+        String key = getSemanticWorkInProgressMessageKey(doc.getId());
+        Contexts.getEventContext().remove(key);
     }
 
     /*

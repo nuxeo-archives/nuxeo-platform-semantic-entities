@@ -178,11 +178,13 @@ public interface LocalEntityService {
      *            entities
      * @param docRef the id of the document referring to the entity
      * @param entityRef the id of the entity to remove occurrences for
+     * @param forcePhysicalDelete perform physical deletion (no trash)
      * @throws ClientException if the repository fails or the document does not
      *             exist.
      */
     void removeOccurrences(CoreSession session, DocumentRef docRef,
-            DocumentRef entityRef) throws ClientException;
+            DocumentRef entityRef, boolean forcePhysicalDelete)
+            throws ClientException;
 
     /**
      * Find the occurrence relation instance linking a document to an entity.

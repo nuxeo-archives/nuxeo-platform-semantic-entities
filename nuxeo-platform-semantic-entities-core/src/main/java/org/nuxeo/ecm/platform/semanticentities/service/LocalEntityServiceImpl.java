@@ -181,8 +181,10 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
 
     @Override
     public void removeOccurrences(CoreSession session, DocumentRef docRef,
-            final DocumentRef entityRef) throws ClientException {
-        OccurrenceRelation rel = getOccurrenceRelation(session, docRef, entityRef, false);
+            final DocumentRef entityRef, final boolean forcePhysicalDelete)
+            throws ClientException {
+        OccurrenceRelation rel = getOccurrenceRelation(session, docRef,
+                entityRef, false);
         if (rel == null) {
             return;
         }
@@ -224,15 +226,18 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                     session.saveDocument(entity);
                 }
 
-                // perform the actual deletion using the trash service
-                try {
-                    TrashService trashService = Framework.getService(TrashService.class);
-                    trashService.trashDocuments(session.getDocuments(docToDeleteArray));
-                } catch (Exception e) {
-                    // the trash service is not deployed
+                if (forcePhysicalDelete) {
                     session.removeDocuments(docToDeleteArray);
+                } else {
+                    try {
+                        // try to perform the actual deletion using the trash service
+                        TrashService trashService = Framework.getService(TrashService.class);
+                        trashService.trashDocuments(session.getDocuments(docToDeleteArray));
+                    } catch (Exception e) {
+                        // the trash service is not deployed
+                        session.removeDocuments(docToDeleteArray);
+                    }
                 }
-
             }
         };
         runner.runUnrestricted();

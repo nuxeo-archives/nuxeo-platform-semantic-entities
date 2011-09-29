@@ -501,7 +501,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(Arrays.asList(), relation.getOccurrences());
 
         // check removal of relation
-        service.removeOccurrences(session, doc1.getRef(), john.getRef());
+        service.removeOccurrences(session, doc1.getRef(), john.getRef(), false);
 
         // check that the relation has been removed
         DocumentRef relationRef = relation.getOccurrenceDocument().getRef();
