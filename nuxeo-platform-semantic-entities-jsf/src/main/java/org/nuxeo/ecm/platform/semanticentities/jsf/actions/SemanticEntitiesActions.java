@@ -351,17 +351,16 @@ public class SemanticEntitiesActions {
         DocumentModel doc = navigationContext.getCurrentDocument();
         try {
             DocumentRef docRef = doc.getRef();
-            PageProvider<DocumentModel> relatedEntities = getLocalEntityService().getRelatedEntities(
-                    documentManager, docRef, null);
-            DocumentModel currentEntity = relatedEntities.getCurrentEntry();
-            while (currentEntity != null) {
-                getLocalEntityService().removeOccurrences(documentManager,
-                        docRef, currentEntity.getRef(), true);
-                if (relatedEntities.isNextEntryAvailable()) {
-                    relatedEntities.nextEntry();
-                    currentEntity = relatedEntities.getCurrentEntry();;
-                } else {
-                    currentEntity = null;
+            LocalEntityService leService = getLocalEntityService();
+            while (true) {
+                PageProvider<DocumentModel> relatedEntities = leService.getRelatedEntities(
+                        documentManager, docRef, null);
+                if (relatedEntities.getCurrentPage().isEmpty()) {
+                    break;
+                }
+                for (DocumentModel entity: relatedEntities.getCurrentPage()) {
+                    leService.removeOccurrences(documentManager,
+                            docRef, entity.getRef(), true);
                 }
             }
         } catch (Exception e) {
