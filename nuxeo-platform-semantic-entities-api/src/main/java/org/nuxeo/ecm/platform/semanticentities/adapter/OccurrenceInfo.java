@@ -27,7 +27,7 @@ import java.util.Map;
  *
  * @author ogrisel
  */
-public class OccurrenceInfo {
+public class OccurrenceInfo implements Comparable<OccurrenceInfo> {
 
     /**
      * The context part that actually references an entity
@@ -48,6 +48,12 @@ public class OccurrenceInfo {
      * The end offset to locate the mention inside the context.
      */
     public final int endPosInContext;
+
+    /**
+     * Ordering info such as position in source document to be able to order the
+     * occurrences relative to one another.
+     */
+    public double order = 0.0;
 
     public OccurrenceInfo(String mention, String context) {
         if (context == null || context.isEmpty()) {
@@ -165,5 +171,18 @@ public class OccurrenceInfo {
      */
     public String getSuffixContext() {
         return context.substring(endPosInContext);
+    }
+
+    @Override
+    public int compareTo(OccurrenceInfo o) {
+        return Double.compare(order, o.order);
+    }
+
+    /**
+     * The end offset to locate the mention inside the context.
+     */
+    public OccurrenceInfo withOrder(double order) {
+        this.order  = order;
+        return this;
     }
 }

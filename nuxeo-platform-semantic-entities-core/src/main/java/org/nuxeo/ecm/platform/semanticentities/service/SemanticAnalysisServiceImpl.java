@@ -359,6 +359,9 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             }
             // sort by score for easy display and testing
             Collections.sort(group.entitySuggestions);
+
+            // sort occurrences by occurrence order for easy display and testing
+            Collections.sort(group.occurrences);
             groups.add(group);
         }
         // sort by alphabetic order for names for easy display and testing
@@ -405,6 +408,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     protected OccurrenceInfo getOccurrenceInfo(Model model, Resource annotation) {
         Property mentionProp = model.getProperty("http://fise.iks-project.eu/ontology/selected-text");
+        Property startProp = model.getProperty("http://fise.iks-project.eu/ontology/start");
+
         Statement mentionStmt = annotation.getProperty(mentionProp);
         if (mentionStmt == null || !mentionStmt.getObject().isLiteral()) {
             return null;
@@ -413,8 +418,16 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 Literal.class);
         String mention = mentionLiteral.getString().trim();
 
+        double position = 0.0;
+        Statement startStmt = annotation.getProperty(startProp);
+        if (startStmt != null && startStmt.getObject().isLiteral()) {
+            Literal startLiteral = startStmt.getObject().as(Literal.class);
+            position = Double.parseDouble(startLiteral.getString());
+        }
+
         Property contextProp = model.getProperty("http://fise.iks-project.eu/ontology/selection-context");
         Statement contextStmt = annotation.getProperty(contextProp);
+
         if (contextStmt != null && contextStmt.getObject().isLiteral()) {
             Literal contextLiteral = contextStmt.getObject().as(
                     Literal.class);
@@ -426,9 +439,9 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 // layout
                 context = mention;
             }
-            return new OccurrenceInfo(mention, context);
+            return new OccurrenceInfo(mention, context).withOrder(position);
         } else {
-            return new OccurrenceInfo(mention, mention);
+            return new OccurrenceInfo(mention, mention).withOrder(position);
         }
     }
 

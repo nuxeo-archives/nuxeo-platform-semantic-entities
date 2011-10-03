@@ -7,10 +7,10 @@
   <require>org.nuxeo.ecm.core.api.pathsegment.PathSegmentService</require>
   <require>org.nuxeo.ecm.core.schema.TypeService</require>
 
+  <!-- Override the default service implementation to work offline for the tests -->
   <implementation
     class="org.nuxeo.ecm.platform.semanticentities.service.MockSemanticAnalysisServiceImpl" />
 
-  <!-- Override the default service implementation to work offline for the tests -->
   <service>
     <provide
       interface="org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService" />

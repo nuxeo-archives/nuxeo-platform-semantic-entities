@@ -76,6 +76,9 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         // deploy off-line mock DBpedia source to override the default source
         // that needs an internet connection: comment the following contrib to
         // test again a real Stanbol server
+        Framework.getProperties().put(
+                SemanticAnalysisServiceImpl.STANBOL_URL_PROPERTY,
+                "http://localhost:9090/");
         deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
                 "OSGI-INF/test-semantic-entities-stanbol-entity-contrib.xml");
 
@@ -187,8 +190,8 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         return createSampleDocumentModel(id, true);
     }
 
-    public DocumentModel createSampleDocumentModel(String id, boolean saveAndWait)
-            throws ClientException {
+    public DocumentModel createSampleDocumentModel(String id,
+            boolean saveAndWait) throws ClientException {
         DocumentModel doc = session.createDocumentModel("/", id, "Note");
         doc.setPropertyValue("dc:title", "A short bio for John Lennon");
         doc.setPropertyValue(
@@ -272,8 +275,10 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         assertEquals("http://dbpedia.org/resource/John_Lennon",
                 og1.entitySuggestions.get(0).remoteEntityUris.iterator().next());
         assertFalse(og1.entitySuggestions.get(0).isLocal());
-        // no pre-fetched info in the payload
-        assertNull(og1.entitySuggestions.get(0).entity);
+
+        // the entity is directly prefetched from the entityhub by the analysis
+        // engine on stanbol
+        assertNotNull(og1.entitySuggestions.get(0).entity);
 
         OccurrenceGroup og2 = groups.get(1);
         assertEquals("Liverpool", og2.name);
@@ -282,11 +287,12 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         assertEquals(1, og2.occurrences.size());
         assertEquals("Liverpool", og2.occurrences.get(0).mention);
 
-        assertEquals(1, og2.entitySuggestions.size());
+        assertEquals(3, og2.entitySuggestions.size());
         assertEquals("Liverpool", og2.entitySuggestions.get(0).label);
         assertEquals("http://dbpedia.org/resource/Liverpool",
                 og2.entitySuggestions.get(0).remoteEntityUris.iterator().next());
         assertFalse(og2.entitySuggestions.get(0).isLocal());
+
         // there is pre-fetched data in the payload
         DocumentModel liverpool = og2.entitySuggestions.get(0).entity;
         assertNotNull(liverpool);
@@ -295,7 +301,13 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         assertEquals(Arrays.asList("http://dbpedia.org/resource/Liverpool"),
                 liverpool.getProperty("entity:sameas").getValue(List.class));
         assertEquals(
-                "Fake Liverpool abstract prefetched by the SemanticAnalysisEngine",
+                "Liverpool is a city and metropolitan borough of Merseyside,"
+                        + " England, along the eastern side of the Mersey Estuary. It "
+                        + "was founded as a borough in 1207 and was granted city status "
+                        + "in 1880. Liverpool is the fourth largest city in the United "
+                        + "Kingdom (third largest in England) and has a population of "
+                        + "435,500, and lies at the centre of the wider Liverpool Urban "
+                        + "Area, which has a population of 816,216.",
                 liverpool.getPropertyValue("entity:summary"));
     }
 
