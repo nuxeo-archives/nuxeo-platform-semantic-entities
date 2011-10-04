@@ -66,7 +66,7 @@ public class SemanticEntitiesCoreListener implements PostCommitEventListener {
             EventContext eventContext = event.getContext();
             CoreSession s = eventContext.getCoreSession();
             DocumentModel dm = (DocumentModel) eventContext.getArguments()[0];
-            if (dm.isVersion() || dm.isProxy()) {
+            if (dm.isVersion() || dm.isProxy() || dm.isFolder()) {
                 // do not perform analysis on archived versions: a separate
                 // event listener should be used to
                 // copy any previously existing the analysis results and manual
