@@ -17,6 +17,7 @@
 package org.nuxeo.ecm.platform.semanticentities.listener;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -31,6 +32,7 @@ import org.nuxeo.ecm.core.event.Event;
 import org.nuxeo.ecm.core.event.EventBundle;
 import org.nuxeo.ecm.core.event.EventContext;
 import org.nuxeo.ecm.core.event.PostCommitEventListener;
+import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService;
 import org.nuxeo.runtime.api.Framework;
 
@@ -44,6 +46,17 @@ public class SemanticEntitiesCoreListener implements PostCommitEventListener {
     @Override
     public void handleEvent(EventBundle events) throws ClientException {
 
+        SemanticAnalysisService saService;
+        Set<String> typesToIgnore = new HashSet<String>(Arrays.asList("Occurrence"));
+        try {
+            saService = Framework.getService(SemanticAnalysisService.class);
+            LocalEntityService leService = Framework.getService(LocalEntityService.class);
+            typesToIgnore.addAll(leService.getEntityTypeNames());
+        } catch (Exception e) {
+            log.error(e, e);
+            return;
+        }
+
         CoreSession session = null;
         Set<Serializable> ids = new HashSet<Serializable>();
         for (Event event : events) {
@@ -54,8 +67,13 @@ public class SemanticEntitiesCoreListener implements PostCommitEventListener {
             CoreSession s = eventContext.getCoreSession();
             DocumentModel dm = (DocumentModel) eventContext.getArguments()[0];
             if (dm.isVersion() || dm.isProxy()) {
-                // do not perform analysis on archived versions: a separate event listener should be used to
-                // copy any previously existing the analysis results and manual corrections instead.
+                // do not perform analysis on archived versions: a separate
+                // event listener should be used to
+                // copy any previously existing the analysis results and manual
+                // corrections instead.
+                continue;
+            }
+            if (typesToIgnore.contains(dm.getType())) {
                 continue;
             }
             ids.add(dm.getId());
@@ -78,7 +96,6 @@ public class SemanticEntitiesCoreListener implements PostCommitEventListener {
             IdRef docRef = new IdRef((String) id);
             // perform the entity extraction and linking operation
             try {
-                SemanticAnalysisService saService = Framework.getService(SemanticAnalysisService.class);
                 saService.launchAnalysis(session.getRepositoryName(), docRef);
             } catch (Exception e) {
                 log.error(e, e);
