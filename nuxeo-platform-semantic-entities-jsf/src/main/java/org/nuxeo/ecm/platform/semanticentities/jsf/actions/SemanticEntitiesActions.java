@@ -50,6 +50,7 @@ import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
 import org.nuxeo.ecm.platform.ui.web.api.NavigationContext;
+import org.nuxeo.ecm.webapp.clipboard.ClipboardActions;
 import org.nuxeo.ecm.webapp.helpers.EventManager;
 import org.nuxeo.ecm.webapp.helpers.EventNames;
 import org.nuxeo.runtime.api.Framework;
@@ -68,6 +69,9 @@ public class SemanticEntitiesActions {
 
     @In(create = true)
     protected FacesMessages facesMessages;
+
+    @In(create = true, required = false)
+    protected ClipboardActions clipboardActions;
 
     @In(create = true)
     protected Map<String, String> messages;
@@ -130,8 +134,7 @@ public class SemanticEntitiesActions {
                 i18nStatus = "";
             } else {
                 // there is some work in progress: invalidate the cached results
-                // to
-                // display the real state
+                // to display the real state
                 invalidateCurrentDocumentProviders();
 
                 // i18n status message with interpolation
@@ -161,11 +164,32 @@ public class SemanticEntitiesActions {
 
     public void launchAsyncAnalysis() throws ClientException {
         DocumentModel doc = navigationContext.getCurrentDocument();
+        launchAsyncAnalysis(doc);
+    }
+
+    public void launchAsyncAnalysis(DocumentModel doc) throws ClientException {
         getSemanticAnalysisService().launchAnalysis(doc.getRepositoryName(),
                 doc.getRef());
         invalidateCurrentDocumentProviders();
         String key = getSemanticWorkInProgressMessageKey(doc.getId());
         Contexts.getEventContext().remove(key);
+    }
+
+    public void analyzeCurrentList() throws ClientException {
+        if (clipboardActions == null) {
+            // no hard runtime dependencies on the clipboardActions seam
+            // component
+            return;
+        }
+        List<DocumentModel> docList = clipboardActions.getCurrentSelectedList();
+        if (docList != null) {
+            for (DocumentModel doc : docList) {
+                launchAsyncAnalysis(doc);
+            }
+            facesMessages.add(StatusMessage.Severity.INFO,
+                    messages.get("status.worklist.semanticAnalysis"),
+                    docList.size());
+        }
     }
 
     public String goToEntityContainer() throws Exception {
@@ -551,4 +575,5 @@ public class SemanticEntitiesActions {
     public String reverseEllipsis(String content, int maxWords) {
         return ellipsis(content, maxWords, true);
     }
+
 }
