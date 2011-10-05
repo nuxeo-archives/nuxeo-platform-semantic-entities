@@ -1,12 +1,15 @@
 Manifest-Version: 1.0
-Require-Bundle: org.nuxeo.ecm.webapp.ui, org.nuxeo.ecm.platform.lang, 
- org.nuxeo.ecm.relations.web
+Bundle-ManifestVersion: 2
+Bundle-Name: Nuxeo Platform Semantic Entities JSF
+Bundle-SymbolicName: org.nuxeo.ecm.platform.semanticentities.jsf
+Bundle-Localization: plugin
 Bundle-Vendor: Nuxeo
 Bundle-Category: runtime
-Bundle-Localization: plugin
-Bundle-Name: Nuxeo Platform Semantic Entities JSF
-Bundle-ManifestVersion: 2
-Comment: ensure deployment after relations.web for temp template overr
- ide
-Bundle-SymbolicName: org.nuxeo.ecm.platform.semanticentities.jsf
-
+Comment: ensure deployment after relations.web for temp template override
+Require-Bundle: org.nuxeo.ecm.webapp.ui,
+  org.nuxeo.ecm.platform.lang,
+  org.nuxeo.ecm.relations.web
+Nuxeo-Component: OSGI-INF/semantic-entities-actions-contrib.xml,
+  OSGI-INF/semantic-entities-layouts-contrib.xml,
+  OSGI-INF/semantic-entities-ui-types-contrib.xml,
+  OSGI-INF/semantic-entities-theme-contrib.xml
