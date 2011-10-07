@@ -10,6 +10,7 @@
 
   <install>
     <unzip from="${bundle.fileName}" to="/" prefix="web">
+      <exclude>web/nuxeo.war/WEB-INF/classes/*.properties</exclude>
       <include>web/nuxeo.war/**</include>
     </unzip>
 

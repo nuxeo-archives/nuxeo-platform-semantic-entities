@@ -66,6 +66,20 @@
         <artifactId>build-helper-maven-plugin</artifactId>
         <executions>
           <execution>
+            <id>add-resource</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>add-resource</goal>
+            </goals>
+            <configuration>
+              <resources>
+                <resource>
+                  <directory>src/main/i18n</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+          <execution>
             <id>add-source</id>
             <phase>generate-sources</phase>
             <goals>
@@ -73,7 +87,6 @@
             </goals>
             <configuration>
               <sources>
-                <source>src/main/i18n</source>
                 <source>src/main/seam</source>
               </sources>
             </configuration>
