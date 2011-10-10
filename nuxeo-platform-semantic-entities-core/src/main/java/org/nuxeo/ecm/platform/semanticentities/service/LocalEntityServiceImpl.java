@@ -83,10 +83,10 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     public static final String ENTITY_CONTAINER_TITLE = "Entities";
 
     protected Map<String, DocumentRef> recentlyDereferenced = new MapMaker().concurrencyLevel(
-            4).expiration(5, TimeUnit.MINUTES).makeMap();
+            4).expiration(5, TimeUnit.SECONDS).makeMap();
 
     protected Map<DocumentRef, String> progressMessages = new MapMaker().concurrencyLevel(
-            4).expiration(10, TimeUnit.MINUTES).makeMap();
+            4).expiration(30, TimeUnit.MINUTES).makeMap();
 
     @Override
     synchronized public DocumentModel getEntityContainer(CoreSession session)
@@ -603,6 +603,8 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                     "The provided suggestion has neither local"
                             + " entity nor emote entities links");
         }
+        // TODO: optimize to do a single core query using a disjunction on all
+        // the remote URI if we ever have the case for many remote URI
         for (String remoteEntityUri : suggestion.remoteEntityUris) {
             DocumentModel localEntity = getLinkedLocalEntity(session,
                     URI.create(remoteEntityUri));
