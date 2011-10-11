@@ -369,4 +369,35 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
             fail(firstPlace.getTitle() + " should have been deleted");
         }
     }
+
+    public void testTextExtract() throws ClientException {
+        DocumentModel doc = session.createDocumentModel("/",
+                "docWithControlChars", "Note");
+        doc.setPropertyValue("dc:title", "A short bio for John Lennon");
+        doc.setPropertyValue("dc:description",
+                "'\ud800\udc00' is a valid character outside of the BMP that should be kept.");
+        doc.setPropertyValue(
+                "note:note",
+                "<html><body>"
+                        + "<h1>This is an HTML title</h1>"
+                        + "<p>John Lennon was born in Liverpool in 1940. John was a musician."
+                        + " This document about John Lennon has many occurrences"
+                        + " of the words 'John' and 'Lennon' hence should rank high"
+                        + " for suggestions on such keywords.</p>"
+                        + "<p>'\uFFFE' is an invalid control char and should be ignored.</p>"
+                        + "<!-- this is a HTML comment about Bob Marley. -->"
+                        + "</body></html>");
+        SemanticAnalysisServiceImpl sasi = (SemanticAnalysisServiceImpl) saService;
+        String extractedText = sasi.extractText(doc);
+        assertEquals(
+                "A short bio for John Lennon\n\n"
+                        + "'\ud800\udc00' is a valid character outside of the BMP that should be kept.\n\n"
+                        + "This is an HTML title\n\n"
+                        + "John Lennon was born in Liverpool in 1940. John was a"
+                        + " musician. This document about John Lennon has many"
+                        + " occurrences of the words 'John' and 'Lennon' hence should"
+                        + " rank high for suggestions on such keywords.\n\n"
+                        + "'' is an invalid control char and should be ignored.\n\n"
+                        + "\n\n", extractedText);
+    }
 }

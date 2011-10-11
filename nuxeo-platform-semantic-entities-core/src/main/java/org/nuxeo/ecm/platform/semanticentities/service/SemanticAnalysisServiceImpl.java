@@ -18,6 +18,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
@@ -82,6 +83,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         SemanticAnalysisService {
 
     private static final Log log = LogFactory.getLog(SemanticAnalysisServiceImpl.class);
+
+    Pattern INVALID_XML_CHARS = Pattern.compile("[^\\u0009\\u000A\\u000D\\u0020-\\uD7FF\\uE000-\\uFFFD\uD800\uDC00-\uDBFF\uDFFF]");
 
     protected final Map<DocumentLocation, String> states = new MapMaker().concurrencyLevel(
             10).expiration(30, TimeUnit.MINUTES).makeMap();
@@ -540,6 +543,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         // special handling of the HTML payload of notes
         try {
             String noteContent = (String) doc.getPropertyValue("note:note");
+            noteContent = INVALID_XML_CHARS.matcher(noteContent).replaceAll("");
             StreamingBlob blob = StreamingBlob.createFromString(noteContent);
             blob.setMimeType("text/html");
             BlobHolder bh = new SimpleBlobHolder(blob);
@@ -566,7 +570,11 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         }
         BlobsExtractor extractor = new BlobsExtractor();
         sb.append(blobsToText(extractor.getBlobs(doc)));
-        return sb.toString();
+
+        // remove any invisible control characters that can be not accepted
+        // inside XML 1.0 payload (e.g. in SOAP) and are useless for text
+        // analysis anyway.
+        return INVALID_XML_CHARS.matcher(sb.toString()).replaceAll("");
     }
 
     protected String blobsToText(List<Blob> blobs) {
