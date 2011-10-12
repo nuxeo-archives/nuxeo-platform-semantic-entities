@@ -12,12 +12,17 @@
 }
 
 .entityOccurrences div.entityOccurrence {
-  margin-bottom: 1em;
+  margin-bottom: 0.1em;
+  padding: 0.5em 0;
+}
+
+.entityOccurrences div.entityOccurrence:hover {
+  background: #e6f6ff;
 }
 
 .entityOccurrences div.entityLinkAndSummary {
   margin: 0 0 0 50px;
-  padding: 0 0 0 1em;
+  padding: 0 0.2em 0 0.5em;
 }
 
 .entityOccurrences div.entityOccurrenceTooltip {
