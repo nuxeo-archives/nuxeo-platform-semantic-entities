@@ -1,4 +1,4 @@
-<div class="entities_block" xmlns:nxu="http://nuxeo.org/nxweb/util"
+<div class="entitiesBlock" xmlns:nxu="http://nuxeo.org/nxweb/util"
   xmlns:f="http://java.sun.com/jsf/core"
   xmlns:ui="http://java.sun.com/jsf/facelets"
   xmlns:h="http://java.sun.com/jsf/html"
@@ -13,88 +13,177 @@
        factorized out of the project
  -->
 
+<c:set var="docId" value="#{currentDocument.id}" />
+
+<a4j:queue name="entitiesQueue"/>
 <a4j:region renderRegionOnly="true">
 <a4j:outputPanel id="relatedEntitiesPanel">
 
-<a4j:poll interval="1000"
- enabled="#{!empty semanticWorkInProgressMessage}"
- reRender="relatedEntitiesPanel" />
+<a4j:poll interval="5000" eventsQueue="entitiesQueue"
+  reRender="relatedEntitiesPanel,relatedEntitiesButtonsPanel" ignoreDupResponses="true"
+  enabled="#{!empty semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}" />
 
-<f:subview rendered="#{!empty semanticWorkInProgressMessage}">
-  <div class="infoFeedback semanticWorkInProgressMessage">
-      #{semanticWorkInProgressMessage}
-      <span style="width: 1em"/>
-      <h:graphicImage value="/img/standart_waiter.gif" />
+<f:subview rendered="#{!empty semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}">
+  <div class="actions_block">
+    <div class="semanticWorkInProgressMessage">
+        <h:graphicImage value="/img/standart_waiter.gif" />
+        #{semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}
+    </div>
   </div>
 </f:subview>
 
-<f:subview rendered="#{false and empty semanticWorkInProgressMessage}">
+<f:subview rendered="#{!empty relatedTopics}">
+  <h3 class="summaryTitle">#{messages['heading.topics']}</h3>
+  <div class="entityOccurrences">
+  <c:forEach var="entity" items="#{relatedTopics}">
+    <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
+  </c:forEach>
+  </div>
+</f:subview>
+
+<f:subview rendered="#{!empty relatedPeopleOccurrences}">
+  <h3 class="summaryTitle">#{messages['heading.occurrencesOfPeople']}</h3>
+  <div class="entityOccurrences">
+  <c:forEach var="occurrence" items="#{relatedPeopleOccurrences}">
+    <nxl:layout name="entity_short_summary_layout" value="#{occurrence}" mode="view" />
+  </c:forEach>
+  </div>
+</f:subview>
+
+<f:subview rendered="#{!empty relatedOrganizationsOccurrences}">
+  <h3 class="summaryTitle">#{messages['heading.occurrencesOfOrganizations']}</h3>
+  <div class="entityOccurrences">
+  <c:forEach var="occurrence" items="#{relatedOrganizationsOccurrences}">
+    <nxl:layout name="entity_short_summary_layout" value="#{occurrence}" mode="view" />
+  </c:forEach>
+  </div>
+</f:subview>
+
+<f:subview rendered="#{!empty relatedPlacesOccurrences}">
+  <h3 class="summaryTitle">#{messages['heading.occurrencesOfPlaces']}</h3>
+  <div class="entityOccurrences">
+  <c:forEach var="occurrence" items="#{relatedPlacesOccurrences}">
+    <nxl:layout name="entity_short_summary_layout" value="#{occurrence}" mode="view" />
+  </c:forEach>
+  </div>
+</f:subview>
+
+<script>
+<!--
+// register the tooltip machinery inside the ajax area since newly linked
+// entities to get bound to their tooltip event callbacks
+jQuery(document).ready(function() {
+  jQuery(".entityOccurrence").tooltip({
+    position: "center left",
+    tipClass: 'entityOccurrenceTooltip',
+    events: {
+      def: 'mouseenter,mouseleave',
+      tooltip: 'mouseenter,mouseleavetooltip',
+    }
+  });
+  // avoid multiple bindings when doing a4j rerendering
+  jQuery(".entityOccurrenceTooltip").unbind('mouseleave');
+  jQuery(".entityOccurrenceTooltip").bind('mouseleave',
+    function(e) {
+      // check wether the mouse has really left the tooltip area using
+      // the coordinates info
+      var tooltip = jQuery(this);
+      if (e.pageX < tooltip.offset().left ||
+          e.pageX > tooltip.offset().left + tooltip.width() ||
+          e.pageY < tooltip.offset().top ||
+          e.pageY > tooltip.offset().top + tooltip.height()) {
+        //  the mouse position is outside of the tooltip area, hence we
+        // trigger the closing event
+        tooltip.trigger('mouseleavetooltip');
+      }
+      // the mouse position is still inside the tooltip area: most likely
+      // the tooltip is over-ing the rich faces suggest box which is a direct
+      // child of the body element but positioned as an absolute overlay on
+      // top of the tooltip. We should not close the tooltip in that case.
+  });
+
+  jQuery('.entityOccurrenceTooltip .linkedEntity .editLink a').click(function() {
+    var container = jQuery(this).parents('.linkedEntity');
+    container.find('.currentEntity').fadeTo(150, 0.0).css('visibility', 'hidden');
+    container.find('.entityUpdater').css('visibility', 'visible').fadeTo(150, 1.0);
+    container.find('.editLink').css('display', 'none');
+    container.find('.cancelLink').css('display', 'block');
+    return false;
+  });
+
+  jQuery('.entityOccurrenceTooltip .linkedEntity .cancelLink a').click(function() {
+    var container = jQuery(this).parents('.linkedEntity');
+    container.find('.entityUpdater').fadeTo(150, 0.0).css('visibility', 'hidden');
+    container.find('.currentEntity').css('visibility', 'visible').fadeTo(150, 1.0);
+    container.find('.cancelLink').css('display', 'none');
+    container.find('.editLink').css('display', 'block');
+    return false;
+  });
+
+});
+-->
+</script>
+
+</a4j:outputPanel>
+
+<h3 class="summaryTitle">#{messages['heading.manageLinks']}</h3>
+
+<p>
+<h:outputText value="#{messages['label.button.addLink']}" />
+<span style="width: 1em" />
+<h:inputText id="entitySuggestionKeywords" styleClass="searchField"
+  onkeydown="if (event.keyCode == 13 || event.keyCode == 9) {return false;}" />
+
+<a4j:status>
+  <f:facet name="start">
+    <h:graphicImage value="/img/standart_waiter.gif" />
+  </f:facet>
+</a4j:status>
+<rich:suggestionbox
+  suggestionAction="#{semanticEntitiesActions.suggestEntities}" var="entitySuggestion"
+  for="entitySuggestionKeywords"
+  nothingLabel="${messages['label.results.noMatchingEntity']}"
+  eventsQueue="entitiesQueue"
+  ajaxSingle="true"
+  width="500">
+  <a4j:support event="onselect"
+    reRender="relatedEntitiesPanel"
+    eventsQueue="entitiesQueue"
+    action="#{semanticEntitiesActions.addNewOccurrenceRelation}"
+    ajaxSingle="true">
+    <f:setPropertyActionListener value="#{entitySuggestion}"
+      target="#{semanticEntitiesActions.selectedSuggestion}" />
+  </a4j:support>
+  <h:column>
+    <h:graphicImage
+      url="/icons/#{entitySuggestion.type}.png"
+      rendered="#{!empty entitySuggestion.type}"
+      styleClass="entityTypeIcon" />
+    #{entitySuggestion.label}
+  </h:column>
+</rich:suggestionbox>
+</p>
+
+<a4j:outputPanel id="relatedEntitiesButtonsPanel">
+<p>
+<f:subview rendered="#{empty semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}">
   <a4j:commandButton value="#{messages['label.button.launchSemanticAnalysis']}"
    action="#{semanticEntitiesActions.launchAsyncAnalysis}"
    rendered="#{documentManager.hasPermission(currentDocument.ref, 'WriteProperties')}"
    onclick="this.disabled=true"
    oncomplete="this.disabled=false"
-   reRender="relatedEntitiesPanel" />
-</f:subview>
+   reRender="relatedEntitiesPanel,relatedEntitiesButtonsPanel" />
 
-<f:subview rendered="#{!empty relatedTopicsProvider.currentPage}">
-  <h3 class="summaryTitle">#{messages['heading.topics']}</h3>
-  <c:forEach var="entity" items="#{relatedTopicsProvider.currentPage}">
-    <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
-  </c:forEach>
-</f:subview>
+  <span style="width: 1em" />
 
-<f:subview rendered="#{!empty relatedPeopleProvider.currentPage}">
-  <h3 class="summaryTitle">#{messages['heading.occurrencesOfPeople']}</h3>
-  <c:forEach var="entity" items="#{relatedPeopleProvider.currentPage}">
-    <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
-  </c:forEach>
+  <a4j:commandButton value="#{messages['label.button.removeAllLinks']}"
+   action="#{semanticEntitiesActions.removeAllLinks}"
+   rendered="#{documentManager.hasPermission(currentDocument.ref, 'WriteProperties')}"
+   onclick="this.disabled=true"
+   oncomplete="this.disabled=false"
+   reRender="relatedEntitiesPanel,relatedEntitiesButtonsPanel" />
 </f:subview>
-
-<f:subview rendered="#{!empty relatedOrganizationsProvider.currentPage}">
-  <h3 class="summaryTitle">#{messages['heading.occurrencesOfOrganizations']}</h3>
-  <c:forEach var="entity" items="#{relatedOrganizationsProvider.currentPage}">
-    <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
-  </c:forEach>
-</f:subview>
-
-<f:subview rendered="#{!empty relatedPlacesProvider.currentPage}">
-  <h3 class="summaryTitle">#{messages['heading.occurrencesOfPlaces']}</h3>
-  <c:forEach var="entity" items="#{relatedPlacesProvider.currentPage}">
-    <nxl:layout name="entity_short_summary_layout" value="#{entity}" mode="view" />
-  </c:forEach>
-</f:subview>
-
-<f:subview rendered="#{empty semanticWorkInProgressMessage}">
-  <h3 class="summaryTitle">#{messages['heading.linkToEntity']}</h3>
-  <h:inputText id="entitySuggestionKeywords" styleClass="searchField"
-    onkeydown="if (event.keyCode == 13 || event.keyCode == 9) {return false;}" />
-  <a4j:status>
-    <f:facet name="start">
-      <h:graphicImage value="/img/standart_waiter.gif" />
-    </f:facet>
-  </a4j:status>
-  <rich:suggestionbox
-    suggestionAction="#{semanticEntitiesActions.suggestEntities}" var="entitySuggestion"
-    for="entitySuggestionKeywords"
-    nothingLabel="${messages['label.results.noMatchingEntity']}"
-    ajaxSingle="true">
-    <a4j:support event="onselect" reRender="relatedEntitiesPanel"
-      action="#{semanticEntitiesActions.addNewOccurrenceRelation}"
-      ajaxSingle="true">
-      <f:setPropertyActionListener value="#{entitySuggestion}"
-        target="#{semanticEntitiesActions.selectedSuggestion}" />
-    </a4j:support>
-    <h:column>
-      <h:graphicImage
-        url="/icons/#{entitySuggestion.type}.png"
-        style="height: 16px; width: 16px; border: none; padding: 0"
-        rendered="#{!empty entitySuggestion.type}"
-        styleClass="entityDepiction" />
-      #{entitySuggestion.label}
-    </h:column>
-  </rich:suggestionbox>
-</f:subview>
+</p>
 </a4j:outputPanel>
 </a4j:region>
 

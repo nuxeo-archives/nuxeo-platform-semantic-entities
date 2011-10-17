@@ -59,7 +59,8 @@ public class AnalysisTask implements Runnable {
                 return;
             }
             try {
-                List<OccurrenceGroup> occurrenceGroups = service.analyze(session.getDocument(docRef));
+                List<OccurrenceGroup> occurrenceGroups = service.analyze(
+                        session, session.getDocument(docRef));
                 if (occurrenceGroups.isEmpty()) {
                     service.clearProgressStatus(repositoryName, docRef);
                     return;
@@ -88,9 +89,9 @@ public class AnalysisTask implements Runnable {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.lang.Object#equals(java.lang.Object)
-     * 
+     *
      * Override to make it possible to lookup the position of a document in the
      * queue and remove duplicates
      */

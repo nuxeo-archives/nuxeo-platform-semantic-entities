@@ -49,13 +49,14 @@ import org.nuxeo.ecm.core.api.security.ACP;
 import org.nuxeo.ecm.core.api.security.SecurityConstants;
 import org.nuxeo.ecm.core.api.security.impl.ACPImpl;
 import org.nuxeo.ecm.core.schema.SchemaManager;
+import org.nuxeo.ecm.core.trash.TrashService;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
-import org.nuxeo.ecm.platform.semanticentities.RemoteEntity;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
+import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceInfo;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
 import org.nuxeo.runtime.api.Framework;
@@ -82,10 +83,10 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     public static final String ENTITY_CONTAINER_TITLE = "Entities";
 
     protected Map<String, DocumentRef> recentlyDereferenced = new MapMaker().concurrencyLevel(
-            4).expiration(5, TimeUnit.MINUTES).makeMap();
+            4).expiration(5, TimeUnit.SECONDS).makeMap();
 
     protected Map<DocumentRef, String> progressMessages = new MapMaker().concurrencyLevel(
-            4).expiration(10, TimeUnit.MINUTES).makeMap();
+            4).expiration(30, TimeUnit.MINUTES).makeMap();
 
     @Override
     synchronized public DocumentModel getEntityContainer(CoreSession session)
@@ -178,6 +179,70 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         return getOccurrenceRelation(session, docRef, entityRef, false);
     }
 
+    @Override
+    public void removeOccurrences(CoreSession session, DocumentRef docRef,
+            final DocumentRef entityRef, final boolean forcePhysicalDelete)
+            throws ClientException {
+        OccurrenceRelation rel = getOccurrenceRelation(session, docRef,
+                entityRef, false);
+        if (rel == null) {
+            return;
+        }
+        // mark the relation document for deletion
+        DocumentModel relDoc = rel.getOccurrenceDocument();
+        final List<DocumentRef> docToDelete = new ArrayList<DocumentRef>();
+        docToDelete.add(relDoc.getRef());
+
+        // find the linked entity to check whether it was automatically created
+        // by the system
+        PageProvider<DocumentModel> relatedDocuments = getRelatedDocuments(
+                session, entityRef, null);
+        if (relatedDocuments.getCurrentPage().size() == 1
+                && relatedDocuments.getCurrentEntry().getRef().equals(docRef)) {
+            // only related to the current document
+            DocumentModel entity = session.getDocument(entityRef);
+            Boolean auto = entity.getProperty("entity:automaticallyCreated").getValue(
+                    Boolean.class);
+            @SuppressWarnings("unchecked")
+            List<String> contributors = entity.getProperty("dc:contributors").getValue(
+                    List.class);
+            if (auto && contributors.size() <= 1) {
+                // remove the automatically created entity as well
+                docToDelete.add(entity.getRef());
+            }
+        }
+        final DocumentRef[] docToDeleteArray = docToDelete.toArray(new DocumentRef[docToDelete.size()]);
+        UnrestrictedSessionRunner runner = new UnrestrictedSessionRunner(
+                session) {
+
+            @Override
+            public void run() throws ClientException {
+                if (!docToDelete.contains(entityRef)) {
+                    // update the popularity count of the entity
+                    DocumentModel entity = session.getDocument(entityRef);
+                    Long newPopularity = entity.getProperty("entity:popularity").getValue(
+                            Long.class) - 1;
+                    entity.setPropertyValue("entity:popularity", newPopularity);
+                    session.saveDocument(entity);
+                }
+
+                if (forcePhysicalDelete) {
+                    session.removeDocuments(docToDeleteArray);
+                } else {
+                    try {
+                        // try to perform the actual deletion using the trash service
+                        TrashService trashService = Framework.getService(TrashService.class);
+                        trashService.trashDocuments(session.getDocuments(docToDeleteArray));
+                    } catch (Exception e) {
+                        // the trash service is not deployed
+                        session.removeDocuments(docToDeleteArray);
+                    }
+                }
+            }
+        };
+        runner.runUnrestricted();
+    }
+
     public OccurrenceRelation getOccurrenceRelation(CoreSession session,
             DocumentRef docRef, DocumentRef entityRef, boolean createIfMissing)
             throws ClientException {
@@ -221,13 +286,16 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
 
         DocumentRef entityRef = null;
         if (entitySuggestion.isLocal()) {
-            entityRef = entitySuggestion.localEntity.getRef();
+            entityRef = entitySuggestion.entity.getRef();
         } else {
             // use the recentlyDereferenced cache that is shared among threads
             // and concurrent transaction to avoid dereferencing the same remote
             // entity to duplicated local entities
             for (String uri : entitySuggestion.remoteEntityUris) {
                 entityRef = recentlyDereferenced.get(uri);
+                if (entityRef != null) {
+                    break;
+                }
             }
             if (entityRef == null) {
                 entityRef = asLocalEntity(session, entitySuggestion).getRef();
@@ -374,7 +442,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public List<DocumentModel> suggestLocalEntity(CoreSession session,
+    public List<EntitySuggestion> suggestLocalEntity(CoreSession session,
             String keywords, String type, int maxSuggestions)
             throws ClientException {
         Set<String> entityTypeNames = new TreeSet<String>();
@@ -397,14 +465,40 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                         + " ORDER BY entity:popularity DESC, dc:title LIMIT %d",
                 Constants.ENTITY_TYPE, cleanupKeywords(keywords),
                 StringUtils.join(entityTypeNames, "', '"), maxSuggestions);
-        return session.query(q);
+
+        // TODO: read the score info as well
+        List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
+        for (DocumentModel doc: session.query(q)) {
+            suggestions.add(new EntitySuggestion(doc));
+        }
+        return suggestions;
     }
 
-    @SuppressWarnings("unchecked")
+    @Override
+    public List<EntitySuggestion> suggestEntity(CoreSession session,
+            OccurrenceGroup group, int maxSuggestions)
+            throws DereferencingException, ClientException {
+        if (group.hasPrefetchedSuggestions()) {
+            return suggestEntity(session, group.name, group.type,
+                    group.entitySuggestions, maxSuggestions);
+        } else {
+            return suggestEntity(session, group.name, group.type, null,
+                    maxSuggestions);
+        }
+    }
+
     @Override
     public List<EntitySuggestion> suggestEntity(CoreSession session,
             String keywords, String type, int maxSuggestions)
             throws ClientException, DereferencingException {
+        return suggestEntity(session, keywords, type, null,
+                maxSuggestions);
+    }
+
+    protected List<EntitySuggestion> suggestEntity(CoreSession session,
+            String keywords, String type,
+            List<EntitySuggestion> precomputedRemoteSuggestions,
+            int maxSuggestions) throws ClientException, DereferencingException {
         // lookup remote entities
         RemoteEntityService reService;
         try {
@@ -412,114 +506,42 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        List<RemoteEntity> remoteEntities = Collections.emptyList();
-        if (reService.canSuggestRemoteEntity()) {
-            try {
-                remoteEntities = reService.suggestRemoteEntity(keywords, type,
-                        maxSuggestions);
-            } catch (IOException e) {
-                // wait a bit
+        List<EntitySuggestion> remoteSuggestions = precomputedRemoteSuggestions;
+        if (remoteSuggestions == null) {
+            if (reService.canSuggestRemoteEntity()) {
                 try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e1) {
-                    throw new RuntimeException(e1);
-                }
-                // retry once
-                try {
-                    remoteEntities = reService.suggestRemoteEntity(keywords,
+                    remoteSuggestions = reService.suggestRemoteEntity(keywords,
                             type, maxSuggestions);
-                } catch (IOException e2) {
+                } catch (IOException e) {
                     log.warn(String.format(
                             "failed to suggest remote entity for '%s' with type '%s': %s",
                             keywords, type, e.getMessage()));
+                    remoteSuggestions = Collections.emptyList();
                 }
+            } else {
+                remoteSuggestions = Collections.emptyList();
             }
         }
         // lookup local entities
-        List<DocumentModel> localEntities = suggestLocalEntity(session,
+        List<EntitySuggestion> suggestions = suggestLocalEntity(session,
                 keywords, type, maxSuggestions);
-
-        // TODO: refactor this code to make it simpler
-
-        List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
-        double invScoreLocal = 10.0;
-        Set<RemoteEntity> mergedRemoteEntities = new HashSet<RemoteEntity>();
-        for (DocumentModel localEntity : localEntities) {
-            EntitySuggestion suggestion = new EntitySuggestion(localEntity).withScore(1 / invScoreLocal);
-            suggestions.add(suggestion);
-            List<String> sameas = localEntity.getProperty("entity:sameas").getValue(
-                    List.class);
-            if (sameas == null) {
-                sameas = Collections.emptyList();
-            }
-            double invScoreRemote = 2.0;
-            for (RemoteEntity remoteEntity : remoteEntities) {
-                if (sameas.contains(remoteEntity.getUri().toString())) {
-                    suggestion.remoteEntityUris.add(remoteEntity.uri.toString());
-                    suggestion.score += 1 / invScoreRemote;
-                    mergedRemoteEntities.add(remoteEntity);
-                }
-                invScoreRemote += 1.0;
-            }
-            invScoreLocal += 1.0;
+        Set<String> alreadySeenRemoteUris = new HashSet<String>();
+        for (EntitySuggestion suggestion: suggestions) {
+            alreadySeenRemoteUris.addAll(suggestion.remoteEntityUris);
         }
 
-        remoteEntities.removeAll(mergedRemoteEntities);
-        double invScoreRemote = 2.0;
-        for (RemoteEntity remoteEntity : remoteEntities) {
-            // TODO: how to escape?
-            String query = String.format(
-                    "SELECT * FROM Entity WHERE entity:sameas = '%s' ORDER BY dc:modified",
-                    remoteEntity.uri.toString());
-            DocumentModelList localMatchingEntities = session.query(query);
-            if (localMatchingEntities.size() > 0) {
-                if (localMatchingEntities.size() > 1) {
-                    log.warn("found multiple local entities matching query: "
-                            + query);
-                }
-                DocumentModel localEntity = localMatchingEntities.get(0);
-                EntitySuggestion suggestion = new EntitySuggestion(localEntity).withScore(2 / invScoreRemote);
-                suggestion.remoteEntityUris.add(remoteEntity.uri.toString());
-                suggestions.add(suggestion);
+        for (EntitySuggestion remoteSuggestion : remoteSuggestions) {
+            String remoteUri = remoteSuggestion.getRemoteUri();
+            if (alreadySeenRemoteUris.contains(remoteUri)) {
+                // filter out remote suggestions that already have a match
+                // in the local suggestions
+                // TODO: how to account for a rank boost?
                 continue;
             }
-
-            EntitySuggestion suggestion = new EntitySuggestion(
-                    remoteEntity.label, remoteEntity.uri.toString(), type).withScore(1 / invScoreRemote);
-            // TODO: optimize me and change the source suggestion API to fetch
-            // admissible types up-front instead
-            Set<String> types = Collections.emptySet();
-            try {
-                types = reService.getAdmissibleTypes(remoteEntity.uri);
-            } catch (IOException e) {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e1) {
-                    throw new RuntimeException(e1);
-                }
-                // retry once
-                try {
-                    types = reService.getAdmissibleTypes(remoteEntity.uri);
-                } catch (IOException e1) {
-                    log.warn(String.format(
-                            "failed to resolve admissible type for '%s': %s",
-                            remoteEntity.uri, e1.getMessage()));
-                }
-            }
-
-            // quick hack to filter out entities with overly generic types (such
-            // as Entity) or entities without any admissible local types
-            if (types.contains(Constants.ENTITY_TYPE)) {
-                types.remove(Constants.ENTITY_TYPE);
-            }
-            if (types.size() > 0) {
-                suggestion.type = types.iterator().next();
-                suggestions.add(suggestion);
-                invScoreRemote += 1.0;
-            }
+            suggestions.add(remoteSuggestion);
         }
-        Collections.sort(suggestions);
-        Collections.reverse(suggestions);
+
+        // TODO: re-rank results to boost exact name matches
         return suggestions;
     }
 
@@ -575,13 +597,23 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     public DocumentModel asLocalEntity(CoreSession session,
             EntitySuggestion suggestion) throws ClientException, IOException {
         if (suggestion.isLocal()) {
-            return suggestion.localEntity;
+            return suggestion.entity;
         } else if (suggestion.remoteEntityUris.isEmpty()) {
             throw new IllegalArgumentException(
                     "The provided suggestion has neither local"
                             + " entity nor emote entities links");
         }
+        // TODO: optimize to do a single core query using a disjunction on all
+        // the remote URI if we ever have the case for many remote URI
+        for (String remoteEntityUri : suggestion.remoteEntityUris) {
+            DocumentModel localEntity = getLinkedLocalEntity(session,
+                    URI.create(remoteEntityUri));
+            if (localEntity != null) {
+                return localEntity;
+            }
+        }
 
+        // dereference remote entity as a local entity
         RemoteEntityService reService;
         PathSegmentService psService;
         try {
@@ -591,15 +623,28 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             throw new RuntimeException(e);
         }
         DocumentModel entityContainer = getEntityContainer(session);
-
-        DocumentModel localEntity = session.createDocumentModel(suggestion.type);
-        localEntity.setPropertyValue("dc:title", suggestion.label);
-        String pathSegment = psService.generatePathSegment(localEntity);
-        localEntity.setPathInfo(entityContainer.getPathAsString(), pathSegment);
-
-        for (String remoteEntity : suggestion.remoteEntityUris) {
-            URI uri = URI.create(remoteEntity);
-            reService.dereferenceInto(localEntity, uri, false);
+        DocumentModel localEntity;
+        if (suggestion.entity != null) {
+            // this is pre-fetched in memory representation of a remote entity
+            // that does not already exist in the local repository
+            localEntity = suggestion.entity;
+            // ensure that the parent location and path segment are ok
+            String pathSegment = psService.generatePathSegment(localEntity);
+            localEntity.setPathInfo(entityContainer.getPathAsString(),
+                    pathSegment);
+        } else {
+            // lazy dereferencing into a new local entity document
+            localEntity = session.createDocumentModel(suggestion.type);
+            localEntity.setPropertyValue("dc:title", suggestion.label);
+            localEntity.setPropertyValue("entity:automaticallyCreated",
+                    suggestion.automaticallyCreated);
+            String pathSegment = psService.generatePathSegment(localEntity);
+            localEntity.setPathInfo(entityContainer.getPathAsString(),
+                    pathSegment);
+            for (String remoteEntity : suggestion.remoteEntityUris) {
+                URI uri = URI.create(remoteEntity);
+                reService.dereferenceInto(localEntity, uri, false, false);
+            }
         }
         localEntity = session.createDocument(localEntity);
         for (String remoteEntity : suggestion.remoteEntityUris) {

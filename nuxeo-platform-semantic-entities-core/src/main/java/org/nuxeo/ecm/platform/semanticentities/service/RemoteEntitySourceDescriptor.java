@@ -19,6 +19,7 @@ package org.nuxeo.ecm.platform.semanticentities.service;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.nuxeo.common.xmap.annotation.XNode;
 import org.nuxeo.common.xmap.annotation.XNodeMap;
@@ -43,13 +44,18 @@ public class RemoteEntitySourceDescriptor {
     @XNode("typeMapping@default")
     protected String defaultType;
 
-    protected ParameterizedRemoteEntitySource source;
+    protected ParameterizedHTTPEntitySource source;
 
     @XNodeMap(value = "typeMapping/type", key = "@name", type = HashMap.class, componentType = String.class)
     protected Map<String, String> mappedTypes = Collections.emptyMap();
 
     @XNodeMap(value = "propertyMapping/field", key = "@name", type = HashMap.class, componentType = String.class)
     protected Map<String, String> mappedProperties = Collections.emptyMap();
+
+    @XNodeMap(value = "parameters/parameter", key = "@name", type = HashMap.class, componentType = String.class)
+    protected Map<String, String> parameters = Collections.emptyMap();
+
+    protected Map<String, String> reverseMappedTypes;
 
     public String getDefaultType() {
         return defaultType;
@@ -59,8 +65,23 @@ public class RemoteEntitySourceDescriptor {
         return mappedTypes;
     }
 
+    public Map<String, String> getReverseMappedTypes() {
+        if (reverseMappedTypes == null) {
+            Map<String, String> reversed = new TreeMap<String, String>();
+            for (Map.Entry<String, String> entry: mappedTypes.entrySet()) {
+                reversed.put(entry.getValue(), entry.getKey());
+            }
+            reverseMappedTypes = reversed;
+        }
+        return reverseMappedTypes;
+    }
+
     public Map<String, String> getMappedProperties() {
         return mappedProperties;
+    }
+
+    public Map<String, String> getParameters() {
+        return parameters;
     }
 
     public String getName() {
@@ -83,7 +104,7 @@ public class RemoteEntitySourceDescriptor {
             throws InstantiationException, IllegalAccessException,
             ClassNotFoundException {
         if (className != null) {
-            source = (ParameterizedRemoteEntitySource) context.loadClass(
+            source = (ParameterizedHTTPEntitySource) context.loadClass(
                     className).newInstance();
             source.setDescriptor(this);
         } else if (enabled) {
@@ -93,7 +114,7 @@ public class RemoteEntitySourceDescriptor {
         }
     }
 
-    public ParameterizedRemoteEntitySource getEntitySource() {
+    public ParameterizedHTTPEntitySource getEntitySource() {
         return source;
     }
 
@@ -112,30 +133,40 @@ public class RemoteEntitySourceDescriptor {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         RemoteEntitySourceDescriptor other = (RemoteEntitySourceDescriptor) obj;
         if (className == null) {
-            if (other.className != null)
+            if (other.className != null) {
                 return false;
-        } else if (!className.equals(other.className))
+            }
+        } else if (!className.equals(other.className)) {
             return false;
-        if (enabled != other.enabled)
+        }
+        if (enabled != other.enabled) {
             return false;
+        }
         if (name == null) {
-            if (other.name != null)
+            if (other.name != null) {
                 return false;
-        } else if (!name.equals(other.name))
+            }
+        } else if (!name.equals(other.name)) {
             return false;
+        }
         if (uriPrefix == null) {
-            if (other.uriPrefix != null)
+            if (other.uriPrefix != null) {
                 return false;
-        } else if (!uriPrefix.equals(other.uriPrefix))
+            }
+        } else if (!uriPrefix.equals(other.uriPrefix)) {
             return false;
+        }
         return true;
     }
 

@@ -17,15 +17,17 @@
 package org.nuxeo.ecm.platform.semanticentities.service;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.GregorianCalendar;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.event.EventService;
 import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
-import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
@@ -34,6 +36,9 @@ import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
 import org.nuxeo.runtime.api.Framework;
 
 public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
+
+    @SuppressWarnings("unused")
+    private static final Log log = LogFactory.getLog(SemanticAnalysisServiceTest.class);
 
     private DocumentModel john;
 
@@ -57,25 +62,33 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         deployBundle("org.nuxeo.ecm.core.convert");
         deployBundle("org.nuxeo.ecm.core.convert.plugins");
 
+        // dublincore contributors are required to check whether non system
+        // users have edited an entity or not
+        deployBundle("org.nuxeo.ecm.platform.dublincore");
+
         // semantic entities types
         deployBundle("org.nuxeo.ecm.platform.semanticentities.core");
-        
+
         // deploy off-line mock for the semantic analysis service
         deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
                 "OSGI-INF/test-semantic-entities-analysis-service.xml");
-        
+
         // deploy off-line mock DBpedia source to override the default source
         // that needs an internet connection: comment the following contrib to
-        // test again the real DBpedia server
+        // test again a real Stanbol server
+        Framework.getProperties().put(
+                SemanticAnalysisServiceImpl.STANBOL_URL_PROPERTY,
+                "http://localhost:9090/");
         deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
-                "OSGI-INF/test-semantic-entities-remote-entity-contrib.xml");
+                "OSGI-INF/test-semantic-entities-stanbol-entity-contrib.xml");
 
         // CMIS query maker
         deployBundle("org.nuxeo.ecm.core.opencmis.impl");
 
         // initialize the session field
         openSession();
-        DocumentModel domain = session.createDocumentModel("/", "default-domain", "Folder");
+        DocumentModel domain = session.createDocumentModel("/",
+                "default-domain", "Folder");
         session.createDocument(domain);
         session.save();
 
@@ -87,7 +100,12 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
         saService = Framework.getService(SemanticAnalysisService.class);
         assertNotNull(saService);
-        makeSomeEntities();
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+        closeSession();
+        super.tearDown();
     }
 
     public void makeSomeEntities() throws ClientException {
@@ -167,7 +185,13 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         Framework.getLocalService(EventService.class).waitForAsyncCompletion();
     }
 
-    public DocumentModel createSampleDocumentModel(String id) throws ClientException {
+    public DocumentModel createSampleDocumentModel(String id)
+            throws ClientException {
+        return createSampleDocumentModel(id, true);
+    }
+
+    public DocumentModel createSampleDocumentModel(String id,
+            boolean saveAndWait) throws ClientException {
         DocumentModel doc = session.createDocumentModel("/", id, "Note");
         doc.setPropertyValue("dc:title", "A short bio for John Lennon");
         doc.setPropertyValue(
@@ -176,69 +200,220 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
                         + "<h1>This is an HTML title</h1>"
                         + "<p>John Lennon was born in Liverpool in 1940. John was a musician."
                         + " This document about John Lennon has many occurrences"
-                        + " of the words 'John' and 'Lennong' hence should rank high"
+                        + " of the words 'John' and 'Lennon' hence should rank high"
                         + " for suggestions on such keywords.</p>"
 
                         + "<!-- this is a HTML comment about Bob Marley. -->"
                         + " </body></html>");
         doc = session.createDocument(doc);
-        session.save(); // force write to SQL backend
-        Framework.getLocalService(EventService.class).waitForAsyncCompletion(
-                1000 * 10);
+        if (saveAndWait) {
+            session.save(); // force write to SQL backend
+            Framework.getLocalService(EventService.class).waitForAsyncCompletion(
+                    1000 * 10);
+        }
         return doc;
     }
 
     public void testAsyncAnalysis() throws Exception {
-        DocumentModel doc1 = createSampleDocumentModel("john-bio1");
-        DocumentModel doc2 = createSampleDocumentModel("john-bio2");
-        DocumentModel doc3 = createSampleDocumentModel("john-bio3");
-        saService.launchAnalysis(doc1.getRepositoryName(), doc1.getRef());
-        saService.launchAnalysis(doc2.getRepositoryName(), doc2.getRef());
-        saService.launchAnalysis(doc3.getRepositoryName(), doc3.getRef());
-        
+        EventService es = Framework.getLocalService(EventService.class);
+        List<DocumentModel> docs = new ArrayList<DocumentModel>();
+        for (int i = 0; i < 5; i++) {
+            docs.add(createSampleDocumentModel(String.format("john-bio-%d", i),
+                    false));
+        }
+        session.save(); // force write to SQL backend
+        es.waitForAsyncCompletion();
+
+        // launch asynchronous analysis on each documents (in concurrently using
+        // the thread pool executors)
+        for (DocumentModel doc : docs) {
+            saService.launchAnalysis(doc.getRepositoryName(), doc.getRef());
+        }
+
         // wait for all the analysis to complete
-        for (DocumentModel doc : new DocumentModel[] { doc1, doc2, doc3 }) {
+        for (DocumentModel doc : docs) {
             while (saService.getProgressStatus(doc.getRepositoryName(),
                     doc.getRef()) != null) {
                 Thread.sleep(200);
             }
         }
-        Framework.getLocalService(EventService.class).waitForAsyncCompletion();
+        es.waitForAsyncCompletion();
 
-        checkRelatedEntities(doc1);
-        checkRelatedEntities(doc2);
-        checkRelatedEntities(doc3);
+        // check the results of the analysis
+        for (DocumentModel doc : docs) {
+            // the same entities are linked to all the docs
+            checkRelatedEntities(doc);
+        }
     }
-    
+
     public void testSynchronousAnalysis() throws Exception {
         DocumentModel doc = createSampleDocumentModel("john-bio1");
         saService.launchSynchronousAnalysis(doc, session);
-        checkRelatedEntities(doc);
+        checkRemoveRelatedEntities(doc);
     }
-    
+
     public void testSimpleAnalysis() throws Exception {
+        makeSomeEntities();
+
         DocumentModel doc = createSampleDocumentModel("john-bio1");
-        List<OccurrenceGroup> groups = saService.analyze(doc);
-        assertEquals(7, groups.size());
-        assertEquals("Liverpool", groups.get(0).name);
-        assertEquals("John Lennon", groups.get(1).name);
-        assertEquals("The Beatles members", groups.get(2).name);
-        assertEquals("Places associated with The Beatles", groups.get(3).name);
-        // ...
+        List<OccurrenceGroup> groups = saService.analyze(session, doc);
+        assertEquals(5, groups.size());
+
+        OccurrenceGroup og1 = groups.get(0);
+        assertEquals("John Lennon", og1.name);
+        assertEquals("Person", og1.type);
+
+        assertEquals(5, og1.occurrences.size());
+        assertEquals("John Lennon", og1.occurrences.get(0).mention);
+        assertEquals("John Lennon", og1.occurrences.get(1).mention);
+        assertEquals("John", og1.occurrences.get(2).mention);
+        assertEquals("John", og1.occurrences.get(3).mention);
+        assertEquals("John Lennon", og1.occurrences.get(4).mention);
+
+        assertEquals(1, og1.entitySuggestions.size());
+        assertEquals("John Lennon", og1.entitySuggestions.get(0).label);
+        assertEquals("http://dbpedia.org/resource/John_Lennon",
+                og1.entitySuggestions.get(0).remoteEntityUris.iterator().next());
+        assertFalse(og1.entitySuggestions.get(0).isLocal());
+
+        // the entity is directly prefetched from the entityhub by the analysis
+        // engine on stanbol
+        assertNotNull(og1.entitySuggestions.get(0).entity);
+
+        OccurrenceGroup og2 = groups.get(1);
+        assertEquals("Liverpool", og2.name);
+        assertEquals("Place", og2.type);
+
+        assertEquals(1, og2.occurrences.size());
+        assertEquals("Liverpool", og2.occurrences.get(0).mention);
+
+        assertEquals(3, og2.entitySuggestions.size());
+        assertEquals("Liverpool", og2.entitySuggestions.get(0).label);
+        assertEquals("http://dbpedia.org/resource/Liverpool",
+                og2.entitySuggestions.get(0).remoteEntityUris.iterator().next());
+        assertFalse(og2.entitySuggestions.get(0).isLocal());
+
+        // there is pre-fetched data in the payload
+        DocumentModel liverpool = og2.entitySuggestions.get(0).entity;
+        assertNotNull(liverpool);
+        assertEquals("Liverpool", liverpool.getTitle());
+        assertEquals("Place", liverpool.getType());
+        assertEquals(Arrays.asList("http://dbpedia.org/resource/Liverpool"),
+                liverpool.getProperty("entity:sameas").getValue(List.class));
+        assertEquals(
+                "Liverpool is a city and metropolitan borough of Merseyside,"
+                        + " England, along the eastern side of the Mersey Estuary. It "
+                        + "was founded as a borough in 1207 and was granted city status "
+                        + "in 1880. Liverpool is the fourth largest city in the United "
+                        + "Kingdom (third largest in England) and has a population of "
+                        + "435,500, and lies at the centre of the wider Liverpool Urban "
+                        + "Area, which has a population of 816,216.",
+                liverpool.getPropertyValue("entity:summary"));
+        
+        // topics: 
+        OccurrenceGroup og3 = groups.get(2);
+        assertEquals("Corpus linguistics", og3.name);
+        assertEquals("Topic", og3.type);
+
+        OccurrenceGroup og4 = groups.get(3);
+        assertEquals("Town and country planning in the United Kingdom", og4.name);
+        assertEquals("Topic", og4.type);
+
+        OccurrenceGroup og5 = groups.get(4);
+        assertEquals("Protests", og5.name);
+        assertEquals("Topic", og4.type);
     }
 
     protected void checkRelatedEntities(DocumentModel doc)
             throws ClientException {
-        PageProvider<DocumentModel> relatedPeople = leService.getRelatedEntities(
-                session, doc.getRef(), "Person");
-        List<DocumentModel> firstPeople = relatedPeople.getCurrentPage();
-        assertEquals(1, firstPeople.size());
-        assertEquals("John Lennon", firstPeople.get(0).getTitle());
+        List<DocumentModel> relatedPeople = leService.getRelatedEntities(
+                session, doc.getRef(), "Person").getCurrentPage();
+        assertEquals(
+                String.format(doc.getPathAsString()
+                        + " should have been linked to an entity"), 1,
+                relatedPeople.size());
+        DocumentModel firstPerson = relatedPeople.get(0);
+        assertEquals("John Lennon", firstPerson.getTitle());
 
-        PageProvider<DocumentModel> relatedPlaces = leService.getRelatedEntities(
-                session, doc.getRef(), "Place");
-        List<DocumentModel> firstPlaces = relatedPlaces.getCurrentPage();
-        assertEquals(1, firstPlaces.size());
-        assertEquals("Liverpool", firstPlaces.get(0).getTitle());
+        List<DocumentModel> relatedPlaces = leService.getRelatedEntities(
+                session, doc.getRef(), "Place").getCurrentPage();
+        assertEquals(1, relatedPlaces.size());
+        assertEquals("Liverpool", relatedPlaces.get(0).getTitle());
+    }
+
+    /**
+     * Check that the expected relations are there and that removal of the link
+     * also remove automatically created entities
+     */
+    protected void checkRemoveRelatedEntities(DocumentModel doc)
+            throws ClientException {
+        List<DocumentModel> relatedPeople = leService.getRelatedEntities(
+                session, doc.getRef(), "Person").getCurrentPage();
+        assertEquals(
+                String.format(doc.getPathAsString()
+                        + " should have been linked to an entity"), 1,
+                relatedPeople.size());
+        DocumentModel firstPerson = relatedPeople.get(0);
+        assertEquals("John Lennon", firstPerson.getTitle());
+
+        // check removal of the link
+        leService.removeOccurrences(session, doc.getRef(),
+                firstPerson.getRef(), false);
+        if (session.exists(firstPerson.getRef())) {
+            assertEquals("deleted",
+                    session.getCurrentLifeCycleState(firstPerson.getRef()));
+        } else {
+            fail(firstPerson.getTitle() + " should have been deleted");
+        }
+
+        List<DocumentModel> relatedPlaces = leService.getRelatedEntities(
+                session, doc.getRef(), "Place").getCurrentPage();
+        assertEquals(1, relatedPlaces.size());
+        DocumentModel firstPlace = relatedPlaces.get(0);
+        assertEquals("Liverpool", firstPlace.getTitle());
+
+        // check removal of the link
+        leService.removeOccurrences(session, doc.getRef(), firstPlace.getRef(),
+                false);
+        if (session.exists(firstPlace.getRef())) {
+            assertEquals("deleted",
+                    session.getCurrentLifeCycleState(firstPlace.getRef()));
+        } else {
+            fail(firstPlace.getTitle() + " should have been deleted");
+        }
+    }
+
+    public void testTextExtract() throws ClientException {
+        DocumentModel doc = session.createDocumentModel("/",
+                "docWithControlChars", "Note");
+        doc.setPropertyValue("dc:title", "A short bio for John Lennon");
+        doc.setPropertyValue("dc:description",
+                "'\ud800\udc00' is a valid character outside of the BMP that should be kept.");
+        doc.setPropertyValue(
+                "note:note",
+                "<html><body>"
+                        + "<h1>This is an HTML title</h1>"
+                        + "<p>John Lennon was born in Liverpool in 1940. John was a musician."
+                        + " This document about John Lennon has many occurrences"
+                        + " of the words 'John' and 'Lennon' hence should rank high"
+                        + " for suggestions on such keywords.</p>"
+                        + "<p>'\uFFFE' is an invalid control char and should be ignored.</p>"
+                        + "<!-- this is a HTML comment about Bob Marley. -->"
+                        + "</body></html>");
+        SemanticAnalysisServiceImpl sasi = (SemanticAnalysisServiceImpl) saService;
+        String extractedText = sasi.extractText(doc);
+        assertEquals(
+                "A short bio for John Lennon\n\n"
+
+                        + "'\ud800\udc00' is a valid character outside of the BMP that should be kept.\n\n"
+
+                        + "This is an HTML title\n\n"
+
+                        + "John Lennon was born in Liverpool in 1940. John was a musician. This\n"
+                        + "document about John Lennon has many occurrences of the words 'John' and\n"
+                        + "'Lennon' hence should rank high for suggestions on such keywords.\n\n"
+
+                        + "'' is an invalid control char and should be ignored.\n\n",
+                extractedText);
     }
 }

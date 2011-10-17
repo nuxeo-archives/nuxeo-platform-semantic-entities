@@ -18,6 +18,18 @@
       <filter-id>createEntity</filter-id>
     </action>
 
+    <action id="WORKLIST_SEMANTIC_ANALYSIS"
+      link="#{semanticEntitiesActions.analyzeCurrentList}"
+      label="command.worklist.semanticAnalysis"
+      icon="/icons/EntityContainer.png">
+      <category>DEFAULT_LIST</category>
+      <filter id="currentWorkListIsNotEmptyXML">
+        <rule grant="false">
+          <condition>#{clipboardActions.workListEmpty}</condition>
+        </rule>
+      </filter>
+    </action>
+
   </extension>
 
   <extension target="org.nuxeo.ecm.platform.actions.ActionService"

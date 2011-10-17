@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.io.StringReader;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,6 +20,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
@@ -63,9 +65,12 @@ import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.utils.BlobsExtractor;
 import org.nuxeo.ecm.platform.semanticentities.AnalysisTask;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
+import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.ProgressStatus;
+import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
+import org.nuxeo.ecm.platform.semanticentities.RemoteEntitySource;
 import org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService;
 import org.nuxeo.ecm.platform.semanticentities.SerializationTask;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
@@ -82,22 +87,27 @@ import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.ResIterator;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
+import com.hp.hpl.jena.rdf.model.StmtIterator;
 
 public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         SemanticAnalysisService {
 
     private static final Log log = LogFactory.getLog(SemanticAnalysisServiceImpl.class);
 
+    Pattern INVALID_XML_CHARS = Pattern.compile("[^\\u0009\\u000A\\u000D\\u0020-\\uD7FF\\uE000-\\uFFFD\uD800\uDC00-\uDBFF\uDFFF]");
+
     protected final Map<DocumentLocation, String> states = new MapMaker().concurrencyLevel(
             10).expiration(30, TimeUnit.MINUTES).makeMap();
 
     private static final String ANY2TEXT = "any2text";
 
-    protected static final String DEFAULT_ENGINE_URL = "https://stanbol.demo.nuxeo.com/engines";
+    protected static final String DEFAULT_STANBOL_URL = "https://stanbol.demo.nuxeo.com/";
 
-    protected static final String DEFAULT_TOPIC_INDEX_URL = "http://stanbol.demo.nuxeo.com:8983/solr";
+    protected static final String STANBOL_URL_PROPERTY = "org.nuxeo.ecm.platform.semanticentities.stanbolUrl";
 
     protected static final String ENGINE_URL_PROPERTY = "org.nuxeo.ecm.platform.semanticentities.stanbolUrl";
+
+    protected static final String DEFAULT_TOPIC_INDEX_URL = "http://localhost:8983/solr";
 
     protected static final String TOPIC_INDEX_URL_PROPERTY = "org.nuxeo.ecm.platform.semanticentities.topicIndexUrl";
 
@@ -108,12 +118,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     protected static final String DEFAULT_ENGINE_OUTPUT_FORMAT = "application/rdf+xml";
 
     // TODO: turn the following fields into configurable parameters set by a
-    // contribution to an extension
-    // point
-
-    protected String sparqlQuery = DEFAULT_SPARQL_QUERY;
-
-    protected String sourceName = DEFAULT_SOURCE_NAME;
+    // contribution to an extension point
 
     protected String outputFormat = DEFAULT_ENGINE_OUTPUT_FORMAT;
 
@@ -122,6 +127,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     protected boolean linkToAmbiguousEntities = true;
 
     protected boolean linkShortPersonNames = false;
+
+    protected boolean prefetchSuggestion = true;
 
     // use framework property by default and fallback to public nuxeo instance
     protected String engineURL = null;
@@ -133,6 +140,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     protected ConversionService conversionService;
 
     protected LocalEntityService leService;
+
+    protected RemoteEntityService reService;
 
     protected PathSegmentService pathService;
 
@@ -266,13 +275,14 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                             doc.getRef()),
                     ProgressStatus.STATUS_ANALYSIS_PENDING);
             String textContent = extractText(doc);
-            createLinks(doc, session, analyze(textContent));
+            createLinks(doc, session, analyze(session, textContent));
         } finally {
             states.remove(new DocumentLocationImpl(doc.getRepositoryName(),
                     doc.getRef()));
         }
     }
 
+    @Override
     public void createLinks(DocumentModel doc, CoreSession session,
             List<OccurrenceGroup> groups) throws ClientException, IOException {
         if (groups.isEmpty()) {
@@ -285,19 +295,18 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         for (OccurrenceGroup group : groups) {
 
             // hardcoded trick to avoid linking to persons just based on their
-            // first name or last names for
-            // instance
+            // first name or last names for instance
             if (!linkShortPersonNames && "Person".equals(group.type)
                     && group.name.trim().split(" ").length <= 1) {
                 continue;
             }
-
             List<EntitySuggestion> suggestions = leService.suggestEntity(
-                    session, group.name, group.type, 3);
-
+                    session, group, 3);
             if (suggestions.isEmpty() && linkToUnrecognizedEntities) {
                 DocumentModel localEntity = session.createDocumentModel(group.type);
                 localEntity.setPropertyValue("dc:title", group.name);
+                localEntity.setPropertyValue("entity:automaticallyCreated",
+                        true);
                 String pathSegment = pathService.generatePathSegment(localEntity);
                 localEntity.setPathInfo(entityContainer.getPathAsString(),
                         pathSegment);
@@ -310,19 +319,23 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                     continue;
                 }
                 EntitySuggestion bestGuess = suggestions.get(0);
-                leService.addOccurrences(session, doc.getRef(), bestGuess,
+                leService.addOccurrences(session, doc.getRef(),
+                        bestGuess.withAutomaticallyCreated(true),
                         group.occurrences);
             }
         }
     }
 
-    public List<OccurrenceGroup> findStanbolEntityOccurrences(Model model) {
+    public List<OccurrenceGroup> findStanbolEntityOccurrences(
+            CoreSession session, Model model) throws DereferencingException,
+            ClientException {
         // Retrieve the existing text annotations handling the subsumption
         // relationships
         Property type = model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
         Property entityType = model.getProperty("http://purl.org/dc/terms/type");
         Property dcRelation = model.getProperty("http://purl.org/dc/terms/relation");
         Resource textAnnotationType = model.getResource("http://fise.iks-project.eu/ontology/TextAnnotation");
+
         ResIterator it = model.listSubjectsWithProperty(type,
                 textAnnotationType);
         List<OccurrenceGroup> groups = new ArrayList<OccurrenceGroup>();
@@ -337,7 +350,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             if (typeStmt == null || !typeStmt.getObject().isURIResource()) {
                 continue;
             }
-            Resource typeResouce = (Resource) typeStmt.getObject().as(
+            Resource typeResouce = typeStmt.getObject().as(
                     Resource.class);
             String localType = localTypes.get(typeResouce.getURI());
             if (localType == null) {
@@ -355,67 +368,134 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             ResIterator it2 = model.listSubjectsWithProperty(dcRelation,
                     annotation);
             for (; it2.hasNext();) {
+                Resource linkedResource = it2.nextResource();
                 OccurrenceInfo subMention = getOccurrenceInfo(model,
-                        it2.nextResource());
-                if (subMention == null) {
+                        linkedResource);
+                if (subMention != null) {
+                    // this is a sub-mention
+                    group.occurrences.add(subMention);
                     continue;
                 }
-                group.occurrences.add(subMention);
+                if (prefetchSuggestion) {
+                    // maybe this is a suggestion, try to fetch it
+                    EntitySuggestion suggestion = getEntitySuggestion(session,
+                            model, linkedResource, localType);
+                    if (suggestion != null) {
+                        group.entitySuggestions.add(suggestion.withAutomaticallyCreated(
+                                true));
+                    }
+                }
             }
+            // sort by score for easy display and testing
+            Collections.sort(group.entitySuggestions);
+
+            // sort occurrences by occurrence order for easy display and testing
+            Collections.sort(group.occurrences);
             groups.add(group);
         }
+        // sort by alphabetic order for names for easy display and testing
+        Collections.sort(groups);
         return groups;
+    }
+
+    protected EntitySuggestion getEntitySuggestion(CoreSession session,
+            Model model, Resource entitySuggestionResource, String localType)
+            throws DereferencingException, ClientException {
+        Property entityReference = model.getProperty("http://fise.iks-project.eu/ontology/entity-reference");
+        Property scoreProperty = model.getProperty("http://fise.iks-project.eu/ontology/confidence");
+        Property entityLabelProperty = model.getProperty("http://fise.iks-project.eu/ontology/entity-label");
+        Resource linkedResource = entitySuggestionResource.getPropertyResourceValue(entityReference);
+        if (linkedResource == null) {
+            return null;
+        }
+        Statement scoreStmt = entitySuggestionResource.getProperty(scoreProperty);
+        double score = scoreStmt != null ? scoreStmt.getObject().asLiteral().getDouble()
+                : 0.0;
+        // check whether the pre-fetched model has additional info on the linked
+        // resource
+        Property type = model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+        StmtIterator typeIterator = linkedResource.listProperties(type);
+        String remoteEntityUri = linkedResource.getURI();
+        if (typeIterator.hasNext()) {
+            // delegate the pre-fetch the description using the mapping
+            // information from the
+            // remote sources
+            DocumentModel entity = session.createDocumentModel(localType);
+            getRemoteEntityService().dereferenceIntoFromModel(entity,
+                    URI.create(remoteEntityUri), model, true, true);
+            return new EntitySuggestion(entity).withScore(score);
+        } else {
+            // treat the suggestion as a lazily fetched remote entity
+            Statement labelStmt = entitySuggestionResource.getProperty(entityLabelProperty);
+            if (labelStmt != null) {
+                String label = labelStmt.getObject().asLiteral().getString();
+                return new EntitySuggestion(label, remoteEntityUri, localType).withScore(score);
+            }
+        }
+        return null;
     }
 
     protected OccurrenceInfo getOccurrenceInfo(Model model, Resource annotation) {
         Property mentionProp = model.getProperty("http://fise.iks-project.eu/ontology/selected-text");
+        Property startProp = model.getProperty("http://fise.iks-project.eu/ontology/start");
+
         Statement mentionStmt = annotation.getProperty(mentionProp);
         if (mentionStmt == null || !mentionStmt.getObject().isLiteral()) {
             return null;
         }
-        Literal mentionLiteral = (Literal) mentionStmt.getObject().as(
+        Literal mentionLiteral = mentionStmt.getObject().as(
                 Literal.class);
         String mention = mentionLiteral.getString().trim();
 
+        double position = 0.0;
+        Statement startStmt = annotation.getProperty(startProp);
+        if (startStmt != null && startStmt.getObject().isLiteral()) {
+            Literal startLiteral = startStmt.getObject().as(Literal.class);
+            position = Double.parseDouble(startLiteral.getString());
+        }
+
         Property contextProp = model.getProperty("http://fise.iks-project.eu/ontology/selection-context");
         Statement contextStmt = annotation.getProperty(contextProp);
+
         if (contextStmt != null && contextStmt.getObject().isLiteral()) {
-            Literal contextLiteral = (Literal) contextStmt.getObject().as(
+            Literal contextLiteral = contextStmt.getObject().as(
                     Literal.class);
             // TODO: normalize whitespace
             String context = contextLiteral.getString().trim();
 
-            if (!context.contains(mention) || context.length() > 500) {
+            if (!context.contains(mention) || context.length() > 10000) {
                 // context extraction is likely to have failed on some complex
                 // layout
                 context = mention;
             }
-            return new OccurrenceInfo(mention, context);
+            return new OccurrenceInfo(mention, context).withOrder(position);
         } else {
-            return new OccurrenceInfo(mention, mention);
+            return new OccurrenceInfo(mention, mention).withOrder(position);
         }
     }
 
-    public List<OccurrenceGroup> analyze(String textContent) throws IOException {
+    @Override
+    public List<OccurrenceGroup> analyze(CoreSession session, String textContent)
+            throws IOException, ClientException {
         String output = callSemanticEngine(textContent, outputFormat, 2);
         Model model = ModelFactory.createDefaultModel().read(
                 new StringReader(output), null);
         List<OccurrenceGroup> occurrences = new ArrayList<OccurrenceGroup>();
-        occurrences.addAll(findStanbolEntityOccurrences(model));
+        occurrences.addAll(findStanbolEntityOccurrences(session, model));
         occurrences.addAll(findTopicOccurrences(textContent, 2));
         return occurrences;
     }
 
     @Override
-    public List<OccurrenceGroup> analyze(DocumentModel doc) throws IOException,
-            ClientException {
+    public List<OccurrenceGroup> analyze(CoreSession session, DocumentModel doc)
+            throws IOException, ClientException {
         states.put(
                 new DocumentLocationImpl(doc.getRepositoryName(), doc.getRef()),
                 ProgressStatus.STATUS_ANALYSIS_PENDING);
         if (shouldSkip(doc)) {
             return Collections.emptyList();
         }
-        return analyze(extractText(doc));
+        return analyze(session, extractText(doc));
     }
 
     public String callSemanticEngine(String textContent, String outputFormat,
@@ -425,17 +505,21 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         if (effectiveEngineUrl == null) {
             // no Automation Chain configuration available: use the
             // configuration from a properties file
-            effectiveEngineUrl = Framework.getProperty(ENGINE_URL_PROPERTY,
-                    DEFAULT_ENGINE_URL);
+            effectiveEngineUrl = Framework.getProperty(STANBOL_URL_PROPERTY,
+                    DEFAULT_STANBOL_URL);
             if (effectiveEngineUrl.trim().isEmpty()) {
-                effectiveEngineUrl = DEFAULT_ENGINE_URL;
+                effectiveEngineUrl = DEFAULT_STANBOL_URL;
             }
+            if (!effectiveEngineUrl.endsWith("/")) {
+                effectiveEngineUrl += "/";
+            }
+            effectiveEngineUrl += "engines/";
         }
         HttpPost post = new HttpPost(effectiveEngineUrl);
         try {
             post.setHeader("Accept", outputFormat);
             // TODO: fix the Stanbol engine handling of charset in mimetype
-            // negociation
+            // Negotiation
             // post.setHeader("Content-Type", "text/plain; charset=utf-8");
             post.setHeader("Content-Type", "text/plain");
             post.setEntity(new ByteArrayEntity(textContent.getBytes("utf-8")));
@@ -548,6 +632,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         // special handling of the HTML payload of notes
         try {
             String noteContent = (String) doc.getPropertyValue("note:note");
+            noteContent = INVALID_XML_CHARS.matcher(noteContent).replaceAll("");
             StreamingBlob blob = StreamingBlob.createFromString(noteContent);
             blob.setMimeType("text/html");
             BlobHolder bh = new SimpleBlobHolder(blob);
@@ -572,10 +657,13 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 }
             }
         }
-
         BlobsExtractor extractor = new BlobsExtractor();
         sb.append(blobsToText(extractor.getBlobs(doc)));
-        return sb.toString();
+
+        // remove any invisible control characters that can be not accepted
+        // inside XML 1.0 payload (e.g. in SOAP) and are useless for text
+        // analysis anyway.
+        return INVALID_XML_CHARS.matcher(sb.toString()).replaceAll("");
     }
 
     protected String blobsToText(List<Blob> blobs) {
@@ -675,6 +763,17 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     @Override
     public boolean isActive() {
         return active;
+    }
+
+    protected RemoteEntitySource getRemoteEntityService() {
+        if (reService == null) {
+            try {
+                reService = Framework.getService(RemoteEntityService.class);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return reService;
     }
 
 }

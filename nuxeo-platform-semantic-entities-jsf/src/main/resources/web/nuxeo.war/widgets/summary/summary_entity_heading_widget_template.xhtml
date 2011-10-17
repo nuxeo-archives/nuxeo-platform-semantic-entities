@@ -1,0 +1,26 @@
+<div class="entityHeadingBlock"
+  xmlns:nxu="http://nuxeo.org/nxweb/util"
+  xmlns:ui="http://java.sun.com/jsf/facelets"
+  xmlns:f="http://java.sun.com/jsf/core"
+  xmlns:h="http://java.sun.com/jsf/html"
+  xmlns:c="http://java.sun.com/jstl/core"
+  xmlns:nxh="http://nuxeo.org/nxweb/html"
+  xmlns:nxl="http://nuxeo.org/nxforms/layout"
+  xmlns:nxd="http://nuxeo.org/nxweb/document">
+
+<div class="entityDepictionContainer">
+<h:graphicImage
+  url="#{nxd:fileUrl('downloadFile', value, 'entity:depiction', value.entity.depiction.filename)}?conversationId=#{conversation.id}"
+  rendered="#{value.hasSchema('entity') and !empty value.entity.depiction}"
+  styleClass="entityDepiction" />
+<h:graphicImage
+  url="/icons/#{value.type}_100.png"
+  rendered="#{value.hasSchema('entity') and empty value.entity.depiction}"
+  styleClass="genericEntityDepiction" />
+</div>
+<div class="entitySummary">
+  <h:outputText value="#{semanticEntitiesActions.ellipsis(value.entity.summary, 100)}" />
+</div>
+
+<div style="clear: both"></div>
+</div>

@@ -26,6 +26,7 @@ import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
+import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceInfo;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
 
@@ -58,6 +59,7 @@ public interface LocalEntityService {
      * This method will call both the local entity lookup and the remote entity
      * lookup and merge the results based on the sameas relationship.
      *
+     * @param session an active CoreSession used for local entity queries.
      * @param keywords keywords to match the entity names
      * @param type the Nuxeo type name of entity to match (or null)
      * @param maxSuggestions maximum number of entities to suggest
@@ -68,6 +70,25 @@ public interface LocalEntityService {
             DereferencingException;
 
     /**
+     * Helper method to suggest entities by keyword match on names.
+     *
+     * This method will call both the local entity lookup and the remote entity
+     * lookup and merge the results based on the sameas relationship. This
+     * method allows to pass an OccurrenceGroup instance directly. If the group
+     * has pre-fetched remote entities some calls to the remote sources are
+     * spared to reduce performance hits induced by network latency.
+     *
+     * @param session an active CoreSession used for local entity queries.
+     * @param group a group of occurrence pointing to a supposedly unique entity
+     *            to be resolved in the various local and remote entity sources.
+     * @param maxSuggestions maximum number of entities to suggest
+     * @return a list of maximum maxSuggestions matching entities
+     */
+    List<EntitySuggestion> suggestEntity(CoreSession session,
+            OccurrenceGroup group, int maxSuggestions)
+            throws DereferencingException, ClientException;
+
+    /**
      * Helper method to suggest local entities by keyword match on names.
      *
      * @param keywords keywords to match the entity names
@@ -75,7 +96,7 @@ public interface LocalEntityService {
      * @param maxSuggestions maximum number of entities to suggest
      * @return a list of maximum maxSuggestions matching entities
      */
-    List<DocumentModel> suggestLocalEntity(CoreSession session,
+    List<EntitySuggestion> suggestLocalEntity(CoreSession session,
             String keywords, String type, int maxSuggestions)
             throws ClientException;
 
@@ -143,6 +164,27 @@ public interface LocalEntityService {
     void addOccurrences(CoreSession session, DocumentRef ref,
             EntitySuggestion entitySuggestion, List<OccurrenceInfo> occurrences)
             throws ClientException, IOException;
+
+    /**
+     * Remove any occurrence information of an entity on the specified
+     * documents. If the entity was automatically created (by the "system"
+     * principal) and nobody else edited it, it is also removed from the entity
+     * base.
+     * 
+     * If the trash service if applicable. Otherwise the related document(s) are
+     * simply deleted from the repository.
+     * 
+     * @param session active session to the repository holding the document and
+     *            entities
+     * @param docRef the id of the document referring to the entity
+     * @param entityRef the id of the entity to remove occurrences for
+     * @param forcePhysicalDelete perform physical deletion (no trash)
+     * @throws ClientException if the repository fails or the document does not
+     *             exist.
+     */
+    void removeOccurrences(CoreSession session, DocumentRef docRef,
+            DocumentRef entityRef, boolean forcePhysicalDelete)
+            throws ClientException;
 
     /**
      * Find the occurrence relation instance linking a document to an entity.

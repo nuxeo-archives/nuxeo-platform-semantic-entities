@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.VersioningOption;
 import org.nuxeo.ecm.core.event.EventService;
 import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
@@ -62,6 +63,10 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         deployBundle("org.nuxeo.ecm.core.convert");
         deployBundle("org.nuxeo.ecm.core.convert.plugins");
 
+        // dublincore contributors are required to check whether non system
+        // users have edited an entity or not
+        deployBundle("org.nuxeo.ecm.platform.dublincore");
+
         // semantic entities types
         deployBundle("org.nuxeo.ecm.platform.semanticentities.core");
 
@@ -78,6 +83,12 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         service = Framework.getService(LocalEntityService.class);
         assertNotNull(service);
         makeSomeDocuments();
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+        closeSession();
+        super.tearDown();
     }
 
     public void makeSomeDocuments() throws ClientException {
@@ -311,26 +322,27 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     public void testSuggestLocalEntitiesEmptyKB() throws ClientException {
-        List<DocumentModel> suggestions = service.suggestLocalEntity(session,
-                "John", null, 3);
+        List<EntitySuggestion> suggestions = service.suggestLocalEntity(
+                session, "John", null, 3);
         assertTrue(suggestions.isEmpty());
     }
 
     public void testSuggestLocalEntities() throws ClientException {
         makeSomeEntities();
 
-        List<DocumentModel> suggestions = service.suggestLocalEntity(session,
-                "John", "Person", 3);
+        List<EntitySuggestion> suggestions = service.suggestLocalEntity(
+                session, "John", "Person", 3);
         assertEquals(2, suggestions.size());
         // by default the popularities are identical hence the ordering is
         // undefined
-        assertTrue(suggestions.contains(johndoe));
-        assertTrue(suggestions.contains(john));
+        List<DocumentModel> expectedEntities = Arrays.asList(john, johndoe);
+        assertTrue(expectedEntities.contains(suggestions.get(0).entity));
+        assertTrue(expectedEntities.contains(suggestions.get(1).entity));
 
         suggestions = service.suggestLocalEntity(session, "Lennon John",
                 "Person", 3);
         assertEquals(1, suggestions.size());
-        assertEquals(john, suggestions.get(0));
+        assertEquals(john, suggestions.get(0).entity);
 
         // make Lennon more popular my adding occurrences pointing to him
         service.addOccurrence(session, doc1.getRef(), john.getRef(),
@@ -339,8 +351,8 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         // Lennon is now the top person for the "John" query
         suggestions = service.suggestLocalEntity(session, "John", "Person", 3);
         assertEquals(2, suggestions.size());
-        assertEquals(john, suggestions.get(0));
-        assertEquals(johndoe, suggestions.get(1));
+        assertEquals(john, suggestions.get(0).entity);
+        assertEquals(johndoe, suggestions.get(1).entity);
 
         // create a new version for Lennon
         john.putContextData(VersioningService.VERSIONING_OPTION,
@@ -352,8 +364,8 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         // not suggested)
         suggestions = service.suggestLocalEntity(session, "John", "Person", 3);
         assertEquals(2, suggestions.size());
-        assertEquals(john, suggestions.get(0));
-        assertEquals(johndoe, suggestions.get(1));
+        assertEquals(john, suggestions.get(0).entity);
+        assertEquals(johndoe, suggestions.get(1).entity);
 
         // delete the john entity (using the trash)
         session.followTransition(john.getRef(), "delete");
@@ -362,14 +374,14 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         // We only get non-deleted live entities as suggestion
         suggestions = service.suggestLocalEntity(session, "John", "Person", 3);
         assertEquals(1, suggestions.size());
-        assertEquals(johndoe, suggestions.get(0));
+        assertEquals(johndoe, suggestions.get(0).entity);
 
         session.followTransition(john.getRef(), "undelete");
         session.save();
         suggestions = service.suggestLocalEntity(session, "John", "Person", 3);
         assertEquals(2, suggestions.size());
-        assertEquals(john, suggestions.get(0));
-        assertEquals(johndoe, suggestions.get(1));
+        assertEquals(john, suggestions.get(0).entity);
+        assertEquals(johndoe, suggestions.get(1).entity);
     }
 
     public void testSuggestEntities() throws Exception {
@@ -377,7 +389,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         // that needs an internet connection: comment the following contrib to
         // test again the real DBpedia server
         deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
-                "OSGI-INF/test-semantic-entities-remote-entity-contrib.xml");
+                "OSGI-INF/test-semantic-entities-dbpedia-entity-contrib.xml");
 
         // empty local KB, only remote source output
         List<EntitySuggestion> suggestions = service.suggestEntity(session,
@@ -386,6 +398,9 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(suggestions.size(), 1);
         EntitySuggestion firstGuess = suggestions.get(0);
         assertEquals("Barack Obama", firstGuess.label);
+        assertEquals("http://dbpedia.org/resource/Barack_Obama",
+                firstGuess.getRemoteUri());
+        assertEquals("Person", firstGuess.type);
         assertFalse(firstGuess.isLocal());
 
         // synchronize the remote entity as a local entity
@@ -400,6 +415,46 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(suggestions.size(), 1);
         firstGuess = suggestions.get(0);
         assertEquals("Barack Obama", firstGuess.label);
+        assertEquals("http://dbpedia.org/resource/Barack_Obama",
+                firstGuess.getRemoteUri());
+        assertEquals("Person", firstGuess.type);
+        assertTrue(firstGuess.isLocal());
+    }
+
+    public void testSuggestEntitiesWithoutTypeRestriction() throws Exception {
+        // deploy off-line mock DBpedia source to override the default source
+        // that needs an internet connection: comment the following contrib to
+        // test again the real DBpedia server
+        deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
+                "OSGI-INF/test-semantic-entities-dbpedia-entity-contrib.xml");
+
+        // empty local KB, only remote source output
+        List<EntitySuggestion> suggestions = service.suggestEntity(session,
+                "Barack Obama", null, 3);
+        assertNotNull(suggestions);
+        assertEquals(suggestions.size(), 1);
+        EntitySuggestion firstGuess = suggestions.get(0);
+        assertEquals("Barack Obama", firstGuess.label);
+        assertEquals("http://dbpedia.org/resource/Barack_Obama",
+                firstGuess.getRemoteUri());
+        assertEquals("Person", firstGuess.type);
+        assertFalse(firstGuess.isLocal());
+
+        // synchronize the remote entity as a local entity
+        DocumentModel localEntity = service.asLocalEntity(session, firstGuess);
+        assertEquals(localEntity.getTitle(), "Barack Obama");
+
+        // perform the same suggestion query again: this time the result is
+        // local
+        suggestions = service.suggestEntity(session, "Barack Obama", "Person",
+                3);
+        assertNotNull(suggestions);
+        assertEquals(suggestions.size(), 1);
+        firstGuess = suggestions.get(0);
+        assertEquals("Barack Obama", firstGuess.label);
+        assertEquals("http://dbpedia.org/resource/Barack_Obama",
+                firstGuess.getRemoteUri());
+        assertEquals("Person", firstGuess.type);
         assertTrue(firstGuess.isLocal());
     }
 
@@ -422,14 +477,21 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(mentions, relation.getOccurrences());
     }
 
-    public void testAddOccurrenceRelationWithEmptyOccurrenceData()
+    public void testAddRemoveOccurrenceRelationWithEmptyOccurrenceData()
             throws Exception {
         makeSomeEntities();
         OccurrenceRelation relation = service.getOccurrenceRelation(session,
                 doc1.getRef(), john.getRef());
         assertNull(relation);
+        assertEquals(0.0,
+                john.getProperty("entity:popularity").getValue(Double.class));
 
         service.addOccurrences(session, doc1.getRef(), john.getRef(), null);
+
+        // check the popularity of john
+        john = session.getDocument(john.getRef());
+        assertEquals(1.0,
+                john.getProperty("entity:popularity").getValue(Double.class));
 
         relation = service.getOccurrenceRelation(session, doc1.getRef(),
                 john.getRef());
@@ -437,6 +499,28 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(doc1.getRef(), relation.getSourceDocumentRef());
         assertEquals(john.getRef(), relation.getTargetEntityRef());
         assertEquals(Arrays.asList(), relation.getOccurrences());
+
+        // check removal of relation
+        service.removeOccurrences(session, doc1.getRef(), john.getRef(), false);
+
+        // check that the relation has been removed
+        DocumentRef relationRef = relation.getOccurrenceDocument().getRef();
+        if (session.exists(relationRef)) {
+            assertEquals("deleted",
+                    session.getCurrentLifeCycleState(relationRef));
+        }
+
+        // check that john has not been deleted (john was not created by the
+        // system user)
+        assertTrue(session.exists(john.getRef()));
+        assertFalse(
+                "Entity should not have been marked as deleted",
+                "deleted".equals(session.getCurrentLifeCycleState(john.getRef())));
+
+        // check the popularity of john
+        john = session.getDocument(john.getRef());
+        assertEquals(0.0,
+                john.getProperty("entity:popularity").getValue(Double.class));
     }
 
     public void testSuggestDocument() throws Exception {

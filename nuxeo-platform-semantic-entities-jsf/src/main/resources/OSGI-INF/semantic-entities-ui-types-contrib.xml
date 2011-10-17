@@ -6,14 +6,14 @@
 
     <type id="EntityContainer">
       <label>EntityContainer</label>
-      <!-- TODO: find a dedicated icon -->
-      <icon>/icons/domain.gif</icon>
-      <bigIcon>/icons/domain_100.png</bigIcon>
+      <icon>/icons/EntityContainer.png</icon>
+      <bigIcon>/icons/EntityContainer_100.png</bigIcon>
       <category>Collaborative</category>
       <description>EntityContainer.description</description>
       <default-view>view_documents</default-view>
       <subtypes>
         <type>Topic</type>
+        <type>Entity</type>
         <type>Person</type>
         <type>Place</type>
         <type>Organization</type>
@@ -39,6 +39,21 @@
       <bigIcon>/icons/Topic_100.png</bigIcon>
       <category>SimpleDocument</category>
       <description>Topic.description</description>
+      <default-view>view_documents</default-view>
+      <layouts mode="summary">
+        <layout>entity_summary_layout</layout>
+      </layouts>
+      <layouts mode="any">
+        <layout>entity_heading</layout>
+      </layouts>
+    </type>
+
+    <type id="Entity">
+      <label>Entity</label>
+      <icon>/icons/Entity.png</icon>
+      <bigIcon>/icons/Entity_100.png</bigIcon>
+      <category>SimpleDocument</category>
+      <description>Entity.description</description>
       <default-view>view_documents</default-view>
       <layouts mode="summary">
         <layout>entity_summary_layout</layout>

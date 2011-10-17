@@ -31,20 +31,20 @@ import org.nuxeo.runtime.api.Framework;
 
 /**
  * Use a semantic engine to extract the occurrences of semantic entities from the text content of a document.
- * 
+ *
  * The semantic engine is assumed to accept an HTTP POST request on a fixed URL and synchronously return the
  * result of the analysis as an RDF/XML graph in the body of the response.
- * 
+ *
  * The label, type and context text snippet of each occurrence is then extracted by performing a configurable
  * SPARQL query on the resulting RDF model loaded in a temporary RDF graph.
- * 
+ *
  * This pattern should work for semantic engines such as:
  * <ul>
  * <li>Stanbol from the project http://incubator.apache.org/stanbol</li>
  * <li>OpenCalais (untested)</li>
  * <li>Maybe more</li>
  * </ul>
- * 
+ *
  * @author <a href="mailto:ogrisel@nuxeo.com">Olivier Grisel</a>
  */
 @Operation(id = OccurrenceExtractionOperation.ID, category = org.nuxeo.ecm.automation.core.Constants.CAT_DOCUMENT, label = "Extract occurrences", description = "Extract the text and launch an use a semantic engine to extract and link occurrences of semantic entities. Returns back the analyzed document.")

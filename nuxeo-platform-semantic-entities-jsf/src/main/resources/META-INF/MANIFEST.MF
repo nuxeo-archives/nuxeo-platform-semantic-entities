@@ -11,4 +11,5 @@ Require-Bundle: org.nuxeo.ecm.webapp.ui,
   org.nuxeo.ecm.relations.web
 Nuxeo-Component: OSGI-INF/semantic-entities-actions-contrib.xml,
   OSGI-INF/semantic-entities-layouts-contrib.xml,
-  OSGI-INF/semantic-entities-ui-types-contrib.xml
+  OSGI-INF/semantic-entities-ui-types-contrib.xml,
+  OSGI-INF/semantic-entities-theme-contrib.xml

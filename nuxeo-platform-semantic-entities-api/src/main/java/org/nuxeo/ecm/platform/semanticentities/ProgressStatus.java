@@ -21,8 +21,8 @@ public class ProgressStatus {
 
     public ProgressStatus(String message) {
         this.message = message;
-        this.positionInQueue = 0;
-        this.queueSize = 0;
+        positionInQueue = 0;
+        queueSize = 0;
     }
 
     public ProgressStatus(String message, int positionInQueue, int queueSize) {

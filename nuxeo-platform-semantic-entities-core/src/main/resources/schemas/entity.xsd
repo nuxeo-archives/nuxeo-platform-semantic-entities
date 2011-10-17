@@ -51,5 +51,12 @@
   -->
   <xs:element name="types" type="nxs:simpleStringList" />
 
+  <!--
+    Boolean flag to be able to distinguish entities created heuristically 
+    by the SemanticAnalysisService from entities created explicitly by users.
+  -->
+  <xs:element name="automaticallyCreated" type="xs:boolean"
+    default="false" />
+
 
 </xs:schema>
