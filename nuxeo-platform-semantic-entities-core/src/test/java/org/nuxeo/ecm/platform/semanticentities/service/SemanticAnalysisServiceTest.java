@@ -391,13 +391,16 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         String extractedText = sasi.extractText(doc);
         assertEquals(
                 "A short bio for John Lennon\n\n"
+
                         + "'\ud800\udc00' is a valid character outside of the BMP that should be kept.\n\n"
+
                         + "This is an HTML title\n\n"
-                        + "John Lennon was born in Liverpool in 1940. John was a"
-                        + " musician. This document about John Lennon has many"
-                        + " occurrences of the words 'John' and 'Lennon' hence should"
-                        + " rank high for suggestions on such keywords.\n\n"
-                        + "'' is an invalid control char and should be ignored.\n\n"
-                        + "\n\n", extractedText);
+
+                        + "John Lennon was born in Liverpool in 1940. John was a musician. This\n"
+                        + "document about John Lennon has many occurrences of the words 'John' and\n"
+                        + "'Lennon' hence should rank high for suggestions on such keywords.\n\n"
+
+                        + "'' is an invalid control char and should be ignored.\n\n",
+                extractedText);
     }
 }
