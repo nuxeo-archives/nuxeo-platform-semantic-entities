@@ -117,7 +117,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
     public void testGetAdmissibleTypes() throws Exception {
         Set<String> admissibleTypes = service.getAdmissibleTypes(DBPEDIA_BARACK_OBAMA_URI);
         assertNotNull(admissibleTypes);
-        assertEquals("Person", StringUtils.join(admissibleTypes, ", "));
+        assertEquals("Person, Topic", StringUtils.join(admissibleTypes, ", "));
 
         admissibleTypes = service.getAdmissibleTypes(WIKIPEDIA_LONDON_URI);
         assertNotNull(admissibleTypes);
@@ -196,7 +196,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         } catch (DereferencingException e) {
             assertEquals(
                     "Remote entity 'http://dbpedia.org/resource/Barack_Obama'"
-                            + " can be mapped to types: ('Person')"
+                            + " can be mapped to types: ('Person', 'Topic')"
                             + " but not to 'Organization'", e.getMessage());
         }
     }
