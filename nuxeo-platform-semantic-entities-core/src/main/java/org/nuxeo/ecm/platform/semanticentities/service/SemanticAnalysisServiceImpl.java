@@ -292,6 +292,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 new DocumentLocationImpl(doc.getRepositoryName(), doc.getRef()),
                 ProgressStatus.STATUS_LINKING_PENDING);
         DocumentModel entityContainer = leService.getEntityContainer(session);
+        boolean isEnglish = "en".equals(doc.getPropertyValue("dc:language"));
         for (OccurrenceGroup group : groups) {
 
             // hardcoded trick to avoid linking to persons just based on their
@@ -300,6 +301,12 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                     && group.name.trim().split(" ").length <= 1) {
                 continue;
             }
+
+            // hardcoded trick to avoid topic classification on non English text
+            if (!isEnglish && "Topic".equals(group.type)) {
+                continue;
+            }
+
             List<EntitySuggestion> suggestions = leService.suggestEntity(
                     session, group, 3);
             if (suggestions.isEmpty() && linkToUnrecognizedEntities) {
