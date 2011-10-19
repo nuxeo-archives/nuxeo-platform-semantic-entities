@@ -262,6 +262,9 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
             throw new IOException(String.format(
                     "Invalid suggestion response for '%s' with type '%s'",
                     keywords, type), e);
+        } catch (NullPointerException e) {
+            log.error(e, e);
+            return Collections.emptyList();
         } finally {
             bodyStream.close();
         }

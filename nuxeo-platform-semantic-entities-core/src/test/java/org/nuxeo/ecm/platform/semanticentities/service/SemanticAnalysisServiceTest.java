@@ -257,7 +257,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
         DocumentModel doc = createSampleDocumentModel("john-bio1");
         List<OccurrenceGroup> groups = saService.analyze(session, doc);
-        assertEquals(2, groups.size());
+        assertEquals(5, groups.size());
 
         OccurrenceGroup og1 = groups.get(0);
         assertEquals("John Lennon", og1.name);
@@ -309,6 +309,19 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
                         + "435,500, and lies at the centre of the wider Liverpool Urban "
                         + "Area, which has a population of 816,216.",
                 liverpool.getPropertyValue("entity:summary"));
+        
+        // topics: 
+        OccurrenceGroup og3 = groups.get(2);
+        assertEquals("Corpus linguistics", og3.name);
+        assertEquals("Topic", og3.type);
+
+        OccurrenceGroup og4 = groups.get(3);
+        assertEquals("Town and country planning in the United Kingdom", og4.name);
+        assertEquals("Topic", og4.type);
+
+        OccurrenceGroup og5 = groups.get(4);
+        assertEquals("Protests", og5.name);
+        assertEquals("Topic", og4.type);
     }
 
     protected void checkRelatedEntities(DocumentModel doc)

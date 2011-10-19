@@ -11,11 +11,11 @@
     <remoteSource name="dbpedia" uriPrefix="http://dbpedia.org/resource/"
       class="org.nuxeo.ecm.platform.semanticentities.sources.MockStanbolEntityHubSource"
       enabled="true">
-      <typeMapping default="Entity">
+      <typeMapping default="Topic">
         <type name="Person">http://dbpedia.org/ontology/Person</type>
         <type name="Organization">http://dbpedia.org/ontology/Organisation</type>
         <type name="Place">http://dbpedia.org/ontology/Place</type>
-        <type name="Entity">http://www.w3.org/2002/07/owl#Thing</type>
+        <type name="Topic">http://www.w3.org/2002/07/owl#Thing</type>
       </typeMapping>
       <propertyMapping>
         <field name="dc:title">http://www.w3.org/2000/01/rdf-schema#label</field>

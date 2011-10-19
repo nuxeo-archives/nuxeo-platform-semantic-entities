@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.io.StringReader;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,6 +38,14 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpParams;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.MoreLikeThisParams;
 import org.nuxeo.common.utils.StringUtils;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.ClientException;
@@ -95,6 +105,16 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     protected static final String STANBOL_URL_PROPERTY = "org.nuxeo.ecm.platform.semanticentities.stanbolUrl";
 
+    protected static final String ENGINE_URL_PROPERTY = "org.nuxeo.ecm.platform.semanticentities.stanbolUrl";
+
+    protected static final String DEFAULT_TOPIC_INDEX_URL = "http://stanbol.demo.nuxeo.com:8983/solr";
+
+    protected static final String TOPIC_INDEX_URL_PROPERTY = "org.nuxeo.ecm.platform.semanticentities.topicIndexUrl";
+
+    protected static final String DEFAULT_SPARQL_QUERY = "SELECT ?label ?type ?context ";
+
+    protected static final String DEFAULT_SOURCE_NAME = "dbpedia";
+
     protected static final String DEFAULT_ENGINE_OUTPUT_FORMAT = "application/rdf+xml";
 
     // TODO: turn the following fields into configurable parameters set by a
@@ -113,11 +133,15 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     // use framework property by default and fallback to public nuxeo instance
     protected String engineURL = null;
 
+    protected String topicIndexURL = null;
+
     protected HttpClient httpClient;
 
     protected ConversionService conversionService;
 
     protected LocalEntityService leService;
+
+    protected RemoteEntityService reService;
 
     protected PathSegmentService pathService;
 
@@ -132,8 +156,6 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     protected ThreadPoolExecutor serializationExecutor;
 
     protected boolean active = false;
-
-    protected RemoteEntityService reService;
 
     // TODO: make the following configurable using an extension point
     protected static final Map<String, String> localTypes = new HashMap<String, String>();
@@ -206,6 +228,10 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     protected boolean shouldSkip(DocumentModel doc) throws PropertyException,
             ClientException {
+        if (doc.isFolder()) {
+            return true;
+        }
+
         if (schemaManager.getDocumentTypeNamesExtending(Constants.ENTITY_TYPE).contains(
                 doc.getType())
                 || schemaManager.getDocumentTypeNamesExtending(
@@ -266,6 +292,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 new DocumentLocationImpl(doc.getRepositoryName(), doc.getRef()),
                 ProgressStatus.STATUS_LINKING_PENDING);
         DocumentModel entityContainer = leService.getEntityContainer(session);
+        boolean isEnglish = "en".equals(doc.getPropertyValue("dc:language"));
         for (OccurrenceGroup group : groups) {
 
             // hardcoded trick to avoid linking to persons just based on their
@@ -274,6 +301,12 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                     && group.name.trim().split(" ").length <= 1) {
                 continue;
             }
+
+            // hardcoded trick to avoid topic classification on non English text
+            if (!isEnglish && "Topic".equals(group.type)) {
+                continue;
+            }
+
             List<EntitySuggestion> suggestions = leService.suggestEntity(
                     session, group, 3);
             if (suggestions.isEmpty() && linkToUnrecognizedEntities) {
@@ -454,7 +487,10 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         String output = callSemanticEngine(textContent, outputFormat, 2);
         Model model = ModelFactory.createDefaultModel().read(
                 new StringReader(output), null);
-        return findStanbolEntityOccurrences(session, model);
+        List<OccurrenceGroup> occurrences = new ArrayList<OccurrenceGroup>();
+        occurrences.addAll(findStanbolEntityOccurrences(session, model));
+        occurrences.addAll(findTopicOccurrences(textContent, 2));
+        return occurrences;
     }
 
     @Override
@@ -525,6 +561,66 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         } catch (IOException e) {
             post.abort();
             throw e;
+        }
+    }
+
+    protected List<OccurrenceGroup> findTopicOccurrences(String textContent,
+            int retry) throws IOException {
+        // Temporary hack to use a Solr server loaded with the TSV output of
+        // the topic-corpus example of the pignlproc tool
+        String topicIndexUrl = topicIndexURL;
+        if (topicIndexUrl == null) {
+            // no Automation Chain configuration available: use the
+            // configuration from a properties file
+            topicIndexUrl = Framework.getProperty(TOPIC_INDEX_URL_PROPERTY,
+                    DEFAULT_TOPIC_INDEX_URL);
+            if (topicIndexUrl.trim().isEmpty()) {
+                topicIndexUrl = DEFAULT_TOPIC_INDEX_URL;
+            }
+        }
+        CommonsHttpSolrServer server = new CommonsHttpSolrServer(new URL(
+                topicIndexUrl));
+        String MLT_QUERY_TYPE = "/" + MoreLikeThisParams.MLT;
+        SolrQuery query = new SolrQuery();
+        query.setQueryType(MLT_QUERY_TYPE);
+        query.set(MoreLikeThisParams.MATCH_INCLUDE, false);
+        query.set(MoreLikeThisParams.MIN_DOC_FREQ, 1);
+        query.set(MoreLikeThisParams.MIN_TERM_FREQ, 1);
+        query.set(MoreLikeThisParams.INTERESTING_TERMS, "details");
+        query.set(MoreLikeThisParams.SIMILARITY_FIELDS, "text");
+        query.set(CommonParams.STREAM_BODY, textContent);
+        query.setRows(3); // hardcoded maximum number of results
+        QueryResponse response;
+        StreamQueryRequest request = new StreamQueryRequest(query);
+        List<OccurrenceGroup> occurrences = new ArrayList<OccurrenceGroup>();
+        try {
+            response = request.process(server);
+            SolrDocumentList results = response.getResults();
+            for (SolrDocument topicDoc : results) {
+                String id = (String) topicDoc.getFieldValue("id");
+                String decodedId = URLDecoder.decode(id, "UTF-8");
+                decodedId = decodedId.substring("Category:".length());
+                decodedId = decodedId.replaceAll("_", " ");
+                OccurrenceGroup occurrence = new OccurrenceGroup(
+                        decodedId, "Topic");
+                occurrence.uri = "http://dbpedia.org/resource/" + id;
+                occurrences.add(occurrence);
+            }
+            return occurrences;
+        } catch (SolrServerException e) {
+            if (retry > 0) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e1) {
+                    // pass
+                }
+                return findTopicOccurrences(textContent, retry - 1);
+            } else {
+                String errorMsg = String.format(
+                        "Unexpected response from '%s': %s", topicIndexUrl,
+                        e.getMessage());
+                throw new IOException(errorMsg, e);
+            }
         }
     }
 

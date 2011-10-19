@@ -217,6 +217,13 @@ public class SemanticEntitiesActions {
                 entity.getRef(), null);
     }
 
+    @Factory(scope = ScopeType.EVENT, value = "relatedTopics")
+    public List<EntityOccurrence> getRelatedTopics() throws ClientException,
+            Exception {
+        return getRelatedOccurrences(navigationContext.getCurrentDocument(),
+                "Topic");
+    }
+
     @Factory(scope = ScopeType.EVENT, value = "relatedPeopleOccurrences")
     public List<EntityOccurrence> getRelatedPeopleOccurrences()
             throws ClientException, Exception {

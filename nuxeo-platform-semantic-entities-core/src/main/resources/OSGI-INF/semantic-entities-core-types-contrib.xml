@@ -9,6 +9,7 @@
     <schema name="person" src="schemas/person.xsd" prefix="person"/>
     <schema name="place" src="schemas/place.xsd" prefix="place"/>
     <schema name="organization" src="schemas/organization.xsd" prefix="org"/>
+    <schema name="topic" src="schemas/topic.xsd" prefix="topic"/>
     <schema name="occurrence" src="schemas/occurrence.xsd" prefix="occ"/>
   </extension>
 
@@ -18,6 +19,7 @@
     <doctype name="EntityContainer" extends="Folder">
       <facet name="SuperSpace"/>
       <subtypes>
+        <type>Topic</type>
         <type>Person</type>
         <type>Place</type>
         <type>Organization</type>
@@ -41,6 +43,13 @@
            QueryMaker for entities if this is a problem in the future.
         <facet name="HiddenInNavigation" />
       -->
+    </doctype>
+
+    <!-- TODO: turn the following types as dynamic facets for
+      the Entity base type -->
+
+    <doctype name="Topic" extends="Entity">
+      <schema name="topic"/>
     </doctype>
 
     <doctype name="Person" extends="Entity">
@@ -77,6 +86,7 @@
       <type name="EntityContainer">default</type>
       <type name="OccurrenceContainer">default</type>
       <type name="Entity">default</type>
+      <type name="Topic">default</type>
       <type name="Person">default</type>
       <type name="Place">default</type>
       <type name="Organization">default</type>

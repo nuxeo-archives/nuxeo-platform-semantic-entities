@@ -96,6 +96,11 @@
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-server</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.solr</groupId>
+      <artifactId>solr-solrj</artifactId>
+      <version>3.3.0</version>
+    </dependency>
     <!--
       jena is required to parse the RDF payload of linked data resources
       only, we do not maintain persistent jena store in this module

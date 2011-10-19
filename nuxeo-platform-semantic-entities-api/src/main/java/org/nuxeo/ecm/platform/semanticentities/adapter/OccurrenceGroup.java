@@ -33,6 +33,8 @@ public class OccurrenceGroup implements Comparable<OccurrenceGroup> {
     public String name;
 
     public String type;
+    
+    public String uri;
 
     public final List<OccurrenceInfo> occurrences = new ArrayList<OccurrenceInfo>();
 
