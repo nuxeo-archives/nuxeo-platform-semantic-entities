@@ -107,7 +107,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     protected static final String ENGINE_URL_PROPERTY = "org.nuxeo.ecm.platform.semanticentities.stanbolUrl";
 
-    protected static final String DEFAULT_TOPIC_INDEX_URL = "http://stanbol.demo.nuxeo.com:8983/solr";
+    protected static final String DEFAULT_TOPIC_INDEX_URL = "http://localhost:8983/solr";
 
     protected static final String TOPIC_INDEX_URL_PROPERTY = "org.nuxeo.ecm.platform.semanticentities.topicIndexUrl";
 
