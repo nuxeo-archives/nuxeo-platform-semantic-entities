@@ -5,12 +5,13 @@
 
   <extension target="org.nuxeo.ecm.platform.actions.ActionService" point="actions">
 
+<!--
     <action id="goToEntityContainer" link="#{semanticEntitiesActions.goToEntityContainer}" enabled="true"
       label="action.goToEntityContainer" order="20" disabled="true">
       <category>USER_SERVICES</category>
       <filter-id>canBrowseEntityContainer</filter-id>
     </action>
-
+ -->
     <action id="newEntity"
       link="javascript:Richfaces.showModalPanel('selectDocTypePanel');"
       label="action.new.entity" icon="/icons/action_add.gif">
