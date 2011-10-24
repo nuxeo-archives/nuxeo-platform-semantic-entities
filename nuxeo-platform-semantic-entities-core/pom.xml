@@ -64,7 +64,7 @@
     </dependency>
     <dependency>
       <groupId>commons-logging</groupId>
-      <artifactId>commons-logging-api</artifactId>
+      <artifactId>commons-logging</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
@@ -101,10 +101,6 @@
       only, we do not maintain persistent jena store in this module
     -->
     <dependency>
-      <groupId>org.nuxeo.ecm.core</groupId>
-      <artifactId>nuxeo-core-convert-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>javax.transaction</groupId>
       <artifactId>jta</artifactId>
       <scope>test</scope>
@@ -139,10 +135,6 @@
       <groupId>net.htmlparser.jericho</groupId>
       <artifactId>jericho-html</artifactId>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>commons-logging</groupId>
-      <artifactId>commons-logging</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
