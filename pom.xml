@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.nuxeo.ecm.platform</groupId>
-    <artifactId>nuxeo-features-parent</artifactId>
+    <groupId>org.nuxeo</groupId>
+    <artifactId>nuxeo-addons-parent</artifactId>
     <version>5.5-SNAPSHOT</version>
   </parent>
 
+  <groupId>org.nuxeo.ecm.platform</groupId>
   <artifactId>nuxeo-platform-semantic-entities</artifactId>
   <name>Nuxeo Semantic Entities: parent pom</name>
   <packaging>pom</packaging>
@@ -21,26 +21,6 @@
     <module>nuxeo-platform-semantic-entities-operations</module>
     <module>nuxeo-platform-semantic-entities-jsf</module>
   </modules>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.nuxeo.ecm.platform</groupId>
-        <artifactId>nuxeo-platform-semantic-entities-api</artifactId>
-        <version>${nuxeo.features.version}</version>
-      </dependency>
-       <dependency>
-        <groupId>org.nuxeo.ecm.platform</groupId>
-        <artifactId>nuxeo-platform-semantic-entities-core</artifactId>
-        <version>${nuxeo.features.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.nuxeo.ecm.core</groupId>
-        <artifactId>nuxeo-opencmis-impl</artifactId>
-        <version>${nuxeo.core.version}</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <repositories>
     <repository>
@@ -65,5 +45,11 @@
       </snapshots>
     </repository>
   </repositories>
+
+  <scm>
+    <connection>scm:hg:http://hg.nuxeo.org/addons/nuxeo-platform-semantic-entities</connection>
+    <developerConnection>scm:hg:https://hg.nuxeo.org/addons/nuxeo-platform-semantic-entities</developerConnection>
+    <url>http://hg.nuxeo.org/addons/nuxeo-platform-semantic-entities</url>
+  </scm>
 
 </project>
