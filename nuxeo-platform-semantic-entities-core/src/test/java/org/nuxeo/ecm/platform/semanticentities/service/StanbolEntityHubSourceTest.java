@@ -1,8 +1,11 @@
 package org.nuxeo.ecm.platform.semanticentities.service;
 
 import java.io.IOException;
+import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.DocumentModel;
@@ -51,8 +54,12 @@ public class StanbolEntityHubSourceTest extends RemoteEntityServiceTest {
         Calendar birthDate = barackDoc.getProperty("person:birthDate").getValue(
                 Calendar.class);
         assertNotNull(birthDate);
-        assertEquals("Fri Aug 04 00:00:00 CET 1961",
-                birthDate.getTime().toString());
+        TimeZone tz = TimeZone.getTimeZone("ECT");
+        DateFormat formatter = DateFormat.getDateTimeInstance(DateFormat.LONG,
+                DateFormat.LONG, Locale.US);
+        formatter.setTimeZone(tz);
+        assertEquals("August 4, 1961 12:00:00 AM CET",
+                formatter.format(birthDate.getTime()));
 
         Blob depiction = barackDoc.getProperty("entity:depiction").getValue(
                 Blob.class);
@@ -76,8 +83,8 @@ public class StanbolEntityHubSourceTest extends RemoteEntityServiceTest {
         assertEquals("B. Obama", barackDoc.getTitle());
         birthDate = barackDoc.getProperty("person:birthDate").getValue(
                 Calendar.class);
-        assertEquals("Fri Aug 04 00:00:00 CET 1961",
-                birthDate.getTime().toString());
+        assertEquals("August 4, 1961 12:00:00 AM CET",
+                formatter.format(birthDate.getTime()));
 
         // existing names are not re-added
         altnames = barackDoc.getProperty("entity:altnames").getValue(List.class);
