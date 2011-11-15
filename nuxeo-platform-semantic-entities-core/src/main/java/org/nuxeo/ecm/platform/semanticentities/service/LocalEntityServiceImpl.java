@@ -438,7 +438,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     }
 
     public static String cleanupKeywords(String keywords) {
-        return keywords.replaceAll("(\\p{P}|\\n| |<|>)+", " ").trim();
+        return keywords.replaceAll("(\\p{P}|\\n| |<|>|\\+|\\-)+", " ").trim();
     }
 
     @Override

@@ -73,6 +73,16 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         // CMIS query maker
         deployBundle("org.nuxeo.ecm.core.opencmis.impl");
 
+        // override remote entity service
+        Framework.getProperties().put(
+                "org.nuxeo.ecm.platform.semanticentities.stanbolUrl",
+                "http://localhost:9090/");
+        // deploy off-line mock DBpedia source to override the default source
+        // that needs an internet connection: comment the following contrib to
+        // test again the real DBpedia server
+        deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
+                "OSGI-INF/test-semantic-entities-dbpedia-entity-contrib.xml");
+
         // initialize the session field
         openSession();
         DocumentModel domain = session.createDocumentModel("/",
@@ -543,6 +553,24 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(2, suggestions.size());
         assertEquals(doc1.getRef(), suggestions.get(0).getRef());
         assertEquals(doc2.getRef(), suggestions.get(1).getRef());
+    }
+
+    public void testSuggestEntityWithSpecialCharacters() throws Exception {
+        DocumentModel container = service.getEntityContainer(session);
+        assertNotNull(container);
+        assertEquals(Constants.ENTITY_CONTAINER_TYPE, container.getType());
+        DocumentModel canalplus = session.createDocumentModel(
+                container.getPathAsString(), null, "Organization");
+        canalplus.setPropertyValue("dc:title", "Canal +");
+        canalplus = session.createDocument(canalplus);
+        session.save();
+
+        // fulltext query with a + sign should be escaped
+        List<EntitySuggestion> suggestions = service.suggestLocalEntity(
+                session, "Canal +", null, 3);
+        assertNotNull(suggestions);
+        assertEquals(1, suggestions.size());
+        assertEquals(canalplus.getId(), suggestions.get(0).getLocalId());
     }
 
     public void testGetLinkedLocalEntity() throws Exception {
