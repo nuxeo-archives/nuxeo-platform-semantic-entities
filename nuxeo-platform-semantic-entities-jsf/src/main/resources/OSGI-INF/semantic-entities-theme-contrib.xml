@@ -3,22 +3,27 @@
 
   <require>org.nuxeo.theme.nuxeo.default</require>
 
-  <extension target="org.nuxeo.theme.services.ThemeService" point="views">
+  <extension target="org.nuxeo.theme.styling.service" point="pages">
 
-    <view name="nuxeo5 includes" template-engine="jsf-facelets"
-      merge="true">
-      <format-type>widget</format-type>
-      <resource>semantic-entities.css</resource>
-    </view>
+    <themePage name="galaxy/default">
+      <defaultFlavor>default</defaultFlavor>
+      <flavors>
+        <flavor>default</flavor>
+      </flavors>
+      <styles append="true">
+        <style>semantic_entities.css</style>
+      </styles>
+    </themePage>
+
+  </extension>
+
+  <extension target="org.nuxeo.theme.styling.service" point="styles">
+
+    <style name="semantic_entities.css">
+      <src>themes/css/semantic_entities.css</src>
+    </style>
 
   </extension>
 
-  <extension target="org.nuxeo.theme.services.ThemeService" point="resources">
-
-    <resource name="semantic-entities.css">
-      <path>css/semantic-entities.css</path>
-    </resource>
-
-  </extension>
 
 </component>

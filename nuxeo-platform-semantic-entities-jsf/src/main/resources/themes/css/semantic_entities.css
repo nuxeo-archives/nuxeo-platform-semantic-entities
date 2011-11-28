@@ -1,0 +1,40 @@
+.entityOccurrences .entityDepictionSmallContainer { float: left; width: 40px; height: 40px }
+.entityOccurrences img.entityDepiction { border: 1px solid #bbb; max-height: 40px; max-width: 40px; padding: .1em }
+
+.entityOccurrences div.entityOccurrence { margin-bottom: .1em; padding: .5em 0 }
+.entityOccurrences div.entityOccurrence:hover { background-color: "color.major.light (__FLAVOR__ background)";}
+.entityOccurrences div.entityLinkAndSummary { margin: 0 0 0 4.5em; padding: 0 .2em 0 .5em }
+.entityOccurrences div.entityOccurrenceTooltip {
+  /* Hidden by default, jquery tools tooltip plugin will trigger the display
+       of the element */
+  display: none;
+  background-color: #fff;
+  border: 1px solid #dedede;
+  padding: 1em;
+  width: 450px;
+  box-shadow: 0 0 10px #ddd }
+
+.entityOccurrenceTooltip .entityMentions p { font-size: 95%; margin-bottom: .5em }
+.entityOccurrenceTooltip .entityMentions strong { background-color: "color.major.medium (__FLAVOR__ background)"; padding: 0 .2em }
+
+img.entityTypeIcon { height: 16px; width: 16px; border: none; padding: 0 }
+
+.entityHeadingBlock div.entityDepictionContainer { float: left; margin: 0 1em 1em 0 }
+.entityHeadingBlock .entityDepictionContainer img { border: 1px solid #bbb; max-height: 200px; max-width: 150px;  padding: .1em }
+.entityHeadingBlock img.genericEntityDepiction { max-height: 60px; max-width: 60px }
+.entityHeadingBlock .entitySummary { margin: 1em }
+
+.entitiesBlock .semanticWorkInProgressMessage { margin-bottom: .5em }
+.entitiesBlock .semanticWorkInProgressMessage img { margin-right: 2em }
+
+.entityOccurrenceTooltip .linkedEntity { position: relative }
+.entityOccurrenceTooltip .linkedEntity .entityUpdater {
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  opacity: 0.0 }
+.entityOccurrenceTooltip .linkedEntity .entityUpdater h3.summaryTitle { padding-top: 0 }
+.entityOccurrenceTooltip .linkedEntity p.editLink { text-align: right }
+.entityOccurrenceTooltip .linkedEntity p.cancelLink { text-align: right; display: none }

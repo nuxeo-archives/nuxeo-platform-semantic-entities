@@ -163,16 +163,16 @@ jQuery(document).ready(function() {
    rendered="#{documentManager.hasPermission(currentDocument.ref, 'WriteProperties')}"
    onclick="this.disabled=true"
    oncomplete="this.disabled=false"
-   reRender="relatedEntitiesPanel,relatedEntitiesButtonsPanel" />
-
-  <span style="width: 1em" />
+   reRender="relatedEntitiesPanel,relatedEntitiesButtonsPanel"
+   styleClass="button" />
 
   <a4j:commandButton value="#{messages['label.button.removeAllLinks']}"
    action="#{semanticEntitiesActions.removeAllLinks}"
    rendered="#{documentManager.hasPermission(currentDocument.ref, 'WriteProperties')}"
    onclick="this.disabled=true"
    oncomplete="this.disabled=false"
-   reRender="relatedEntitiesPanel,relatedEntitiesButtonsPanel" />
+   reRender="relatedEntitiesPanel,relatedEntitiesButtonsPanel"
+   styleClass="button" />
 </f:subview>
 </p>
 </a4j:outputPanel>
