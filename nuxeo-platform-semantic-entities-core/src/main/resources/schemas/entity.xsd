@@ -7,6 +7,12 @@
     <xs:list itemType="xs:string" />
   </xs:simpleType>
 
+  <xs:simpleType name="longString">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="16384" />
+    </xs:restriction>
+  </xs:simpleType>
+
   <!--
     alternative names to aggregated from occurrences for better fulltext
     lookup, the canonical name of the entity is to be stored in the
@@ -24,7 +30,7 @@
   <xs:element name="popularity" type="xs:float" default="0.0" />
 
   <!-- text summary describing the real life entity -->
-  <xs:element name="summary" type="xs:string" />
+  <xs:element name="summary" type="nxs:longString" />
 
   <!-- bitmap image describing -->
   <xs:element name="depiction" type="nxs:content" />
