@@ -108,7 +108,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
                 "dc:description",
                 "John Lennon was born in Liverpool in 1940. John was a musician."
                         + " This document about John Lennon has many occurrences"
-                        + " of the words 'John' and 'Lennong' hence should rank high"
+                        + " of the words 'John' and 'Lennon' hence should rank high"
                         + " for suggestions on such keywords.");
         doc1 = session.createDocument(doc1);
 
