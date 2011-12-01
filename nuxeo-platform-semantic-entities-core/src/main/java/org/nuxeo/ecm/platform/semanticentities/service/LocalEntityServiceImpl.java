@@ -556,7 +556,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                         + "WHERE CONTAINS('%s')"
                         + " AND cmis:objectTypeId NOT IN ('%s')"
                         + " AND nuxeo:isVersion = false "
-                        + "ORDER BY relevance", type,
+                        + "ORDER BY relevance DESC", type,
                 cleanupKeywords(keywords),
                 StringUtils.join(getEntityTypeNames(), "', '"));
         PageProvider<DocumentModel> provider = new CMISQLDocumentPageProvider(
