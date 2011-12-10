@@ -118,6 +118,31 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
                 "John Lennon is not a lemon despite his yellow submarine.");
         doc2 = session.createDocument(doc2);
 
+        DocumentModel doc3 = session.createDocumentModel("/", "doc3", "File");
+        doc3.setPropertyValue("dc:title",
+                "Another document with unrelated topic");
+        doc3 = session.createDocument(doc3);
+
+        DocumentModel doc4 = session.createDocumentModel("/", "doc4", "File");
+        doc4.setPropertyValue("dc:title",
+                "It is necessary to have many documents to...");
+        doc4 = session.createDocument(doc4);
+
+        DocumentModel doc5 = session.createDocumentModel("/", "doc5", "File");
+        doc5.setPropertyValue("dc:title",
+                "...ensure that the l*****n word will not...");
+        doc5 = session.createDocument(doc5);
+
+        DocumentModel doc6 = session.createDocumentModel("/", "doc6", "File");
+        doc6.setPropertyValue("dc:title",
+                "... have a too high document frequency ...");
+        doc6 = session.createDocument(doc6);
+
+        DocumentModel doc7 = session.createDocumentModel("/", "doc7", "File");
+        doc7.setPropertyValue("dc:title",
+                "... otherwise the MySQL tests would be unstable.");
+        doc7 = session.createDocument(doc7);
+
         session.save(); // force write to SQL backend
         Framework.getLocalService(EventService.class).waitForAsyncCompletion();
     }
@@ -543,16 +568,16 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         suggestions = service.suggestDocument(session, "Lennon John", null, 3);
         assertNotNull(suggestions);
         assertEquals(2, suggestions.size());
-        assertEquals(doc1.getRef(), suggestions.get(0).getRef());
-        assertEquals(doc2.getRef(), suggestions.get(1).getRef());
+        assertEquals(doc1.getTitle(), suggestions.get(0).getTitle());
+        assertEquals(doc2.getTitle(), suggestions.get(1).getTitle());
 
         // check that entities don't show up in the results
         makeSomeEntities();
         suggestions = service.suggestDocument(session, "Lennon John", null, 3);
         assertNotNull(suggestions);
         assertEquals(2, suggestions.size());
-        assertEquals(doc1.getRef(), suggestions.get(0).getRef());
-        assertEquals(doc2.getRef(), suggestions.get(1).getRef());
+        assertEquals(doc1.getTitle(), suggestions.get(0).getTitle());
+        assertEquals(doc2.getTitle(), suggestions.get(1).getTitle());
     }
 
     public void testSuggestEntityWithSpecialCharacters() throws Exception {
