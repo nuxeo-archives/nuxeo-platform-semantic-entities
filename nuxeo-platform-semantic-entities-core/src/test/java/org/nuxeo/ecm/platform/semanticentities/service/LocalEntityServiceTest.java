@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.GregorianCalendar;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
@@ -40,6 +42,8 @@ import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
 import org.nuxeo.runtime.api.Framework;
 
 public class LocalEntityServiceTest extends SQLRepositoryTestCase {
+
+    public static final Log log = LogFactory.getLog(LocalEntityServiceTest.class);
 
     LocalEntityService service;
 
@@ -225,11 +229,21 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     public void testCreateEntities() throws ClientException {
+        if (!database.supportsMultipleFulltextIndexes()) {
+            warnSkippedTest();
+            return;
+        }
+
         makeSomeEntities();
     }
 
     @SuppressWarnings("unchecked")
     public void testAddOccurrences() throws Exception {
+        if (!database.supportsMultipleFulltextIndexes()) {
+            warnSkippedTest();
+            return;
+        }
+
         makeSomeEntities();
 
         // fetch the initial john popularity for later comparison
@@ -293,6 +307,11 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     public void testGetRelatedDocumentsAndEntities() throws Exception {
+        if (!database.supportsMultipleFulltextIndexes()) {
+            warnSkippedTest();
+            return;
+        }
+
         // create some entities in the KB and an unrelated document
         makeSomeEntities();
 
@@ -357,12 +376,22 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     public void testSuggestLocalEntitiesEmptyKB() throws ClientException {
+        if (!database.supportsMultipleFulltextIndexes()) {
+            warnSkippedTest();
+            return;
+        }
+
         List<EntitySuggestion> suggestions = service.suggestLocalEntity(
                 session, "John", null, 3);
         assertTrue(suggestions.isEmpty());
     }
 
     public void testSuggestLocalEntities() throws ClientException {
+        if (!database.supportsMultipleFulltextIndexes()) {
+            warnSkippedTest();
+            return;
+        }
+
         makeSomeEntities();
 
         List<EntitySuggestion> suggestions = service.suggestLocalEntity(
@@ -420,6 +449,11 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     public void testSuggestEntities() throws Exception {
+        if (!database.supportsMultipleFulltextIndexes()) {
+            warnSkippedTest();
+            return;
+        }
+
         // deploy off-line mock DBpedia source to override the default source
         // that needs an internet connection: comment the following contrib to
         // test again the real DBpedia server
@@ -457,6 +491,11 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     public void testSuggestEntitiesWithoutTypeRestriction() throws Exception {
+        if (!database.supportsMultipleFulltextIndexes()) {
+            warnSkippedTest();
+            return;
+        }
+
         // deploy off-line mock DBpedia source to override the default source
         // that needs an internet connection: comment the following contrib to
         // test again the real DBpedia server
@@ -494,6 +533,11 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     public void testGetOccurrenceRelation() throws Exception {
+        if (!database.supportsMultipleFulltextIndexes()) {
+            warnSkippedTest();
+            return;
+        }
+
         makeSomeEntities();
         OccurrenceRelation relation = service.getOccurrenceRelation(session,
                 doc1.getRef(), john.getRef());
@@ -514,6 +558,11 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
     public void testAddRemoveOccurrenceRelationWithEmptyOccurrenceData()
             throws Exception {
+        if (!database.supportsMultipleFulltextIndexes()) {
+            warnSkippedTest();
+            return;
+        }
+
         makeSomeEntities();
         OccurrenceRelation relation = service.getOccurrenceRelation(session,
                 doc1.getRef(), john.getRef());
@@ -559,6 +608,11 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     public void testSuggestDocument() throws Exception {
+        if (!database.supportsMultipleFulltextIndexes()) {
+            warnSkippedTest();
+            return;
+        }
+
         List<DocumentModel> suggestions = service.suggestDocument(session,
                 "lemon", null, 3);
         assertNotNull(suggestions);
@@ -581,6 +635,11 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     public void testSuggestEntityWithSpecialCharacters() throws Exception {
+        if (!database.supportsMultipleFulltextIndexes()) {
+            warnSkippedTest();
+            return;
+        }
+
         DocumentModel container = service.getEntityContainer(session);
         assertNotNull(container);
         assertEquals(Constants.ENTITY_CONTAINER_TYPE, container.getType());
@@ -599,6 +658,11 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     public void testGetLinkedLocalEntity() throws Exception {
+        if (!database.supportsMultipleFulltextIndexes()) {
+            warnSkippedTest();
+            return;
+        }
+
         URI johnURI = URI.create("http://dbpedia.org/resource/John_Lennon");
 
         // empty KB will not yield any match
@@ -619,6 +683,11 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals("This is a test",
                 LocalEntityServiceImpl.cleanupKeywords("This is. a\n test?"));
         assertEquals("a b", LocalEntityServiceImpl.cleanupKeywords("a'.;,<>b"));
+    }
+
+    protected void warnSkippedTest() {
+        log.warn("Skipping test that needs multi-fulltext support for database: "
+                + database.getClass().getName());
     }
 
 }

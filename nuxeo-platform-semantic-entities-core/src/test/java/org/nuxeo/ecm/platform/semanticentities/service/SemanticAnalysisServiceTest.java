@@ -37,7 +37,6 @@ import org.nuxeo.runtime.api.Framework;
 
 public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
-    @SuppressWarnings("unused")
     private static final Log log = LogFactory.getLog(SemanticAnalysisServiceTest.class);
 
     private DocumentModel john;
@@ -215,6 +214,10 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
     }
 
     public void testAsyncAnalysis() throws Exception {
+        if (!database.supportsMultipleFulltextIndexes()) {
+            warnSkippedTest();
+            return;
+        }
         EventService es = Framework.getLocalService(EventService.class);
         List<DocumentModel> docs = new ArrayList<DocumentModel>();
         for (int i = 0; i < 5; i++) {
@@ -247,6 +250,10 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
     }
 
     public void testSynchronousAnalysis() throws Exception {
+        if (!database.supportsMultipleFulltextIndexes()) {
+            warnSkippedTest();
+            return;
+        }
         DocumentModel doc = createSampleDocumentModel("john-bio1");
         saService.launchSynchronousAnalysis(doc, session);
         checkRemoveRelatedEntities(doc);
@@ -403,4 +410,10 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
                         + "'' is an invalid control char and should be ignored.\n\n",
                 extractedText);
     }
+
+    protected void warnSkippedTest() {
+        log.warn("Skipping test that needs multi-fulltext support for database: "
+                + database.getClass().getName());
+    }
+
 }
