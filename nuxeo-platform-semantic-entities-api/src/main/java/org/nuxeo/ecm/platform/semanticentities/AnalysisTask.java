@@ -48,7 +48,7 @@ public class AnalysisTask implements Runnable {
         if (!service.isActive()) {
             return;
         }
-        TransactionHelper.startTransaction();
+        boolean isTransactionActive = TransactionHelper.startTransaction();
         LoginContext lc = null;
         try {
             lc = Framework.login();
@@ -73,7 +73,9 @@ public class AnalysisTask implements Runnable {
             }
         } catch (Exception e) {
             service.clearProgressStatus(repositoryName, docRef);
-            TransactionHelper.setTransactionRollbackOnly();
+            if (isTransactionActive) {
+                TransactionHelper.setTransactionRollbackOnly();
+            }
             log.error(e.getMessage(), e);
         } finally {
             if (lc != null) {
@@ -83,7 +85,9 @@ public class AnalysisTask implements Runnable {
                     log.error(e, e);
                 }
             }
-            TransactionHelper.commitOrRollbackTransaction();
+            if (isTransactionActive) {
+                TransactionHelper.commitOrRollbackTransaction();
+            }
         }
     }
 

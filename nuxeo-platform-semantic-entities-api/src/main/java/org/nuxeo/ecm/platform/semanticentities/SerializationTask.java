@@ -87,7 +87,7 @@ public class SerializationTask implements Runnable {
         if (!service.isActive()) {
             return;
         }
-        TransactionHelper.startTransaction();
+        boolean isTransactionActive = TransactionHelper.startTransaction();
         LoginContext lc = null;
         try {
             lc = Framework.login();
@@ -100,7 +100,9 @@ public class SerializationTask implements Runnable {
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            TransactionHelper.setTransactionRollbackOnly();
+            if (isTransactionActive) {
+                TransactionHelper.setTransactionRollbackOnly();
+            }
         } finally {
             service.clearProgressStatus(repositoryName, docRef);
             if (lc != null) {
@@ -110,7 +112,9 @@ public class SerializationTask implements Runnable {
                     log.error(e, e);
                 }
             }
-            TransactionHelper.commitOrRollbackTransaction();
+            if (isTransactionActive) {
+                TransactionHelper.commitOrRollbackTransaction();
+            }
         }
     }
 }
