@@ -43,9 +43,19 @@ public class AnalysisTask implements Runnable {
         }
     }
 
+    public boolean isServiceActiveOrWarn() {
+        if (!service.isActive()) {
+            log.warn(String.format(
+                    "%s has been disabled, skipping analysis for %s:%s",
+                    service.getClass(), repositoryName, docRef));
+            return false;
+        }
+        return true;
+    }
+
     @Override
     public void run() {
-        if (!service.isActive()) {
+        if (!isServiceActiveOrWarn()) {
             return;
         }
         boolean isTransactionActive = TransactionHelper.startTransaction();
@@ -54,11 +64,16 @@ public class AnalysisTask implements Runnable {
             lc = Framework.login();
             CoreSession session = manager.getRepository(repositoryName).open();
             if (!session.exists(docRef)) {
-                // document was deleted
+                log.info(String.format(
+                        "Document %s:%s has been deleted, skipping semantic analysis.",
+                        repositoryName, docRef));
                 service.clearProgressStatus(repositoryName, docRef);
                 return;
             }
             try {
+                if (!isServiceActiveOrWarn()) {
+                    return;
+                }
                 List<OccurrenceGroup> occurrenceGroups = service.analyze(
                         session, session.getDocument(docRef));
                 if (occurrenceGroups.isEmpty()) {
@@ -67,6 +82,9 @@ public class AnalysisTask implements Runnable {
                 }
                 SerializationTask task = new SerializationTask(repositoryName,
                         docRef, occurrenceGroups, service);
+                if (!isServiceActiveOrWarn()) {
+                    return;
+                }
                 service.scheduleSerializationTask(task);
             } finally {
                 Repository.close(session);

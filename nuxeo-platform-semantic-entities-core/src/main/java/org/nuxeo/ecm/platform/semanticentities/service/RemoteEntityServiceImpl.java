@@ -163,8 +163,15 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
     public void dereferenceIntoFromModel(DocumentModel localEntity,
             URI remoteEntity, Model rdfModel, boolean override,
             boolean lazyResourceFetch) throws DereferencingException {
-        getSourceFor(remoteEntity).dereferenceIntoFromModel(localEntity,
-                remoteEntity, rdfModel, override, lazyResourceFetch);
+        RemoteEntitySource source = getSourceFor(remoteEntity);
+        if (source != null) {
+            source.dereferenceIntoFromModel(localEntity, remoteEntity,
+                    rdfModel, override, lazyResourceFetch);
+        } else {
+            log.warn(String.format("No registered source for remote"
+                    + " source '%s' to local entity '%s'.", remoteEntity,
+                    localEntity));
+        }
     }
 
     /**
@@ -175,8 +182,8 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
      * be larger than {@literal maxSuggestions}
      */
     @Override
-    public List<EntitySuggestion> suggestRemoteEntity(String keywords, String type,
-            int maxSuggestions) throws IOException {
+    public List<EntitySuggestion> suggestRemoteEntity(String keywords,
+            String type, int maxSuggestions) throws IOException {
         List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
         for (RemoteEntitySource source : getActiveSources().values()) {
             if (source.canSuggestRemoteEntity()) {
@@ -210,8 +217,8 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
         ArrayList<String> filteredLabels = new ArrayList<String>();
         String[] oldURIs = doc.getProperty(EntitySuggestion.SAMEAS_URI_PROPERTY).getValue(
                 String[].class);
-        String[] oldLabels = doc.getProperty(EntitySuggestion.SAMEAS_LABEL_PROPERTY).getValue(
-                String[].class);
+        String[] oldLabels = doc.getProperty(
+                EntitySuggestion.SAMEAS_LABEL_PROPERTY).getValue(String[].class);
 
         boolean changed = false;
         for (int i = 0; i < oldURIs.length; i++) {
@@ -223,7 +230,8 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
             }
         }
         if (changed) {
-            doc.setPropertyValue(EntitySuggestion.SAMEAS_URI_PROPERTY, filteredURIs);
+            doc.setPropertyValue(EntitySuggestion.SAMEAS_URI_PROPERTY,
+                    filteredURIs);
             doc.setPropertyValue(EntitySuggestion.SAMEAS_LABEL_PROPERTY,
                     filteredLabels);
         }

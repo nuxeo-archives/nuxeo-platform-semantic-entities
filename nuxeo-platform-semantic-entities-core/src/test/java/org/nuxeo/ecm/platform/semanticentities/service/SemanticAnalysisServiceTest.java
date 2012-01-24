@@ -103,6 +103,8 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
     @Override
     public void tearDown() throws Exception {
+        // ensure that all threads are closed before shuting down the runtime
+        ((SemanticAnalysisServiceImpl) saService).deactivate(null);
         closeSession();
         super.tearDown();
     }

@@ -82,9 +82,19 @@ public class SerializationTask implements Runnable {
         return false;
     }
 
+    public boolean isServiceActiveOrWarn() {
+        if (!service.isActive()) {
+            log.warn(String.format(
+                    "%s has been disabled, skipping analysis for %s:%s",
+                    service.getClass(), repositoryName, docRef));
+            return false;
+        }
+        return true;
+    }
+
     @Override
     public void run() {
-        if (!service.isActive()) {
+        if (!isServiceActiveOrWarn()) {
             return;
         }
         boolean isTransactionActive = TransactionHelper.startTransaction();
@@ -93,6 +103,9 @@ public class SerializationTask implements Runnable {
             lc = Framework.login();
             CoreSession session = manager.getRepository(repositoryName).open();
             try {
+                if (!isServiceActiveOrWarn()) {
+                    return;
+                }
                 service.createLinks(session.getDocument(docRef), session,
                         occurrenceGroups);
             } finally {
@@ -104,7 +117,6 @@ public class SerializationTask implements Runnable {
                 TransactionHelper.setTransactionRollbackOnly();
             }
         } finally {
-            service.clearProgressStatus(repositoryName, docRef);
             if (lc != null) {
                 try {
                     lc.logout();
@@ -115,6 +127,7 @@ public class SerializationTask implements Runnable {
             if (isTransactionActive) {
                 TransactionHelper.commitOrRollbackTransaction();
             }
+            service.clearProgressStatus(repositoryName, docRef);
         }
     }
 }
