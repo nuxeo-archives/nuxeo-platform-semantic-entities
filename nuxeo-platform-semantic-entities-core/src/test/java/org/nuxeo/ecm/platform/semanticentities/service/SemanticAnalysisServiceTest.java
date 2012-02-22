@@ -236,16 +236,12 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         }
 
         // wait for all the analysis to complete
-        for (DocumentModel doc : docs) {
-            while (saService.getProgressStatus(doc.getRepositoryName(),
-                    doc.getRef()) != null) {
-                Thread.sleep(200);
-            }
-        }
         es.waitForAsyncCompletion();
 
         // check the results of the analysis
         for (DocumentModel doc : docs) {
+            assertNull(saService.getProgressStatus(doc.getRepositoryName(),
+                    doc.getRef()));
             // the same entities are linked to all the docs
             checkRelatedEntities(doc);
         }

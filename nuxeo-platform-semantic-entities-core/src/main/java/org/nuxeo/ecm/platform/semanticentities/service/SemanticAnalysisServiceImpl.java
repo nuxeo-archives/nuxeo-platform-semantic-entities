@@ -12,10 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
@@ -50,6 +47,9 @@ import org.nuxeo.ecm.core.api.impl.blob.StreamingBlob;
 import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.core.api.pathsegment.PathSegmentService;
 import org.nuxeo.ecm.core.convert.api.ConversionService;
+import org.nuxeo.ecm.core.event.EventService;
+import org.nuxeo.ecm.core.event.impl.AsyncWaitHook;
+import org.nuxeo.ecm.core.event.impl.EventServiceImpl;
 import org.nuxeo.ecm.core.schema.FacetNames;
 import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.utils.BlobsExtractor;
@@ -123,13 +123,9 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     protected SchemaManager schemaManager;
 
-    protected BlockingQueue<Runnable> analysisTaskQueue;
+    protected SemanticAnalysisExecutor executor;
 
-    protected ThreadPoolExecutor analysisExecutor;
-
-    protected BlockingQueue<Runnable> serializationTaskQueue;
-
-    protected ThreadPoolExecutor serializationExecutor;
+    protected AsyncWaitHook asyncWaitHook;
 
     protected boolean active = false;
 
@@ -153,38 +149,57 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         schemaManager = Framework.getService(SchemaManager.class);
         initHttpClient();
 
-        NamedThreadFactory analysisThreadFactory = new NamedThreadFactory(
-                "Nuxeo Async Semantic Analysis");
-        analysisTaskQueue = new LinkedBlockingQueue<Runnable>();
-        analysisExecutor = new ThreadPoolExecutor(4, 8, 5, TimeUnit.MINUTES,
-                analysisTaskQueue, analysisThreadFactory);
+        executor = new SemanticAnalysisExecutor();
 
-        NamedThreadFactory serializationThreadFactory = new NamedThreadFactory(
-                "Nuxeo Async Semantic Link Serialization");
-        serializationTaskQueue = new LinkedBlockingQueue<Runnable>();
-        serializationExecutor = new ThreadPoolExecutor(1, 1, 5,
-                TimeUnit.MINUTES, serializationTaskQueue,
-                serializationThreadFactory);
+        asyncWaitHook = new AsyncWaitHook() {
+
+            @Override
+            public boolean waitForAsyncCompletion(){
+               try {
+                   return executor.shutdown();
+               } finally {
+                   executor = new SemanticAnalysisExecutor();
+               }
+            }
+
+            @Override
+            public boolean shutdown() {
+                try {
+                    return executor.shutdownNow();
+                } finally {
+                    executor = null;
+                }
+            }
+        };
+        ((EventServiceImpl)Framework.getLocalService(EventService.class)).registerForAsyncWait(asyncWaitHook);
         active = true;
     }
 
     @Override
     public void deactivate(ComponentContext context) throws Exception {
         active = false;
-        analysisTaskQueue.clear();
-        serializationTaskQueue.clear();
-        analysisExecutor.shutdownNow();
-        serializationExecutor.shutdownNow();
+
+
+        ((EventServiceImpl)Framework.getLocalService(EventService.class)).unregisterForAsyncWait(asyncWaitHook);
+        asyncWaitHook.shutdown();
+
+        conversionService = null;
+        leService = null;
+        pathService = null;
+        schemaManager = null;
+        asyncWaitHook = null;
+
+        super.deactivate(context);
     }
 
     @Override
     public void scheduleSerializationTask(SerializationTask task) {
+        if (!active) {
+            return;
+        }
         states.put(task.getDocumentLocation(),
                 ProgressStatus.STATUS_LINKING_QUEUED);
-        while (serializationTaskQueue.remove(task)) {
-            // remove duplicates to only link to the latest version
-        }
-        serializationExecutor.execute(task);
+        executor.execute(task);
     }
 
     protected void initHttpClient() {
@@ -230,10 +245,10 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     public void launchAnalysis(String repositoryName, DocumentRef docRef)
             throws ClientException {
         AnalysisTask task = new AnalysisTask(repositoryName, docRef, this);
-        if (!analysisTaskQueue.contains(task)) {
+        if (!executor.analysisTaskQueue.contains(task)) {
             states.put(new DocumentLocationImpl(repositoryName, docRef),
                     ProgressStatus.STATUS_ANALYSIS_QUEUED);
-            analysisExecutor.execute(task);
+            executor.execute(task);
         }
     }
 
@@ -617,9 +632,9 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         @SuppressWarnings("rawtypes")
         Queue q = null;
         if (ProgressStatus.STATUS_ANALYSIS_QUEUED.equals(status)) {
-            q = analysisTaskQueue;
+            q = executor.analysisTaskQueue;
         } else if (ProgressStatus.STATUS_LINKING_QUEUED.equals(status)) {
-            q = serializationTaskQueue;
+            q = executor.serializationTaskQueue;
         }
         int posInQueue = 0;
         int queueSize = 0;
