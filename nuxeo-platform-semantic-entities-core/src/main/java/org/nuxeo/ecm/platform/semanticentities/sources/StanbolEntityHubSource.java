@@ -94,7 +94,11 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
         endpointURL += "entityhub/";
         String site = descriptor.getParameters().get("site");
         if (site != null) {
-            endpointURL += "site/" + site + "/";
+            if ("*".equals(site)) {
+                endpointURL += "sites/";
+            } else {
+                endpointURL += "site/" + site + "/";
+            }
         }
         log.info("Configured StanbolEntityHubSource to endpoint: "
                 + endpointURL);
@@ -414,8 +418,8 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
         }
         List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
         for (Map<String, Object> result : results) {
-            Serializable nameLiteral = readDecodedLiteral(result, namePropertyUri,
-                    StringType.INSTANCE, "en");
+            Serializable nameLiteral = readDecodedLiteral(result,
+                    namePropertyUri, StringType.INSTANCE, "en");
             if (nameLiteral == null) {
                 continue;
             }
