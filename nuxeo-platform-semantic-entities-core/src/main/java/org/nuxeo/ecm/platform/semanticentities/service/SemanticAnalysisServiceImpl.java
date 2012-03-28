@@ -136,12 +136,13 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     protected RemoteEntityService reService;
 
     // TODO: make the following configurable using an extension point
-    protected static final Map<String, String> localTypes = new HashMap<String, String>();
+    protected static final Map<String, String> LOCAL_TYPES = new HashMap<String, String>();
     static {
-        localTypes.put("http://dbpedia.org/ontology/Place", "Place");
-        localTypes.put("http://dbpedia.org/ontology/Person", "Person");
-        localTypes.put("http://dbpedia.org/ontology/Organisation",
+        LOCAL_TYPES.put("http://dbpedia.org/ontology/Place", "Place");
+        LOCAL_TYPES.put("http://dbpedia.org/ontology/Person", "Person");
+        LOCAL_TYPES.put("http://dbpedia.org/ontology/Organisation",
                 "Organization");
+        LOCAL_TYPES.put("http://www.w3.org/2004/02/skos/core#Concept", "Topic");
     }
 
     @Override
@@ -211,16 +212,6 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 || schemaManager.getDocumentTypeNamesExtending(
                         Constants.OCCURRENCE_TYPE).contains(doc.getType())) {
             // do not try to analyze local entities themselves
-            return true;
-        }
-
-        String lang = doc.getProperty("dc:language").getValue(String.class);
-        if (lang != null && !lang.isEmpty() && !"en".equalsIgnoreCase(lang)
-                && !"english".equalsIgnoreCase(lang)) {
-            // XXX: temporary hack!
-            // skip documents explicitly detected in a non English language; to
-            // be disabled once we have explicit multi-lingual support in Apache
-            // Stanbol
             return true;
         }
         return false;
@@ -324,9 +315,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             if (typeStmt == null || !typeStmt.getObject().isURIResource()) {
                 continue;
             }
-            Resource typeResouce = typeStmt.getObject().as(
-                    Resource.class);
-            String localType = localTypes.get(typeResouce.getURI());
+            Resource typeResouce = typeStmt.getObject().as(Resource.class);
+            String localType = LOCAL_TYPES.get(typeResouce.getURI());
             if (localType == null) {
                 continue;
             }
@@ -355,8 +345,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                     EntitySuggestion suggestion = getEntitySuggestion(session,
                             model, linkedResource, localType);
                     if (suggestion != null) {
-                        group.entitySuggestions.add(suggestion.withAutomaticallyCreated(
-                                true));
+                        group.entitySuggestions.add(suggestion.withAutomaticallyCreated(true));
                     }
                 }
             }
@@ -417,8 +406,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         if (mentionStmt == null || !mentionStmt.getObject().isLiteral()) {
             return null;
         }
-        Literal mentionLiteral = mentionStmt.getObject().as(
-                Literal.class);
+        Literal mentionLiteral = mentionStmt.getObject().as(Literal.class);
         String mention = mentionLiteral.getString().trim();
 
         double position = 0.0;
@@ -432,8 +420,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         Statement contextStmt = annotation.getProperty(contextProp);
 
         if (contextStmt != null && contextStmt.getObject().isLiteral()) {
-            Literal contextLiteral = contextStmt.getObject().as(
-                    Literal.class);
+            Literal contextLiteral = contextStmt.getObject().as(Literal.class);
             // TODO: normalize whitespace
             String context = contextLiteral.getString().trim();
 
@@ -472,21 +459,21 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     public String callSemanticEngine(String textContent, String outputFormat,
             int retry) throws IOException {
 
-        String effectiveEngineUrl = engineURL;
-        if (effectiveEngineUrl == null) {
+        String effectiveEnhancerUrl = engineURL;
+        if (effectiveEnhancerUrl == null) {
             // no Automation Chain configuration available: use the
             // configuration from a properties file
-            effectiveEngineUrl = Framework.getProperty(STANBOL_URL_PROPERTY,
+            effectiveEnhancerUrl = Framework.getProperty(STANBOL_URL_PROPERTY,
                     DEFAULT_STANBOL_URL);
-            if (effectiveEngineUrl.trim().isEmpty()) {
-                effectiveEngineUrl = DEFAULT_STANBOL_URL;
+            if (effectiveEnhancerUrl.trim().isEmpty()) {
+                effectiveEnhancerUrl = DEFAULT_STANBOL_URL;
             }
-            if (!effectiveEngineUrl.endsWith("/")) {
-                effectiveEngineUrl += "/";
+            if (!effectiveEnhancerUrl.endsWith("/")) {
+                effectiveEnhancerUrl += "/";
             }
-            effectiveEngineUrl += "engines/";
+            effectiveEnhancerUrl += "enhancer/";
         }
-        HttpPost post = new HttpPost(effectiveEngineUrl);
+        HttpPost post = new HttpPost(effectiveEnhancerUrl);
         try {
             post.setHeader("Accept", outputFormat);
             // TODO: fix the Stanbol engine handling of charset in mimetype
@@ -512,7 +499,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 } else {
                     String errorMsg = String.format(
                             "Unexpected response from '%s': %s\n %s",
-                            effectiveEngineUrl,
+                            effectiveEnhancerUrl,
                             response.getStatusLine().toString(), body);
                     throw new IOException(errorMsg);
                 }
@@ -520,7 +507,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         } catch (ClientProtocolException e) {
             post.abort();
             throw new ClientProtocolException(String.format(
-                    "Error connecting to '%s': %s", effectiveEngineUrl,
+                    "Error connecting to '%s': %s", effectiveEnhancerUrl,
                     e.getMessage(), e));
         } catch (IOException e) {
             post.abort();
@@ -541,6 +528,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         }
 
         // special handling of the HTML payload of notes
+        boolean extractBlobs = true;
         try {
             String noteContent = (String) doc.getPropertyValue("note:note");
             noteContent = INVALID_XML_CHARS.matcher(noteContent).replaceAll("");
@@ -550,6 +538,10 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             BlobHolder converted = conversionService.convert(ANY2TEXT, bh, null);
             sb.append(converted.getBlob().getString());
             sb.append("\n\n");
+            // skip blob extraction to avoid extracting the note text twice in
+            // case the blob is related to the
+            // note content + structured metadata.
+            extractBlobs = false;
         } catch (PropertyException pe) {
             // ignore, not a note document
         } catch (IOException e) {
@@ -568,9 +560,10 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 }
             }
         }
-        BlobsExtractor extractor = new BlobsExtractor();
-        sb.append(blobsToText(extractor.getBlobs(doc)));
-
+        if (extractBlobs) {
+            BlobsExtractor extractor = new BlobsExtractor();
+            sb.append(blobsToText(extractor.getBlobs(doc)));
+        }
         // remove any invisible control characters that can be not accepted
         // inside XML 1.0 payload (e.g. in SOAP) and are useless for text
         // analysis anyway.
