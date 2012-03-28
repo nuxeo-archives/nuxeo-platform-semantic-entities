@@ -312,9 +312,13 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         // Retrieve the existing text annotations handling the subsumption
         // relationships
         Property type = model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
-        Property entityType = model.getProperty("http://purl.org/dc/terms/type");
+        Property dcType = model.getProperty("http://purl.org/dc/terms/type");
         Property dcRelation = model.getProperty("http://purl.org/dc/terms/relation");
+        Property entityReference = model.getProperty("http://fise.iks-project.eu/ontology/entity-reference");
+        Property entityLabel = model.getProperty("http://fise.iks-project.eu/ontology/entity-label");
+        Property entityType = model.getProperty("http://fise.iks-project.eu/ontology/entity-type");
         Resource textAnnotationType = model.getResource("http://fise.iks-project.eu/ontology/TextAnnotation");
+        Resource topicAnnotationType = model.getResource("http://fise.iks-project.eu/ontology/TopicAnnotation");
 
         ResIterator it = model.listSubjectsWithProperty(type,
                 textAnnotationType);
@@ -325,8 +329,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 // this is not the most specific occurrence of this name: skip
                 continue;
             }
-
-            Statement typeStmt = annotation.getProperty(entityType);
+            Statement typeStmt = annotation.getProperty(dcType);
             if (typeStmt == null || !typeStmt.getObject().isURIResource()) {
                 continue;
             }
@@ -370,6 +373,41 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             // sort occurrences by occurrence order for easy display and testing
             Collections.sort(group.occurrences);
             groups.add(group);
+        }
+
+        // Second pass to collect the topic style annotations (no explicit
+        // mention in the body of the text).
+        if (prefetchSuggestion) {
+            it = model.listSubjectsWithProperty(type, topicAnnotationType);
+            for (; it.hasNext();) {
+                Resource topicAnnotation = it.nextResource();
+                Statement typeStmt = topicAnnotation.getProperty(entityType);
+                if (typeStmt == null || !typeStmt.getObject().isURIResource()) {
+                    continue;
+                }
+                Resource typeResouce = typeStmt.getObject().as(Resource.class);
+                String localType = LOCAL_TYPES.get(typeResouce.getURI());
+                if (localType == null) {
+                    continue;
+                }
+                Statement labelStmt = topicAnnotation.getProperty(entityLabel);
+                if (labelStmt == null) {
+                    continue;
+                }
+                String label = labelStmt.getObject().as(Literal.class).getString();
+                Statement refStmt = topicAnnotation.getProperty(entityReference);
+                if (refStmt == null) {
+                    continue;
+                }
+                OccurrenceGroup topic = new OccurrenceGroup(label, localType);
+                // maybe this is a suggestion, try to fetch it
+                EntitySuggestion suggestion = getEntitySuggestion(session,
+                        model, topicAnnotation, localType);
+                if (suggestion != null) {
+                    topic.entitySuggestions.add(suggestion.withAutomaticallyCreated(true));
+                }
+                groups.add(topic);
+            }
         }
         // sort by alphabetic order for names for easy display and testing
         Collections.sort(groups);

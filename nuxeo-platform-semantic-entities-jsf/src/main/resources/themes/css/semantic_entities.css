@@ -14,6 +14,8 @@
   width: 450px;
   box-shadow: 0 0 10px #ddd }
 
+.entityOccurrences .entityLink { text-transform:capitalize }
+
 .entityOccurrenceTooltip .entityMentions p { font-size: 95%; margin-bottom: .5em }
 .entityOccurrenceTooltip .entityMentions strong { background-color: "color.major.medium (__FLAVOR__ background)"; padding: 0 .2em }
 
