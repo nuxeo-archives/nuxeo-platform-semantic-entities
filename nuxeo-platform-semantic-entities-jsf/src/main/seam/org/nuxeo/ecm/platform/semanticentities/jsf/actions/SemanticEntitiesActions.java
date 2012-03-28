@@ -537,6 +537,7 @@ public class SemanticEntitiesActions {
 
     public void invalidateCurrentDocumentProviders() {
         Contexts.removeFromAllContexts("entityOccurrenceProvider");
+        Contexts.removeFromAllContexts("relatedTopicsOccurrences");
         Contexts.removeFromAllContexts("relatedPeopleOccurrences");
         Contexts.removeFromAllContexts("relatedPlacesOccurrences");
         Contexts.removeFromAllContexts("relatedOrganizationsOccurrences");
