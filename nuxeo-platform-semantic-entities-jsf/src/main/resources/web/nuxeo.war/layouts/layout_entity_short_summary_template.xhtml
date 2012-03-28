@@ -45,6 +45,7 @@
 <div class="entityOccurrenceTooltip">
 <div class="linkedEntity">
   <div class="currentEntity">
+    <h2>#{value.entityModel.title}</h2>
     <ui:include src="/widgets/summary/summary_entity_heading_widget_template.xhtml">
       <ui:param name="value" value="#{value.entityModel}"/>
     </ui:include>
@@ -86,6 +87,7 @@
     value="#{messages['label.link.cancelLinkToAnotherEntity']}"/></a></p>
 </div>
 
+<f:subview rendered="#{!empty value.occurrences}">
 <h3 class="summaryTitle">#{messages['heading.mentionsInCurrentDocument']}</h3>
 <div class="entityMentions">
 <ui:repeat value="#{value.occurrences}" var="occInfo">
@@ -97,6 +99,7 @@
 </ui:repeat>
 <em></em>
 </div>
+</f:subview>
 </div>
 
 </f:subview>
