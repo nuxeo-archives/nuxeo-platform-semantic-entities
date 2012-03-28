@@ -32,6 +32,15 @@
   </div>
 </f:subview>
 
+<f:subview rendered="#{!empty relatedTopicsOccurrences}">
+  <h3 class="summaryTitle">#{messages['heading.occurrencesOfTopics']}</h3>
+  <div class="entityOccurrences">
+  <c:forEach var="occurrence" items="#{relatedTopicsOccurrences}">
+    <nxl:layout name="entity_short_summary_layout" value="#{occurrence}" mode="view" />
+  </c:forEach>
+  </div>
+</f:subview>
+
 <f:subview rendered="#{!empty relatedPeopleOccurrences}">
   <h3 class="summaryTitle">#{messages['heading.occurrencesOfPeople']}</h3>
   <div class="entityOccurrences">

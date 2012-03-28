@@ -47,6 +47,21 @@
       </layouts>
     </type>
 
+    <type id="Topic">
+      <label>Topic</label>
+      <icon>/icons/Topic.png</icon>
+      <bigIcon>/icons/Topic_100.png</bigIcon>
+      <category>SimpleDocument</category>
+      <description>Topic.description</description>
+      <default-view>view_documents</default-view>
+      <layouts mode="summary">
+        <layout>entity_summary_layout</layout>
+      </layouts>
+      <layouts mode="any">
+        <layout>entity_heading</layout>
+      </layouts>
+    </type>
+
     <type id="Person">
       <label>Person</label>
       <icon>/icons/Person.png</icon>
