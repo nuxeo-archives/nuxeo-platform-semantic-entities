@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import org.junit.Test;
+import static org.junit.Assert.*;
+
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
@@ -28,6 +31,7 @@ public class StanbolEntityHubSourceTest extends RemoteEntityServiceTest {
 
     @Override
     @SuppressWarnings("unchecked")
+    @Test
     public void testDerefenceRemoteEntity() throws Exception {
         DocumentModel barackDoc = session.createDocumentModel("Person");
         service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true,
@@ -98,6 +102,7 @@ public class StanbolEntityHubSourceTest extends RemoteEntityServiceTest {
     }
 
     @Override
+    @Test
     public void testSuggestRemoteEntity() throws IOException {
         assertTrue(service.canSuggestRemoteEntity());
         List<EntitySuggestion> suggestions = service.suggestRemoteEntity(

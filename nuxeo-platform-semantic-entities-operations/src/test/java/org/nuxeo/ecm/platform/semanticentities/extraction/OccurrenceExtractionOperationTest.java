@@ -21,6 +21,10 @@ import java.util.Arrays;
 import java.util.GregorianCalendar;
 import java.util.List;
 
+import org.junit.Before;
+import org.junit.Test;
+import static org.junit.Assert.*;
+
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.event.EventService;
@@ -48,7 +52,7 @@ public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
 
     private SemanticAnalysisService saService;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
         // necessary for the fulltext indexer and text extraction for analysis
@@ -176,6 +180,7 @@ public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
         return doc;
     }
 
+    @Test
     public void testOperationDirectCall() throws Exception {
         DocumentModel doc = createSampleDocumentModel();
         // TODO: use a derived operation that mocks the service HTTP interaction
@@ -199,6 +204,7 @@ public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
         assertEquals("Liverpool", firstPlaces.get(0).getTitle());
     }
 
+    @Test
     public void testCoreEventListener() throws Exception {
         // TODO: deploy a the mock HTTP operation instead of the default core
         // event listener

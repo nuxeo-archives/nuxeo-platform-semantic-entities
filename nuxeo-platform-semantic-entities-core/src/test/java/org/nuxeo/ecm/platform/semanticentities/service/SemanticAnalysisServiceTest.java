@@ -22,6 +22,11 @@ import java.util.Arrays;
 import java.util.GregorianCalendar;
 import java.util.List;
 
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+import static org.junit.Assert.*;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.ClientException;
@@ -53,7 +58,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
     private SemanticAnalysisService saService;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
         // necessary for the fulltext indexer and text extraction for analysis
@@ -101,7 +106,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         assertNotNull(saService);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         // ensure that all threads are closed before shuting down the runtime
         ((SemanticAnalysisServiceImpl) saService).deactivate(null);
@@ -215,6 +220,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         return doc;
     }
 
+    @Test
     public void testAsyncAnalysis() throws Exception {
         if (!database.supportsMultipleFulltextIndexes()) {
             warnSkippedTest();
@@ -247,6 +253,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         }
     }
 
+    @Test
     public void testSynchronousAnalysis() throws Exception {
         if (!database.supportsMultipleFulltextIndexes()) {
             warnSkippedTest();
@@ -257,6 +264,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         checkRemoveRelatedEntities(doc);
     }
 
+    @Test
     public void testSimpleAnalysis() throws Exception {
         makeSomeEntities();
 
@@ -375,6 +383,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         }
     }
 
+    @Test
     public void testTextExtract() throws ClientException {
         DocumentModel doc = session.createDocumentModel("/",
                 "docWithControlChars", "Note");

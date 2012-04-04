@@ -24,6 +24,11 @@ import java.util.Arrays;
 import java.util.GregorianCalendar;
 import java.util.List;
 
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+import static org.junit.Assert.*;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.ClientException;
@@ -59,7 +64,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
     private DocumentModel doc2;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
         // necessary for the fulltext indexer
@@ -99,7 +104,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         makeSomeDocuments();
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         closeSession();
         super.tearDown();
@@ -228,6 +233,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         Framework.getLocalService(EventService.class).waitForAsyncCompletion();
     }
 
+    @Test
     public void testCreateEntities() throws ClientException {
         if (!database.supportsMultipleFulltextIndexes()) {
             warnSkippedTest();
@@ -238,6 +244,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     @SuppressWarnings("unchecked")
+    @Test
     public void testAddOccurrences() throws Exception {
         if (!database.supportsMultipleFulltextIndexes()) {
             warnSkippedTest();
@@ -306,6 +313,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(11, occ3.getOccurrences().get(0).endPosInContext);
     }
 
+    @Test
     public void testGetRelatedDocumentsAndEntities() throws Exception {
         if (!database.supportsMultipleFulltextIndexes()) {
             warnSkippedTest();
@@ -375,6 +383,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals("Liverpool", ent1.getPropertyValue("dc:title"));
     }
 
+    @Test
     public void testSuggestLocalEntitiesEmptyKB() throws ClientException {
         if (!database.supportsMultipleFulltextIndexes()) {
             warnSkippedTest();
@@ -386,6 +395,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertTrue(suggestions.isEmpty());
     }
 
+    @Test
     public void testSuggestLocalEntities() throws ClientException {
         if (!database.supportsMultipleFulltextIndexes()) {
             warnSkippedTest();
@@ -448,6 +458,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(johndoe, suggestions.get(1).entity);
     }
 
+    @Test
     public void testSuggestEntities() throws Exception {
         if (!database.supportsMultipleFulltextIndexes()) {
             warnSkippedTest();
@@ -490,6 +501,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertTrue(firstGuess.isLocal());
     }
 
+    @Test
     public void testSuggestEntitiesWithoutTypeRestriction() throws Exception {
         if (!database.supportsMultipleFulltextIndexes()) {
             warnSkippedTest();
@@ -532,6 +544,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertTrue(firstGuess.isLocal());
     }
 
+    @Test
     public void testGetOccurrenceRelation() throws Exception {
         if (!database.supportsMultipleFulltextIndexes()) {
             warnSkippedTest();
@@ -556,6 +569,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(mentions, relation.getOccurrences());
     }
 
+    @Test
     public void testAddRemoveOccurrenceRelationWithEmptyOccurrenceData()
             throws Exception {
         if (!database.supportsMultipleFulltextIndexes()) {
@@ -568,14 +582,14 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
                 doc1.getRef(), john.getRef());
         assertNull(relation);
         assertEquals(0.0,
-                john.getProperty("entity:popularity").getValue(Double.class));
+                (double)john.getProperty("entity:popularity").getValue(Double.class), 1e-8);
 
         service.addOccurrences(session, doc1.getRef(), john.getRef(), null);
 
         // check the popularity of john
         john = session.getDocument(john.getRef());
         assertEquals(1.0,
-                john.getProperty("entity:popularity").getValue(Double.class));
+                (double)john.getProperty("entity:popularity").getValue(Double.class), 1e-8);
 
         relation = service.getOccurrenceRelation(session, doc1.getRef(),
                 john.getRef());
@@ -604,9 +618,10 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         // check the popularity of john
         john = session.getDocument(john.getRef());
         assertEquals(0.0,
-                john.getProperty("entity:popularity").getValue(Double.class));
+                (double)john.getProperty("entity:popularity").getValue(Double.class), 1e-8);
     }
 
+    @Test
     public void testSuggestDocument() throws Exception {
         if (!database.supportsMultipleFulltextIndexes()) {
             warnSkippedTest();
@@ -634,6 +649,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(doc2.getTitle(), suggestions.get(1).getTitle());
     }
 
+    @Test
     public void testSuggestEntityWithSpecialCharacters() throws Exception {
         if (!database.supportsMultipleFulltextIndexes()) {
             warnSkippedTest();
@@ -657,6 +673,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(canalplus.getId(), suggestions.get(0).getLocalId());
     }
 
+    @Test
     public void testGetLinkedLocalEntity() throws Exception {
         if (!database.supportsMultipleFulltextIndexes()) {
             warnSkippedTest();
@@ -679,6 +696,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
     }
 
+    @Test
     public void testCleanupKeywords() {
         assertEquals("This is a test",
                 LocalEntityServiceImpl.cleanupKeywords("This is. a\n test?"));
