@@ -77,22 +77,6 @@
       </parameters>
     </remoteSource>
 
-    <remoteSource name="iptc" uriPrefix="http://cv.iptc.org/newscodes/subjectcode/"
-      class="org.nuxeo.ecm.platform.semanticentities.sources.StanbolEntityHubSource"
-      enabled="true">
-      <typeMapping default="Topic">
-        <type name="Topic">http://www.w3.org/2004/02/skos/core#Concept</type>
-      </typeMapping>
-      <propertyMapping>
-        <field name="dc:title">http://www.w3.org/2004/02/skos/core#preferedLabel</field>
-        <field name="entity:altnames">http://www.w3.org/2004/02/skos/core#altLabel</field>
-      </propertyMapping>
-      <parameters>
-        <parameter name="stanbolURL">${org.nuxeo.ecm.platform.semanticentities.stanbolUrl}</parameter>
-        <parameter name="site">iptc</parameter>
-      </parameters>
-    </remoteSource>
-
   </extension>
 
 </component>
