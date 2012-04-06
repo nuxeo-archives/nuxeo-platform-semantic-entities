@@ -180,9 +180,10 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     public void deactivate(ComponentContext context) throws Exception {
         active = false;
 
-
-        ((EventServiceImpl)Framework.getLocalService(EventService.class)).unregisterForAsyncWait(asyncWaitHook);
-        asyncWaitHook.shutdown();
+        if (asyncWaitHook != null) {
+            ((EventServiceImpl) Framework.getLocalService(EventService.class)).unregisterForAsyncWait(asyncWaitHook);
+            asyncWaitHook.shutdown();
+        }
 
         conversionService = null;
         leService = null;
