@@ -27,6 +27,11 @@ import java.util.Set;
 import java.util.TimeZone;
 
 import org.apache.commons.lang.StringUtils;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Test;
+import static org.junit.Assert.*;
+
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
@@ -47,7 +52,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
     RemoteEntityService service;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
         // necessary for the fulltext indexer
@@ -71,7 +76,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         assertNotNull(service);
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         closeSession();
         super.tearDown();
@@ -80,6 +85,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
     protected abstract void deployRemoteEntityServiceOverride()
             throws Exception;
 
+    @Test
     public void testSuggestRemoteEntity() throws IOException {
         assertTrue(service.canSuggestRemoteEntity());
         List<EntitySuggestion> suggestions = service.suggestRemoteEntity("Obama",
@@ -112,11 +118,13 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(0, suggestions.size());
     }
 
+    @Test
     public void testCanDereferenceRemoteEntity() throws Exception {
         assertTrue(service.canDereference(DBPEDIA_LONDON_URI));
         assertFalse(service.canDereference(WIKIPEDIA_LONDON_URI));
     }
 
+    @Test
     public void testGetAdmissibleTypes() throws Exception {
         Set<String> admissibleTypes = service.getAdmissibleTypes(DBPEDIA_BARACK_OBAMA_URI);
         assertNotNull(admissibleTypes);
@@ -128,6 +136,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     @SuppressWarnings("unchecked")
+    @Test
     public void testDerefenceRemoteEntity() throws Exception {
         DocumentModel barackDoc = session.createDocumentModel("Person");
         service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true, false);
@@ -195,6 +204,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals("Barack Obama", barackDoc.getTitle());
     }
 
+    @Test
     public void testDerefencingTypeConsistency() throws Exception {
         DocumentModel barackDoc = session.createDocumentModel("Organization");
         try {
