@@ -160,7 +160,7 @@ public abstract class ParameterizedHTTPEntitySource implements
 
     @Override
     @SuppressWarnings("unchecked")
-    public void dereferenceIntoFromModel(DocumentModel localEntity,
+    public boolean dereferenceIntoFromModel(DocumentModel localEntity,
             URI remoteEntity, Model rdfModel, boolean override,
             boolean lazyResourceFetch) throws DereferencingException {
 
@@ -275,6 +275,7 @@ public abstract class ParameterizedHTTPEntitySource implements
                 throw new DereferencingException(e);
             }
         }
+        return true;
     }
 
     protected Serializable readDecodedLiteral(Model rdfModel,

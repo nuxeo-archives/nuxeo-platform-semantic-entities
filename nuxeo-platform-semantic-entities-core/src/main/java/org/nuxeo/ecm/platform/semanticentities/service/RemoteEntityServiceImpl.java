@@ -27,6 +27,7 @@ import java.util.TreeSet;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.nuxeo.common.utils.StringUtils;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
@@ -104,6 +105,9 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
         registeredSourceDescriptors.add(descriptor);
         // invalidate the cache of activeSources
         activeSources = null;
+        log.info(String.format(
+                "Registered entity source '%s' with class '%s'.",
+                descriptor.getName(), descriptor.getClassName()));
     }
 
     @Override
@@ -123,11 +127,14 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
             RemoteEntitySourceDescriptor descriptor, Extension extension) {
         int index = registeredSourceDescriptors.lastIndexOf(descriptor);
         if (index != -1) {
-            registeredSourceDescriptors.remove(index);
+            RemoteEntitySourceDescriptor removed = registeredSourceDescriptors.remove(index);
             activeSources = null;
+            log.info(String.format(
+                    "Unregistered entity source '%s' with class '%s'.",
+                    removed.getName(), removed.getClassName()));
         } else {
             log.warn(String.format(
-                    "no registered remote source under name '%s'",
+                    "No registered remote source under name '%s'",
                     descriptor.getName()));
         }
     }
@@ -152,26 +159,32 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public void dereferenceInto(DocumentModel localEntity, URI remoteEntity,
+    public boolean dereferenceInto(DocumentModel localEntity, URI remoteEntity,
             boolean override, boolean lazyResourceFetch)
             throws DereferencingException {
-        getSourceFor(remoteEntity).dereferenceInto(localEntity, remoteEntity,
-                override, lazyResourceFetch);
+        RemoteEntitySource source = getSourceFor(remoteEntity);
+        if (source == null) {
+            return false;
+        }
+        log.debug(String.format("Dereferencing '%s' from source '%s'",
+                remoteEntity, source.getClass().getName()));
+        return source.dereferenceInto(localEntity, remoteEntity, override,
+                lazyResourceFetch);
     }
 
     @Override
-    public void dereferenceIntoFromModel(DocumentModel localEntity,
+    public boolean dereferenceIntoFromModel(DocumentModel localEntity,
             URI remoteEntity, Model rdfModel, boolean override,
             boolean lazyResourceFetch) throws DereferencingException {
         RemoteEntitySource source = getSourceFor(remoteEntity);
-        if (source != null) {
-            source.dereferenceIntoFromModel(localEntity, remoteEntity,
-                    rdfModel, override, lazyResourceFetch);
-        } else {
-            log.warn(String.format("No registered source for remote"
-                    + " source '%s' to local entity '%s'.", remoteEntity,
-                    localEntity));
+        if (source == null) {
+            return false;
         }
+        log.debug(String.format(
+                "Dereferencing '%s' from source '%s' and prefetched model.",
+                remoteEntity, source.getClass().getName()));
+        return source.dereferenceIntoFromModel(localEntity, remoteEntity,
+                rdfModel, override, lazyResourceFetch);
     }
 
     /**
@@ -191,6 +204,9 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
                         maxSuggestions));
             }
         }
+        log.debug(String.format(
+                "Entity Suggestions for '%s' and type '%s': [%s]", keywords,
+                type, StringUtils.join(suggestions.toArray(), ", ")));
         return suggestions;
     }
 

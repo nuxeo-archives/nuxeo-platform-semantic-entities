@@ -155,24 +155,32 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         asyncWaitHook = new AsyncWaitHook() {
 
             @Override
-            public boolean waitForAsyncCompletion(){
-               try {
-                   return executor.shutdown();
-               } finally {
-                   executor = new SemanticAnalysisExecutor();
-               }
+            public boolean waitForAsyncCompletion() {
+                try {
+                    log.debug(String.format(
+                            "Wait for async executor '%s' to complete.",
+                            executor));
+                    return executor.shutdown();
+                } finally {
+                    log.debug(String.format("%s has completed.", executor));
+                    executor = new SemanticAnalysisExecutor();
+                }
             }
 
             @Override
             public boolean shutdown() {
                 try {
+                    log.debug(String.format(
+                            "Wait for async executor '%s' to shut down.",
+                            executor));
                     return executor.shutdownNow();
                 } finally {
+                    log.debug(String.format("%s was shut down.", executor));
                     executor = null;
                 }
             }
         };
-        ((EventServiceImpl)Framework.getLocalService(EventService.class)).registerForAsyncWait(asyncWaitHook);
+        ((EventServiceImpl) Framework.getLocalService(EventService.class)).registerForAsyncWait(asyncWaitHook);
         active = true;
     }
 
@@ -199,6 +207,9 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         if (!active) {
             return;
         }
+        log.debug(String.format(
+                "Scheduling serialization task for OccurrenceGroups '%s' on document '%s'.",
+                task.getOccurrenceGroups(), task.getDocumentRef()));
         states.put(task.getDocumentLocation(),
                 ProgressStatus.STATUS_LINKING_QUEUED);
         executor.execute(task);
@@ -238,6 +249,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             throws ClientException {
         AnalysisTask task = new AnalysisTask(repositoryName, docRef, this);
         if (!executor.analysisTaskQueue.contains(task)) {
+            log.debug(String.format(
+                    "Scheduling analysis task for document '%s'.", docRef));
             states.put(new DocumentLocationImpl(repositoryName, docRef),
                     ProgressStatus.STATUS_ANALYSIS_QUEUED);
             executor.execute(task);
@@ -438,9 +451,14 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             // information from the
             // remote sources
             DocumentModel entity = session.createDocumentModel(localType);
-            getRemoteEntityService().dereferenceIntoFromModel(entity,
-                    URI.create(remoteEntityUri), model, true, true);
-            return new EntitySuggestion(entity).withScore(score);
+            boolean found = getRemoteEntityService().dereferenceIntoFromModel(
+                    entity, URI.create(remoteEntityUri), model, true, true);
+            if (found) {
+                return new EntitySuggestion(entity).withScore(score);
+            } else {
+                log.warn(String.format("No description found in registered"
+                        + " sources for remote entity '%s'.", remoteEntityUri));
+            }
         } else {
             // treat the suggestion as a lazily fetched remote entity
             Statement labelStmt = entitySuggestionResource.getProperty(entityLabelProperty);

@@ -100,8 +100,8 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                 endpointURL += "site/" + site + "/";
             }
         }
-        log.info("Configured StanbolEntityHubSource to endpoint: "
-                + endpointURL);
+        log.info(String.format("Configured '%s' to endpoint: '%s'",
+                this.getClass().getName(), endpointURL));
     }
 
     @SuppressWarnings("unchecked")
@@ -167,7 +167,7 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
 
     @SuppressWarnings("unchecked")
     @Override
-    public void dereferenceInto(DocumentModel localEntity, URI remoteEntity,
+    public boolean dereferenceInto(DocumentModel localEntity, URI remoteEntity,
             boolean override, boolean lazyResourceFetch)
             throws DereferencingException {
         Map<String, Object> representation = Collections.emptyMap();
@@ -287,6 +287,7 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                 throw new DereferencingException(e);
             }
         }
+        return true;
     }
 
     @SuppressWarnings("unchecked")

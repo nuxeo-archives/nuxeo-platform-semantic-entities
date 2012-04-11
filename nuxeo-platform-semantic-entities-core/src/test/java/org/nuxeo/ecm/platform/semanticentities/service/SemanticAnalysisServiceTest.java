@@ -108,7 +108,8 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
     @After
     public void tearDown() throws Exception {
-        // ensure that all threads are closed before shuting down the runtime
+        log.info("Tearing down");
+        // ensure that all threads are closed before shutting down the runtime
         ((SemanticAnalysisServiceImpl) saService).deactivate(null);
         closeSession();
         super.tearDown();
@@ -241,7 +242,8 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
             saService.launchAnalysis(doc.getRepositoryName(), doc.getRef());
         }
 
-        // wait for all the analysis to complete
+        // wait for all the analysis to complete thanks to a hook registered in
+        // the Event Service at activation of the Semantic Analysis Service.
         es.waitForAsyncCompletion();
 
         // check the results of the analysis

@@ -12,6 +12,7 @@ import org.nuxeo.ecm.platform.semanticentities.service.RemoteEntitySourceDescrip
 
 public class MockStanbolEntityHubSource extends StanbolEntityHubSource {
 
+    @SuppressWarnings("unused")
     private static final Log log = LogFactory.getLog(MockStanbolEntityHubSource.class);
 
     static final String DBPEDIA_PREFIX = "http://dbpedia.org/resource/";
@@ -20,7 +21,6 @@ public class MockStanbolEntityHubSource extends StanbolEntityHubSource {
     public void setDescriptor(RemoteEntitySourceDescriptor descriptor) {
         descriptor.getParameters().put("stanbolURL", "http://fakehost/");
         super.setDescriptor(descriptor);
-        log.info("Registered mocked descriptor for StanbolEntityHubSource");
     }
 
     @Override

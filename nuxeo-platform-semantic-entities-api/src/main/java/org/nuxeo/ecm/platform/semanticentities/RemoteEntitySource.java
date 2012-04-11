@@ -68,10 +68,13 @@ public interface RemoteEntitySource {
      *            remote entity
      * @param lazyResourceFetch if true, delay the fetch of the content of
      *            referenced resources (e.g. JPEG images) to first access.
+     *
+     * @return true if a suitable remote entity description was found in the
+     *         source, false otherwise.
      */
-    void dereferenceInto(DocumentModel localEntity, URI remoteEntity,
+    boolean dereferenceInto(DocumentModel localEntity, URI remoteEntity,
             boolean override, boolean lazyResourceFetch)
-            throws DereferencingException;
+     throws DereferencingException;
 
     /**
      * Dereference a remote entity into an existing document model from a
@@ -92,8 +95,11 @@ public interface RemoteEntitySource {
      *            remote entity
      * @param lazyResourceFetch if true, delay the fetch of the content of
      *            referenced resources (e.g. JPEG images) to first access.
+     *
+     * @return true if a suitable remote entity description was found in the
+     *         source, false otherwise.
      */
-    public void dereferenceIntoFromModel(DocumentModel localEntity,
+    public boolean dereferenceIntoFromModel(DocumentModel localEntity,
             URI remoteEntity, Model rdfModel, boolean override,
             boolean lazyResourceFetch) throws DereferencingException;
 

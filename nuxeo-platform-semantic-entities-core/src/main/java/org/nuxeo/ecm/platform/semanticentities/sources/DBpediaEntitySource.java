@@ -93,7 +93,7 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
     }
 
     @Override
-    public void dereferenceInto(DocumentModel localEntity, URI remoteEntity,
+    public boolean dereferenceInto(DocumentModel localEntity, URI remoteEntity,
             boolean override, boolean lazyResourceFetch)
             throws DereferencingException {
 
@@ -102,8 +102,8 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
 
         // fill in the localEntity document with the content of the RDF payload
         // using the property mapping defined in the source descriptor
-        dereferenceIntoFromModel(localEntity, remoteEntity, rdfModel, override,
-                lazyResourceFetch);
+        return dereferenceIntoFromModel(localEntity, remoteEntity, rdfModel,
+                override, lazyResourceFetch);
     }
 
     protected Model fetchRDFDescription(URI remoteEntity)
@@ -204,7 +204,7 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
         // Fetch the complete payload to make it easier for debugging (should
         // not be big anyway)
         String content = IOUtils.toString(bodyStream);
-        log.debug(content);
+        log.trace(content);
 
         List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
         try {
