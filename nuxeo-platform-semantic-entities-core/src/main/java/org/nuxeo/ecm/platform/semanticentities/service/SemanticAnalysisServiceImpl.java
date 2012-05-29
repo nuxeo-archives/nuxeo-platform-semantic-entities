@@ -95,6 +95,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     protected static final String STANBOL_URL_PROPERTY = "org.nuxeo.ecm.platform.semanticentities.stanbolUrl";
 
+    protected static final String STANBOL_CHAIN_PROPERTY = "org.nuxeo.ecm.platform.semanticentities.stanbolChain";
+
     protected static final String DEFAULT_ENGINE_OUTPUT_FORMAT = "application/rdf+xml";
 
     // TODO: turn the following fields into configurable parameters set by a
@@ -544,6 +546,10 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 effectiveEnhancerUrl += "/";
             }
             effectiveEnhancerUrl += "enhancer/";
+            String chain = Framework.getProperty(STANBOL_CHAIN_PROPERTY);
+            if (chain != null) {
+                effectiveEnhancerUrl += "chain/" + chain + "/";
+            }
         }
         HttpPost post = new HttpPost(effectiveEnhancerUrl);
         try {
