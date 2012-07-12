@@ -73,8 +73,6 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <!-- TODO: remove hardcoded version number -->
-      <version>4.0.3</version>
     </dependency>
     <dependency>
       <groupId>org.codehaus.jackson</groupId>
