@@ -42,7 +42,8 @@
       <widget name="summary_current_entity_view" type="summary_current_entity_view" />
       <widget name="summary_current_entity_sync" type="summary_current_entity_sync" />
     </layout>
-    
+
+    <!-- FIXME: remove override -->
     <layout name="default_summary_layout">
       <templates>
         <template mode="any">/layouts/layout_summary_template.xhtml</template>
@@ -73,6 +74,7 @@
        type="summary_current_document_entities"/>
     </layout>
 
+    <!-- FIXME: remove override -->
     <layout name="note_summary_layout">
       <templates>
         <template mode="any">/layouts/layout_summary_template.xhtml</template>
