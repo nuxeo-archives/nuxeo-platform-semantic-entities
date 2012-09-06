@@ -456,19 +456,19 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         } else {
             entityTypeNames.add(type);
         }
-
+        String escapedName = cleanupKeywords(keywords);
         String q = String.format(
-                "SELECT * FROM %s WHERE ecm:fulltext_title = '%s'"
+                "SELECT * FROM %s WHERE (ecm:fulltext_title = '%s' OR entity:altnames = '%s')"
                         + " AND ecm:primaryType IN ('%s')"
                         + " AND ecm:currentLifeCycleState != 'deleted'"
                         + " AND ecm:isCheckedInVersion = 0"
                         + " ORDER BY entity:popularity DESC, dc:title LIMIT %d",
-                Constants.ENTITY_TYPE, cleanupKeywords(keywords),
+                Constants.ENTITY_TYPE, escapedName, escapedName,
                 StringUtils.join(entityTypeNames, "', '"), maxSuggestions);
 
         // TODO: read the score info as well
         List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
-        for (DocumentModel doc: session.query(q)) {
+        for (DocumentModel doc : session.query(q)) {
             suggestions.add(new EntitySuggestion(doc));
         }
         return suggestions;

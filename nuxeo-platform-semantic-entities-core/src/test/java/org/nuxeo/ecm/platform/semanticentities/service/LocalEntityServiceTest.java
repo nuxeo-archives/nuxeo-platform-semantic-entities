@@ -178,6 +178,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         john.setPropertyValue(
                 "entity:types",
                 (Serializable) Arrays.asList("http://dbpedia.org/ontology/MusicalArtist"));
+        john.setPropertyValue("entity:altnames", new String[] {"John Winston Lennon"});
         john.setPropertyValue("person:birthDate", new GregorianCalendar(1940,
                 10, 9));
         john.setPropertyValue("person:birthDate", new GregorianCalendar(1980,
@@ -264,7 +265,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         john = session.getDocument(john.getRef());
         // John Lennon is the main entity name, hence not stored in the altnames
         // field
-        assertTrue(john.getProperty("entity:altnames").getValue(List.class).isEmpty());
+        assertFalse(john.getProperty("entity:altnames").getValue(List.class).contains("John Lennon"));
 
         // check the increase in popularity
         double pop1 = john.getProperty("entity:popularity").getValue(
@@ -280,7 +281,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         // in the future
         assertEquals(new ArrayList<String>(
                 john.getProperty("entity:altnames").getValue(List.class)),
-                Arrays.asList("John"));
+                Arrays.asList("John Winston Lennon", "John"));
         // check the popularity is still the same since this is an occurrence
         // from the same document
         double pop2 = john.getProperty("entity:popularity").getValue(
@@ -428,6 +429,11 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(john, suggestions.get(0).entity);
         assertEquals(johndoe, suggestions.get(1).entity);
 
+        // Suggest based on exact match on alternative names
+        suggestions = service.suggestLocalEntity(session, "John Winston Lennon", "Person", 3);
+        assertEquals(1, suggestions.size());
+        assertEquals(john, suggestions.get(0).entity);
+        
         // create a new version for Lennon
         john.putContextData(VersioningService.VERSIONING_OPTION,
                 VersioningOption.MAJOR);
