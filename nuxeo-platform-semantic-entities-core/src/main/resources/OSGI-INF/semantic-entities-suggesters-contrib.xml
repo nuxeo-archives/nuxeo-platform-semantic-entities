@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<component name="org.nuxeo.ecm.platform.semanticentities.suggesters">
+
+  <require>org.nuxeo.ecm.platform.suggestbox.core.defaultSuggesters</require>
+  
+  <extension
+    target="org.nuxeo.ecm.platform.suggestbox.service.SuggestionService"
+    point="suggesters">
+
+    <suggester name="documentOrEntityLookupByTitle"
+      class="org.nuxeo.ecm.platform.semanticentities.suggesters.DocumentOrEntityLookupSuggester">
+      <parameters>
+        <parameter name="providerName">DOCUMENT_OR_ENTITY_SUGGESTION</parameter>
+      </parameters>
+    </suggester>
+
+  </extension>
+  <extension
+    target="org.nuxeo.ecm.platform.suggestbox.service.SuggestionService"
+    point="suggesterGroups">
+    <suggesterGroup name="searchbox">
+      <suggesters>
+        <suggesterName>documentOrEntityLookupByTitle</suggesterName>
+        <suggesterName>documentLookupByTitle</suggesterName>
+        <suggesterName>searchByUsersAndGroups</suggesterName>
+        <suggesterName>searchByDate</suggesterName>
+      </suggesters>
+    </suggesterGroup>
+  </extension>
+</component>

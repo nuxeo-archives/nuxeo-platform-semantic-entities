@@ -11,4 +11,6 @@ Nuxeo-Component: OSGI-INF/semantic-entities-core-types-contrib.xml,
   OSGI-INF/semantic-entities-remote-entity-service.xml,
   OSGI-INF/semantic-entities-document-adapters-contrib.xml,
   OSGI-INF/semantic-entities-analysis-service.xml,
-  OSGI-INF/semantic-entities-permissions-contrib.xml
+  OSGI-INF/semantic-entities-permissions-contrib.xml,
+  OSGI-INF/semantic-entities-pageproviders-contrib.xml,
+  OSGI-INF/semantic-entities-suggesters-contrib.xml
