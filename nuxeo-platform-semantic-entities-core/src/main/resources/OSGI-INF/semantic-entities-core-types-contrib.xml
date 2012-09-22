@@ -11,6 +11,7 @@
     <schema name="organization" src="schemas/organization.xsd" prefix="org"/>
     <schema name="topic" src="schemas/topic.xsd" prefix="topic"/>
     <schema name="occurrence" src="schemas/occurrence.xsd" prefix="occ"/>
+    <schema name="semantics" prefix="semantics" src="schema/semantics.xsd" />
   </extension>
 
   <extension target="org.nuxeo.ecm.core.schema.TypeService"
@@ -76,6 +77,10 @@
         <facet name="HiddenInNavigation" />
       -->
     </doctype>
+
+    <facet name="HasSemantics">
+      <schema name="semantics" />
+    </facet>
 
   </extension>
 
