@@ -34,20 +34,23 @@ public class DocumentOrEntityLookupSuggester extends DocumentLookupSuggester {
         Map<String, Serializable> props = new HashMap<String, Serializable>();
         props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY,
                 (Serializable) context.session);
-        userInput = NXQLQueryBuilder.sanitizeFulltextInput(userInput);
-        String exactMatchUserInput = userInput.trim();
-        if (userInput.trim().isEmpty()) {
+        String trimedInput = userInput.trim();
+        String sanitizedInput = NXQLQueryBuilder.sanitizeFulltextInput(trimedInput);
+        String fulltextInput = sanitizedInput;
+        String likeUserInput = sanitizedInput;
+        if (trimedInput.isEmpty()) {
             return Collections.emptyList();
         }
         if (!userInput.endsWith(" ")) {
             // perform a prefix search on the last typed word
-            userInput += "*";
+            fulltextInput += "*";
+            likeUserInput += "%";
         }
         try {
             List<Suggestion> suggestions = new ArrayList<Suggestion>();
             PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) ppService.getPageProvider(
                     providerName, null, null, null, props,
-                    new Object[] { userInput, exactMatchUserInput });
+                    new Object[] { fulltextInput, likeUserInput });
             for (DocumentModel doc : pp.getCurrentPage()) {
                 suggestions.add(DocumentSuggestion.fromDocumentModel(doc));
             }

@@ -7,7 +7,7 @@
       <coreQueryPageProvider name="DOCUMENT_OR_ENTITY_SUGGESTION">
         <property name="maxResults">PAGE_SIZE</property>
         <pattern quoteParameters="false" escapeParameters="true">
-          SELECT * FROM Document WHERE (ecm:fulltext.dc:title LIKE '?' OR entity:altnames = '?')
+          SELECT * FROM Document WHERE (ecm:fulltext.dc:title LIKE '?' OR entity:altnames LIKE '?')
            AND ecm:mixinType != 'HiddenInNavigation' AND ecm:isCheckedInVersion = 0 AND
           ecm:currentLifeCycleState != 'deleted'
         </pattern>

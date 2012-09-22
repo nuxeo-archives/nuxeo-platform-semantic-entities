@@ -20,10 +20,8 @@
     point="suggesterGroups">
     <suggesterGroup name="searchbox">
       <suggesters>
-        <suggesterName>documentOrEntityLookupByTitle</suggesterName>
-        <suggesterName>documentLookupByTitle</suggesterName>
-        <suggesterName>searchByUsersAndGroups</suggesterName>
-        <suggesterName>searchByDate</suggesterName>
+        <suggesterName appendAfter="searchByKeywords">documentOrEntityLookupByTitle</suggesterName>
+        <suggesterName remove="true">documentLookupByTitle</suggesterName>
       </suggesters>
     </suggesterGroup>
   </extension>
