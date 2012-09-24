@@ -16,6 +16,12 @@ import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
 public interface SemanticAnalysisService {
 
     /**
+     * DocumentModel ContextData marker to avoid recursive analysis of documents
+     * by event listeners.
+     */
+    public static final String SKIP_SEMANTIC_ANALYSIS = "SKIP_SEMANTIC_ANALYSIS";
+
+    /**
      * @return true if the service could be correctly initialized
      */
     boolean isActive();

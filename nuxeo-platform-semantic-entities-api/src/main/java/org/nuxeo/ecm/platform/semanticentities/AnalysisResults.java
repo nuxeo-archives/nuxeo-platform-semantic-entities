@@ -47,6 +47,9 @@ public class AnalysisResults {
                         (Serializable) property.getValue());
             }
         }
+        // Avoid triggering analysis loops by event listeners
+        doc.getContextData().put(
+                SemanticAnalysisService.SKIP_SEMANTIC_ANALYSIS, Boolean.TRUE);
         if (!properties.isEmpty()) {
             session.saveDocument(doc);
         }
