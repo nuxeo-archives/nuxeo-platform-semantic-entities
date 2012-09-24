@@ -68,4 +68,14 @@ public interface OccurrenceRelation {
     void setOccurrences(List<OccurrenceInfo> occurrences)
             throws ClientException;
 
+    /**
+     * Lazy fetch the DocumentModel of the entity being mentioned.
+     */
+    public DocumentModel getTargetEntity() throws ClientException;
+
+    /**
+     * Lazy fetch the DocumentModel of the document carrying the entity mentions.
+     */
+    public DocumentModel getSourceDocument() throws ClientException;
+
 }

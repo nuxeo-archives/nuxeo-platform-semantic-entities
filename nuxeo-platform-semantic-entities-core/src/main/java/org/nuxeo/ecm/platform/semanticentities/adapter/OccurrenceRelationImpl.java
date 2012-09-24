@@ -100,4 +100,14 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
         return doc;
     }
 
+    @Override
+    public DocumentModel getTargetEntity() throws ClientException {
+        return doc.getCoreSession().getDocument(getTargetEntityRef());
+    }
+
+    @Override
+    public DocumentModel getSourceDocument() throws ClientException {
+        return doc.getCoreSession().getDocument(getSourceDocumentRef());
+    }
+
 }
