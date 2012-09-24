@@ -10,6 +10,7 @@
     <listener name="semanticentities" async="false" postCommit="true"
       class="org.nuxeo.ecm.platform.semanticentities.listener.SemanticEntitiesCoreListener"
       priority="510">
+      <event>documentCreated</event>
     </listener>
 
   </extension>
