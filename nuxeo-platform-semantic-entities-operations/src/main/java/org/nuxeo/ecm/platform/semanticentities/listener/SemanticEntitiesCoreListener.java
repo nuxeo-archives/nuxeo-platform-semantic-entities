@@ -45,6 +45,8 @@ public class SemanticEntitiesCoreListener implements PostCommitEventListener {
 
     private static final Log log = LogFactory.getLog(SemanticEntitiesCoreListener.class);
 
+    protected List<String> eventNames = Arrays.asList(DocumentEventTypes.DOCUMENT_CREATED);
+
     protected List<String> documentTypes = new ArrayList<String>();
 
     @Override
@@ -63,6 +65,9 @@ public class SemanticEntitiesCoreListener implements PostCommitEventListener {
         CoreSession session = null;
         Set<Serializable> ids = new HashSet<Serializable>();
         for (Event event : events) {
+            if (!eventNames.isEmpty() && !eventNames.contains(event.getName())) {
+                continue;
+            }
             EventContext eventContext = event.getContext();
             CoreSession s = eventContext.getCoreSession();
             DocumentModel dm = (DocumentModel) eventContext.getArguments()[0];
