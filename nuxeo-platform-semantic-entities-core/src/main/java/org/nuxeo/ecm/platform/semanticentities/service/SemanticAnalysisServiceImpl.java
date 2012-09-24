@@ -53,6 +53,7 @@ import org.nuxeo.ecm.core.event.impl.EventServiceImpl;
 import org.nuxeo.ecm.core.schema.FacetNames;
 import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.utils.BlobsExtractor;
+import org.nuxeo.ecm.platform.semanticentities.AnalysisResults;
 import org.nuxeo.ecm.platform.semanticentities.AnalysisTask;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
@@ -73,6 +74,7 @@ import com.google.common.collect.MapMaker;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.rdf.model.NodeIterator;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.ResIterator;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -271,7 +273,9 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                             doc.getRef()),
                     ProgressStatus.STATUS_ANALYSIS_PENDING);
             String textContent = extractText(doc);
-            createLinks(doc, session, analyze(session, textContent));
+            AnalysisResults results = analyze(session, textContent);
+            results.savePropertiesToDocument(session, doc);
+            createLinks(doc, session, results.groups);
         } finally {
             states.remove(new DocumentLocationImpl(doc.getRepositoryName(),
                     doc.getRef()));
@@ -472,6 +476,26 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         return null;
     }
 
+
+    protected void collectSuggestedProperties(CoreSession session, Model model,
+            AnalysisResults results) {
+        // TODO: write a generic property mapper with a configurable mappings from an extension point
+        Property type = model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+        Property dcLanguage = model.getProperty("http://purl.org/dc/terms/language");
+        Resource textAnnotationType = model.getResource("http://fise.iks-project.eu/ontology/TextAnnotation");
+
+        ResIterator it = model.listSubjectsWithProperty(type,
+                textAnnotationType);
+        for (; it.hasNext();) {
+            Resource annotation = it.nextResource();
+            NodeIterator languages = model.listObjectsOfProperty(annotation, dcLanguage);
+            if (languages.hasNext()) {
+                results.withProperty("dc:language", languages.next().asLiteral().getString());
+            }
+        }
+        
+    }
+    
     protected OccurrenceInfo getOccurrenceInfo(Model model, Resource annotation) {
         Property mentionProp = model.getProperty("http://fise.iks-project.eu/ontology/selected-text");
         Property startProp = model.getProperty("http://fise.iks-project.eu/ontology/start");
@@ -510,22 +534,25 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public List<OccurrenceGroup> analyze(CoreSession session, String textContent)
+    public AnalysisResults analyze(CoreSession session, String textContent)
             throws IOException, ClientException {
         String output = callSemanticEngine(textContent, outputFormat, 2);
         Model model = ModelFactory.createDefaultModel().read(
                 new StringReader(output), null);
-        return findStanbolEntityOccurrences(session, model);
+        AnalysisResults results = AnalysisResults.newInstance();
+        results.groups.addAll(findStanbolEntityOccurrences(session, model));
+        collectSuggestedProperties(session, model, results);
+        return results;
     }
 
     @Override
-    public List<OccurrenceGroup> analyze(CoreSession session, DocumentModel doc)
+    public AnalysisResults analyze(CoreSession session, DocumentModel doc)
             throws IOException, ClientException {
         states.put(
                 new DocumentLocationImpl(doc.getRepositoryName(), doc.getRef()),
                 ProgressStatus.STATUS_ANALYSIS_PENDING);
         if (shouldSkip(doc)) {
-            return Collections.emptyList();
+            return AnalysisResults.newInstance();
         }
         return analyze(session, extractText(doc));
     }

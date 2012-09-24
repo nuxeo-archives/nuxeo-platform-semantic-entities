@@ -1,7 +1,5 @@
 package org.nuxeo.ecm.platform.semanticentities;
 
-import java.util.List;
-
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
@@ -12,7 +10,6 @@ import org.nuxeo.ecm.core.api.DocumentLocation;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.repository.Repository;
 import org.nuxeo.ecm.core.api.repository.RepositoryManager;
-import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
@@ -74,14 +71,14 @@ public class AnalysisTask implements Runnable {
                 if (!isServiceActiveOrWarn()) {
                     return;
                 }
-                List<OccurrenceGroup> occurrenceGroups = service.analyze(
+                AnalysisResults results = service.analyze(
                         session, session.getDocument(docRef));
-                if (occurrenceGroups.isEmpty()) {
+                if (results.isEmpty()) {
                     service.clearProgressStatus(repositoryName, docRef);
                     return;
                 }
                 SerializationTask task = new SerializationTask(repositoryName,
-                        docRef, occurrenceGroups, service);
+                        docRef, results, service);
                 if (!isServiceActiveOrWarn()) {
                     return;
                 }

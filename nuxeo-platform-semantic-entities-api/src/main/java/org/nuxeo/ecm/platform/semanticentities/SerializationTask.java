@@ -9,11 +9,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentLocation;
+import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.impl.DocumentLocationImpl;
 import org.nuxeo.ecm.core.api.repository.Repository;
 import org.nuxeo.ecm.core.api.repository.RepositoryManager;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
+import org.nuxeo.ecm.platform.semanticentities.AnalysisResults;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
@@ -29,7 +31,7 @@ public class SerializationTask implements Runnable {
 
     protected final DocumentRef docRef;
 
-    protected final List<OccurrenceGroup> occurrenceGroups;
+    protected final AnalysisResults results;
 
     protected final DocumentLocation location;
 
@@ -38,11 +40,11 @@ public class SerializationTask implements Runnable {
     protected final RepositoryManager manager;
 
     public SerializationTask(String repositoryName, DocumentRef docRef,
-            List<OccurrenceGroup> occurrenceGroups,
+            AnalysisResults results,
             SemanticAnalysisService service) {
         this.repositoryName = repositoryName;
         this.docRef = docRef;
-        this.occurrenceGroups = occurrenceGroups;
+        this.results = results;
         location = new DocumentLocationImpl(repositoryName, docRef);
         this.service = service;
         try {
@@ -61,7 +63,7 @@ public class SerializationTask implements Runnable {
     }
 
     public List<OccurrenceGroup> getOccurrenceGroups() {
-        return occurrenceGroups;
+        return results.groups;
     }
 
     public DocumentLocation getDocumentLocation() {
@@ -106,8 +108,10 @@ public class SerializationTask implements Runnable {
                 if (!isServiceActiveOrWarn()) {
                     return;
                 }
-                service.createLinks(session.getDocument(docRef), session,
-                        occurrenceGroups);
+                DocumentModel doc = session.getDocument(docRef);
+                results.savePropertiesToDocument(session, doc);
+                service.createLinks(doc, session,
+                        results.groups);
             } finally {
                 Repository.close(session);
             }

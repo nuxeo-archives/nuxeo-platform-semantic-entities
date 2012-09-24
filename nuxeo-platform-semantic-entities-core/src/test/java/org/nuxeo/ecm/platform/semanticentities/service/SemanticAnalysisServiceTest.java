@@ -271,7 +271,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         makeSomeEntities();
 
         DocumentModel doc = createSampleDocumentModel("john-bio1");
-        List<OccurrenceGroup> groups = saService.analyze(session, doc);
+        List<OccurrenceGroup> groups = saService.analyze(session, doc).groups;
         assertEquals(2, groups.size());
 
         OccurrenceGroup og1 = groups.get(0);
