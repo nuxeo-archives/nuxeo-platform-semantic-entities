@@ -137,6 +137,9 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     // TODO: make the following configurable using an extension point
     protected static final Map<String, String> LOCAL_TYPES = new HashMap<String, String>();
+
+    protected static final int MIN_TEXT_WORD_LENGTH = 10;
+
     static {
         LOCAL_TYPES.put("http://dbpedia.org/ontology/Place", "Place");
         LOCAL_TYPES.put("http://dbpedia.org/ontology/Person", "Person");
@@ -493,9 +496,9 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 results.withProperty("dc:language", languages.next().asLiteral().getString());
             }
         }
-        
+
     }
-    
+
     protected OccurrenceInfo getOccurrenceInfo(Model model, Resource annotation) {
         Property mentionProp = model.getProperty("http://fise.iks-project.eu/ontology/selected-text");
         Property startProp = model.getProperty("http://fise.iks-project.eu/ontology/start");
@@ -536,12 +539,14 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     @Override
     public AnalysisResults analyze(CoreSession session, String textContent)
             throws IOException, ClientException {
-        String output = callSemanticEngine(textContent, outputFormat, 2);
-        Model model = ModelFactory.createDefaultModel().read(
-                new StringReader(output), null);
         AnalysisResults results = AnalysisResults.newInstance();
-        results.groups.addAll(findStanbolEntityOccurrences(session, model));
-        collectSuggestedProperties(session, model, results);
+        if (textContent.split("\\s+").length > MIN_TEXT_WORD_LENGTH) {
+            String output = callSemanticEngine(textContent, outputFormat, 2);
+            Model model = ModelFactory.createDefaultModel().read(
+                    new StringReader(output), null);
+            results.groups.addAll(findStanbolEntityOccurrences(session, model));
+            collectSuggestedProperties(session, model, results);
+        }
         return results;
     }
 
@@ -672,7 +677,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         // remove any invisible control characters that can be not accepted
         // inside XML 1.0 payload (e.g. in SOAP) and are useless for text
         // analysis anyway.
-        return INVALID_XML_CHARS.matcher(sb.toString()).replaceAll("");
+        return INVALID_XML_CHARS.matcher(sb.toString()).replaceAll("").trim();
     }
 
     protected String blobsToText(List<Blob> blobs) {

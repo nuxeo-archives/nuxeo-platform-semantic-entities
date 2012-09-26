@@ -416,7 +416,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
                         + "document about John Lennon has many occurrences of the words 'John' and\n"
                         + "'Lennon' hence should rank high for suggestions on such keywords.\n\n"
 
-                        + "'' is an invalid control char and should be ignored.\n\n",
+                        + "'' is an invalid control char and should be ignored.",
                 extractedText);
     }
 
