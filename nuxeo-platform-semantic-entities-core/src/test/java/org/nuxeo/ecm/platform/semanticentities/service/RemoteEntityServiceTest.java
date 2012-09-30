@@ -55,6 +55,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
     @Before
     public void setUp() throws Exception {
         super.setUp();
+        deployBundle("org.nuxeo.ecm.core.schema");
         // necessary for the fulltext indexer
         deployBundle("org.nuxeo.ecm.core.convert.api");
         deployBundle("org.nuxeo.ecm.core.convert");

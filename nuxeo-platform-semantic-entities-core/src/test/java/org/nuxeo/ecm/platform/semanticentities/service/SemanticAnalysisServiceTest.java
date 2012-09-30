@@ -61,6 +61,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
     @Before
     public void setUp() throws Exception {
         super.setUp();
+        deployBundle("org.nuxeo.ecm.core.schema");
         // necessary for the fulltext indexer and text extraction for analysis
         deployBundle("org.nuxeo.ecm.core.convert.api");
         deployBundle("org.nuxeo.ecm.core.convert");

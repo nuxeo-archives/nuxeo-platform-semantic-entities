@@ -67,6 +67,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     @Before
     public void setUp() throws Exception {
         super.setUp();
+        deployBundle("org.nuxeo.ecm.core.schema");
         // necessary for the fulltext indexer
         deployBundle("org.nuxeo.ecm.core.convert.api");
         deployBundle("org.nuxeo.ecm.core.convert");
@@ -433,7 +434,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         suggestions = service.suggestLocalEntity(session, "John Winston Lennon", "Person", 3);
         assertEquals(1, suggestions.size());
         assertEquals(john, suggestions.get(0).entity);
-        
+
         // create a new version for Lennon
         john.putContextData(VersioningService.VERSIONING_OPTION,
                 VersioningOption.MAJOR);
