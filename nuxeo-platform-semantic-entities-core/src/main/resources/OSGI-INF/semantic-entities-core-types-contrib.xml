@@ -20,10 +20,7 @@
     <doctype name="EntityContainer" extends="Folder">
       <facet name="SuperSpace"/>
       <subtypes>
-        <type>Topic</type>
-        <type>Person</type>
-        <type>Place</type>
-        <type>Organization</type>
+        <type>Entity</type>
       </subtypes>
     </doctype>
 
@@ -46,8 +43,21 @@
       -->
     </doctype>
 
-    <!-- TODO: turn the following types as dynamic facets for
-      the Entity base type -->
+    <facet name="Topic">
+	  <schema name="topic" />
+    </facet>
+    <facet name="Person">
+	  <schema name="person" />
+    </facet>
+    <facet name="Place">
+	  <schema name="place" />
+    </facet>
+    <facet name="Organization">
+	  <schema name="place" />
+    </facet>
+
+    <!-- The following types deprecated: the following types should be replaced by
+      document with type Entity + dynamic facets. -->
 
     <doctype name="Topic" extends="Entity">
       <schema name="topic"/>
@@ -78,8 +88,11 @@
       -->
     </doctype>
 
+    <!-- Facet to be add to documents that carry occurrence relations to materialize
+        the list of id ref of related entities to make it possible to perform efficiency
+        concept / entity filtering of document search -->
     <facet name="HasSemantics">
-      <schema name="semantics" />
+	  <schema name="semantics" />
     </facet>
 
   </extension>
