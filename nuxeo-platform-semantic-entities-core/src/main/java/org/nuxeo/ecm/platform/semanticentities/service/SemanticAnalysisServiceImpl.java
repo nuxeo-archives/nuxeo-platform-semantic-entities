@@ -509,6 +509,10 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         }
         Literal mentionLiteral = mentionStmt.getObject().as(Literal.class);
         String mention = mentionLiteral.getString().trim();
+        if (mention.isEmpty()) {
+            log.warn("Found empty mention literal info for " + annotation);
+            return null;
+        }
 
         double position = 0.0;
         Statement startStmt = annotation.getProperty(startProp);
