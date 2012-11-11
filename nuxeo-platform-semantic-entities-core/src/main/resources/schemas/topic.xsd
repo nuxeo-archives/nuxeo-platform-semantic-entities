@@ -4,15 +4,24 @@
   xmlns:nxs="http://www.nuxeo.org/ecm/schemas/topic/">
 
   <xs:include schemaLocation="core-types.xsd" />
-  <xs:simpleType name="simpleStringList">
-    <xs:list itemType="xs:string" />
-  </xs:simpleType>
 
-  <!--
-   Materialized paths to the root categories
-  -->
-  <xs:element name="ancestorPaths" type="nxs:simpleStringList" />
+  <xs:complexType name="broaderLink">
+    <xs:sequence>
+      <!-- Identifier of the taxonomy (typically the URI of a skos:ConceptScheme) -->
+      <xs:element name="taxonomy" type="xs:string" />
 
-  <!-- TODO: store skos:broader and skos:narrower directly too -->
+      <!-- Internal identifier of the parent topic (docref) -->
+      <xs:element name="topic" type="xs:string" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="broaderLinkList">
+    <xs:sequence>
+      <xs:element name="item" type="nxs:broaderLink" minOccurs="0"
+        maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="broaderTopics" type="nxs:broaderLinkList" />
 
 </xs:schema>
