@@ -371,6 +371,26 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                         (Serializable) altnames);
             }
 
+            // materialize the target entities id ref directly on the document to make
+            // it possible to do fast concept queries
+            DocumentModel doc = session.getDocument(relation.getSourceDocumentRef());
+            if (!doc.hasFacet(HAS_SEMANTICS_FACET)) {
+                doc.addFacet(HAS_SEMANTICS_FACET);
+            }
+            List<String> entities = new ArrayList<String>();
+            if (doc.getPropertyValue("semantics:entities") != null) {
+                entities = doc.getProperty("semantics:entities").getValue(
+                        List.class);
+            }
+            if (!entities.contains(relation.getTargetEntityRef())) {
+                entities = new ArrayList<String>(entities);
+                entities.add(relation.getTargetEntityRef().toString());
+            }
+            doc.setPropertyValue("semantics:entities", (Serializable) entities);
+            // TODO: handle deletion of relation to cleanup that list
+            session.saveDocument(doc);
+
+            // create / update the relation document itself
             if (relation.getOccurrenceDocument().getId() == null) {
                 // this is a creation of a new relation between a document and
                 // the entity
@@ -388,6 +408,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 occRef = session.saveDocument(relation.getOccurrenceDocument()).getRef();
             }
             if (entity != null) {
+                // save popularity and altnames info at once
                 session.saveDocument(entity);
             }
             session.save();

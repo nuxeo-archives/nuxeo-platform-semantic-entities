@@ -246,11 +246,15 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         // wait for all the analysis to complete thanks to a hook registered in
         // the Event Service at activation of the Semantic Analysis Service.
         es.waitForAsyncCompletion();
+        closeSession();
+        openSession();
 
         // check the results of the analysis
         for (DocumentModel doc : docs) {
             assertNull(saService.getProgressStatus(doc.getRepositoryName(),
                     doc.getRef()));
+            // refetch the document from the repository
+            doc = session.getDocument(doc.getRef());
             // the same entities are linked to all the docs
             checkRelatedEntities(doc);
         }
@@ -342,6 +346,15 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
                 session, doc.getRef(), "Place").getCurrentPage();
         assertEquals(1, relatedPlaces.size());
         assertEquals("Liverpool", relatedPlaces.get(0).getTitle());
+        
+        // check the the doc refs of the related concepts are materialized
+        // on the doc
+        assertTrue(doc.hasFacet(LocalEntityService.HAS_SEMANTICS_FACET));
+        assertNotNull(doc.getPropertyValue("semantics:entities"));
+        @SuppressWarnings("unchecked")
+        List<String> entityIds = (List<String>) doc.getProperty("semantics:entities").getValue(List.class);
+        assertTrue(entityIds.contains(firstPerson.getId()));
+        assertTrue(entityIds.contains(relatedPlaces.get(0).getId()));
     }
 
     /**

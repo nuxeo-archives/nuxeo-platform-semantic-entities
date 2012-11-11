@@ -39,6 +39,8 @@ import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
  */
 public interface LocalEntityService {
 
+    public static final String HAS_SEMANTICS_FACET = "HasSemantics";
+
     /**
      * The entity container is a singleton container document where to create
      * the entities.
