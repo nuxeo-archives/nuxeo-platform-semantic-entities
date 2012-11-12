@@ -366,6 +366,12 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                             altnames.add(occInfo.mention);
                         }
                     }
+                    for (String transliteration: occInfo.transliterations) {
+                        if (!altnames.contains(transliteration)) {
+                            altnames = new ArrayList<String>(altnames);
+                            altnames.add(transliteration);
+                        }
+                    }
                 }
                 entity.setPropertyValue("entity:altnames",
                         (Serializable) altnames);

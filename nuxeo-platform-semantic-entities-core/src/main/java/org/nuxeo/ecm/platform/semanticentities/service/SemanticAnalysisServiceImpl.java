@@ -76,6 +76,7 @@ import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.NodeIterator;
 import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.ResIterator;
 import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
@@ -450,6 +451,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         Statement scoreStmt = entitySuggestionResource.getProperty(scoreProperty);
         double score = scoreStmt != null ? scoreStmt.getObject().asLiteral().getDouble()
                 : 0.0;
+
         // check whether the pre-fetched model has additional info on the linked
         // resource
         Property type = model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
@@ -473,7 +475,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             Statement labelStmt = entitySuggestionResource.getProperty(entityLabelProperty);
             if (labelStmt != null) {
                 String label = labelStmt.getObject().asLiteral().getString();
-                return new EntitySuggestion(label, remoteEntityUri, localType).withScore(score);
+                return new EntitySuggestion(label, remoteEntityUri, localType).withScore(
+                        score);
             }
         }
         return null;
@@ -513,7 +516,17 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             log.warn("Found empty mention literal info for " + annotation);
             return null;
         }
-
+        // XXX: hardcoded stanbol-temis transliterations:
+        // TODO: find a better way to handle this mapping
+        Property transliteration = model.getProperty("http://ns.nuxeo.org/temis/transliteration");
+        StmtIterator transliterationIterator = annotation.listProperties(transliteration);
+        List<String> transliterations = new ArrayList<String>();
+        for (; transliterationIterator.hasNext();) {
+            RDFNode transliterationNode = transliterationIterator.nextStatement().getObject();
+            if (transliteration.isLiteral()) {
+                transliterations.add(transliterationNode.asLiteral().getString());
+            }
+        }
         double position = 0.0;
         Statement startStmt = annotation.getProperty(startProp);
         if (startStmt != null && startStmt.getObject().isLiteral()) {
@@ -534,9 +547,9 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 // layout
                 context = mention;
             }
-            return new OccurrenceInfo(mention, context).withOrder(position);
+            return new OccurrenceInfo(mention, context).withOrder(position).withTransliterations(transliterations);
         } else {
-            return new OccurrenceInfo(mention, mention).withOrder(position);
+            return new OccurrenceInfo(mention, mention).withOrder(position).withTransliterations(transliterations);
         }
     }
 

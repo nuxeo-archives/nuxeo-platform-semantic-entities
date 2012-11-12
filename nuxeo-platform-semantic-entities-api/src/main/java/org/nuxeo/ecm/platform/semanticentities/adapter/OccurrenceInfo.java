@@ -17,7 +17,9 @@
 package org.nuxeo.ecm.platform.semanticentities.adapter;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -54,6 +56,9 @@ public class OccurrenceInfo implements Comparable<OccurrenceInfo> {
      * occurrences relative to one another.
      */
     public double order = 0.0;
+
+    // Find a better datastructure to handle different scripts / languages explicitly
+    public final List<String> transliterations = new ArrayList<String>();
 
     public OccurrenceInfo(String mention, String context) {
         if (context == null || context.isEmpty()) {
@@ -183,6 +188,11 @@ public class OccurrenceInfo implements Comparable<OccurrenceInfo> {
      */
     public OccurrenceInfo withOrder(double order) {
         this.order  = order;
+        return this;
+    }
+
+    public OccurrenceInfo withTransliterations(List<String> transliterations) {
+        this.transliterations.addAll(transliterations);
         return this;
     }
 }

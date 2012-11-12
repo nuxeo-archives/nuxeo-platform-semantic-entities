@@ -89,6 +89,11 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
         return this;
     }
 
+    public EntitySuggestion withAlternativeNames(List<String> altNames) {
+        this.alternativeNames.addAll(altNames);
+        return this;
+    }
+
     public boolean isLocal() {
         return entity != null && entity.getRef() != null;
     }
