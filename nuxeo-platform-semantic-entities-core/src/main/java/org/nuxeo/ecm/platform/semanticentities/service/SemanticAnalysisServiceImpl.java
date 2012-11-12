@@ -518,12 +518,12 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         }
         // XXX: hardcoded stanbol-temis transliterations:
         // TODO: find a better way to handle this mapping
-        Property transliteration = model.getProperty("http://ns.nuxeo.org/temis/transliteration");
+        Property transliteration = model.getProperty("http://fise.iks-project.eu/ontology/transliteration");
         StmtIterator transliterationIterator = annotation.listProperties(transliteration);
         List<String> transliterations = new ArrayList<String>();
         for (; transliterationIterator.hasNext();) {
             RDFNode transliterationNode = transliterationIterator.nextStatement().getObject();
-            if (transliteration.isLiteral()) {
+            if (transliterationNode.isLiteral()) {
                 transliterations.add(transliterationNode.asLiteral().getString());
             }
         }
