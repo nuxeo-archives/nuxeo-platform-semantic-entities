@@ -19,6 +19,7 @@ package org.nuxeo.ecm.platform.semanticentities.service;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -76,6 +77,12 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         LocalEntityService {
 
     public static final Log log = LogFactory.getLog(LocalEntityServiceImpl.class);
+
+    // TODO: make me configurable in an extension point
+    public String SEPARATOR_CHARS_TO_IGNORE = "(\\p{P}|\\n| |<|>|\\+|\\-)+";
+
+    // remove diacritics and the arabic hamzah
+    public String CHARS_TO_IGNORE = "(\\p{InCombiningDiacriticalMarks}|\u0654|\u0655)+";
 
     // TODO: make me configurable in an extension point
     public static final String ENTITY_CONTAINER_PATH = "/default-domain/entities";
@@ -321,7 +328,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             relation.addOccurrences(occurrences);
         }
         UpdateOrCreateOccurrenceRelation op = new UpdateOrCreateOccurrenceRelation(
-                session, relation);
+                session, relation, this);
         op.runUnrestricted();
         return session.getDocument(op.occRef).getAdapter(
                 OccurrenceRelation.class, true);
@@ -334,10 +341,13 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
 
         protected DocumentRef occRef;
 
+        protected final LocalEntityService service;
+
         public UpdateOrCreateOccurrenceRelation(CoreSession session,
-                OccurrenceRelation relation) {
+                OccurrenceRelation relation, LocalEntityService service) {
             super(session);
             this.relation = relation;
+            this.service = service;
         }
 
         @SuppressWarnings("unchecked")
@@ -458,8 +468,17 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 "Ent.cmis:objectId", "relatedEntities");
     }
 
-    public static String cleanupKeywords(String keywords) {
-        return keywords.replaceAll("(\\p{P}|\\n| |<|>|\\+|\\-)+", " ").trim();
+    public String normalizeName(String name) {
+        // remove punctuation and normalize whitespaces
+        name = name.replaceAll(SEPARATOR_CHARS_TO_IGNORE, " ").trim();
+
+        // strip accents and diacritics
+        name = Normalizer.normalize(name, Normalizer.Form.NFD).replaceAll(
+                CHARS_TO_IGNORE, "");
+
+        // remove more characters such as the arabic h
+        // lower case
+        return name.toLowerCase();
     }
 
     @Override
@@ -477,14 +496,14 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         } else {
             entityTypeNames.add(type);
         }
-        String escapedName = cleanupKeywords(keywords);
+        String normalized = normalizeName(keywords);
         String q = String.format(
-                "SELECT * FROM %s WHERE (ecm:fulltext_title = '%s' OR entity:altnames = '%s')"
+                "SELECT * FROM %s WHERE (ecm:fulltext_title = '%s' OR entity:normalizednames = '%s')"
                         + " AND ecm:primaryType IN ('%s')"
                         + " AND ecm:currentLifeCycleState != 'deleted'"
                         + " AND ecm:isCheckedInVersion = 0"
                         + " ORDER BY entity:popularity DESC, dc:title LIMIT %d",
-                Constants.ENTITY_TYPE, escapedName, escapedName,
+                Constants.ENTITY_TYPE, normalized, normalized,
                 StringUtils.join(entityTypeNames, "', '"), maxSuggestions);
 
         // TODO: read the score info as well
@@ -578,7 +597,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                         + " AND cmis:objectTypeId NOT IN ('%s')"
                         + " AND nuxeo:isVersion = false "
                         + "ORDER BY relevance DESC", type,
-                cleanupKeywords(keywords),
+                        normalizeName(keywords),
                 StringUtils.join(getEntityTypeNames(), "', '"));
         PageProvider<DocumentModel> provider = new CMISQLDocumentPageProvider(
                 session, query, "cmis:objectId", "suggestedDocuments");

@@ -704,10 +704,20 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     @Test
-    public void testCleanupKeywords() {
-        assertEquals("This is a test",
-                LocalEntityServiceImpl.cleanupKeywords("This is. a\n test?"));
-        assertEquals("a b", LocalEntityServiceImpl.cleanupKeywords("a'.;,<>b"));
+    public void testNameNormalization() {
+        assertEquals("this is a test",
+                service.normalizeName("This is. a\n test?"));
+        assertEquals("a b", service.normalizeName("a'.;,<>b"));
+
+        // check french accents normalization
+        assertEquals("youpi c est l ete",
+                service.normalizeName("Youpi, c'est l'\u00e9t\u00e9!"));
+
+        // check diacritics normalization
+        String israelArabicWithoutHamza = "\u0627\u0633\u0631\u0627\u0626\u064a\u0644";
+        String israelArabicWithHamza = "\u0625\u0633\u0631\u0627\u0626\u064a\u0644";
+        assertEquals(service.normalizeName(israelArabicWithoutHamza),
+                service.normalizeName(israelArabicWithHamza));
     }
 
     protected void warnSkippedTest() {

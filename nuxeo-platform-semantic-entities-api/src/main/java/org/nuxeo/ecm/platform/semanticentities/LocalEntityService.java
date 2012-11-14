@@ -248,4 +248,11 @@ public interface LocalEntityService {
     DocumentModel asLocalEntity(CoreSession session, EntitySuggestion suggestion)
             throws ClientException, IOException;
 
+    /**
+     * Normalize names for being able to match entity by names without having
+     * access to full-fledged fulltext index as contributing VCS fulltext index
+     * configuration from an addon is not possible at the moment.
+     */
+    String normalizeName(String mention);
+
 }
