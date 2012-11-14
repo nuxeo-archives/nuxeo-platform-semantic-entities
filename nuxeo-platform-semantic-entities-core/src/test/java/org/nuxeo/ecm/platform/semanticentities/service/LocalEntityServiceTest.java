@@ -709,15 +709,21 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
                 service.normalizeName("This is. a\n test?"));
         assertEquals("a b", service.normalizeName("a'.;,<>b"));
 
-        // check french accents normalization
+        // check french accents normalization (french diacritics)
         assertEquals("youpi c est l ete",
                 service.normalizeName("Youpi, c'est l'\u00e9t\u00e9!"));
 
-        // check diacritics normalization
+        // check arabic diacritics normalization: hamza below
         String israelArabicWithoutHamza = "\u0627\u0633\u0631\u0627\u0626\u064a\u0644";
         String israelArabicWithHamza = "\u0625\u0633\u0631\u0627\u0626\u064a\u0644";
         assertEquals(service.normalizeName(israelArabicWithoutHamza),
                 service.normalizeName(israelArabicWithHamza));
+
+        // check arabic diacritics normalization: hamza above
+        String obamaWithHamza = "\u0623\u0648\u0628\u0627\u0645\u0627";
+        String obamaWithoutHamza = "\u0627\u0648\u0628\u0627\u0645\u0627";
+        assertEquals(service.normalizeName(obamaWithoutHamza),
+                service.normalizeName(obamaWithHamza));
     }
 
     protected void warnSkippedTest() {
