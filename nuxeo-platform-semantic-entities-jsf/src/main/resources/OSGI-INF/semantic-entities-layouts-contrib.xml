@@ -137,6 +137,9 @@
           <widget>altnames</widget>
         </row>
         <row>
+          <widget>normalizednames</widget>
+        </row>
+        <row>
           <widget>entityType</widget>
         </row>
       </rows>
@@ -190,6 +193,24 @@
         </fields>
         <subWidgets>
           <widget name="altname" type="text">
+            <fields>
+              <field></field>
+            </fields>
+          </widget>
+        </subWidgets>
+        <properties widgetMode="edit">
+          <property name="styleClass">dataInputText</property>
+        </properties>
+      </widget>
+      <widget name="normalizednames" type="namelist">
+        <widgetModes>
+          <mode value="any">view</mode>
+        </widgetModes>
+        <fields>
+          <field>entity:normalizednames</field>
+        </fields>
+        <subWidgets>
+          <widget name="normalizednames" type="text">
             <fields>
               <field></field>
             </fields>
