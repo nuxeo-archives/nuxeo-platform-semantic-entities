@@ -172,10 +172,10 @@ public interface LocalEntityService {
      * documents. If the entity was automatically created (by the "system"
      * principal) and nobody else edited it, it is also removed from the entity
      * base.
-     * 
+     *
      * If the trash service if applicable. Otherwise the related document(s) are
      * simply deleted from the repository.
-     * 
+     *
      * @param session active session to the repository holding the document and
      *            entities
      * @param docRef the id of the document referring to the entity
@@ -238,7 +238,7 @@ public interface LocalEntityService {
      * @return the document type names deriving from the Entity type
      * @throws Exception thrown if the TypeManager is not available
      */
-    public Set<String> getEntityTypeNames() throws Exception;
+    Set<String> getEntityTypeNames() throws Exception;
 
     /**
      * Ensure that the suggestion is local. If not, use the remote entity
@@ -254,5 +254,17 @@ public interface LocalEntityService {
      * configuration from an addon is not possible at the moment.
      */
     String normalizeName(String mention);
+
+    /**
+     * Update the entity:normalizednames field use for named based entity
+     * matching of entities.
+     *
+     * @param doc the document to update
+     * @param performUpdate performs the update even if the source fields are
+     *            not dirty.
+     * @return true if the field was updated.
+     * @throws ClientException
+     */
+    boolean updateNormalizedNames(DocumentModel doc, boolean forceUpdate) throws ClientException;
 
 }

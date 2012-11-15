@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +44,7 @@ import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.core.api.UnrestrictedSessionRunner;
+import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.core.api.pathsegment.PathSegmentService;
 import org.nuxeo.ecm.core.api.security.ACE;
 import org.nuxeo.ecm.core.api.security.ACL;
@@ -52,6 +54,7 @@ import org.nuxeo.ecm.core.api.security.impl.ACPImpl;
 import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.trash.TrashService;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
+import org.nuxeo.ecm.platform.query.nxql.NXQLQueryBuilder;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
@@ -237,7 +240,8 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                     session.removeDocuments(docToDeleteArray);
                 } else {
                     try {
-                        // try to perform the actual deletion using the trash service
+                        // try to perform the actual deletion using the trash
+                        // service
                         TrashService trashService = Framework.getService(TrashService.class);
                         trashService.trashDocuments(session.getDocuments(docToDeleteArray));
                     } catch (Exception e) {
@@ -381,7 +385,8 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                         (Serializable) altnames);
             }
 
-            // materialize the target entities id ref directly on the document to make
+            // materialize the target entities id ref directly on the document
+            // to make
             // it possible to do fast concept queries
             DocumentModel doc = session.getDocument(relation.getSourceDocumentRef());
             if (!doc.hasFacet(HAS_SEMANTICS_FACET)) {
@@ -481,6 +486,40 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         return name.toLowerCase();
     }
 
+    @SuppressWarnings("unchecked")
+    public boolean updateNormalizedNames(DocumentModel doc, boolean forceUpdate)
+            throws PropertyException, ClientException {
+        if (!doc.hasSchema("entity")) {
+            log.warn(String.format(
+                    "Cannot normalize names on document '%s' as it does not have the 'entity' schema",
+                    doc.getTitle()));
+        }
+        if (!forceUpdate
+                && doc.getPropertyValue("entity:normalizednames") != null
+                && !doc.getProperty("dc:title").isDirty()
+                && !doc.getProperty("entity:altnames").isDirty()) {
+            // nothing to update
+            return false;
+        }
+        Set<String> names = new LinkedHashSet<String>();
+        Set<String> normalized = new LinkedHashSet<String>();
+        names.add(doc.getTitle());
+        if (doc.getPropertyValue("entity:altnames") != null) {
+            names.addAll(doc.getProperty("entity:altnames").getValue(List.class));
+        }
+        for (String name : names) {
+            normalized.add(normalizeName(name));
+        }
+        doc.setPropertyValue("entity:normalizednames", normalized.toArray());
+        if (log.isDebugEnabled()) {
+            log.debug(String.format(
+                    "Updated names for document '%s'. Form tource names: '%s' to normalized names: '%s'",
+                    doc.getTitle(), StringUtils.join(names, "', '"),
+                    StringUtils.join(normalized, "', '")));
+        }
+        return true;
+    }
+
     @Override
     public List<EntitySuggestion> suggestLocalEntity(CoreSession session,
             String keywords, String type, int maxSuggestions)
@@ -496,6 +535,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         } else {
             entityTypeNames.add(type);
         }
+        String sanitized = NXQLQueryBuilder.sanitizeFulltextInput(keywords);
         String normalized = normalizeName(keywords);
         String q = String.format(
                 "SELECT * FROM %s WHERE (ecm:fulltext_title = '%s' OR entity:normalizednames = '%s')"
@@ -503,7 +543,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                         + " AND ecm:currentLifeCycleState != 'deleted'"
                         + " AND ecm:isCheckedInVersion = 0"
                         + " ORDER BY entity:popularity DESC, dc:title LIMIT %d",
-                Constants.ENTITY_TYPE, normalized, normalized,
+                Constants.ENTITY_TYPE, sanitized, normalized,
                 StringUtils.join(entityTypeNames, "', '"), maxSuggestions);
 
         // TODO: read the score info as well
@@ -531,8 +571,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     public List<EntitySuggestion> suggestEntity(CoreSession session,
             String keywords, String type, int maxSuggestions)
             throws ClientException, DereferencingException {
-        return suggestEntity(session, keywords, type, null,
-                maxSuggestions);
+        return suggestEntity(session, keywords, type, null, maxSuggestions);
     }
 
     protected List<EntitySuggestion> suggestEntity(CoreSession session,
@@ -566,7 +605,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         List<EntitySuggestion> suggestions = suggestLocalEntity(session,
                 keywords, type, maxSuggestions);
         Set<String> alreadySeenRemoteUris = new HashSet<String>();
-        for (EntitySuggestion suggestion: suggestions) {
+        for (EntitySuggestion suggestion : suggestions) {
             alreadySeenRemoteUris.addAll(suggestion.remoteEntityUris);
         }
 
@@ -597,7 +636,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                         + " AND cmis:objectTypeId NOT IN ('%s')"
                         + " AND nuxeo:isVersion = false "
                         + "ORDER BY relevance DESC", type,
-                        normalizeName(keywords),
+                normalizeName(keywords),
                 StringUtils.join(getEntityTypeNames(), "', '"));
         PageProvider<DocumentModel> provider = new CMISQLDocumentPageProvider(
                 session, query, "cmis:objectId", "suggestedDocuments");

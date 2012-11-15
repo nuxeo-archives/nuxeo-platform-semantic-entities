@@ -17,10 +17,6 @@
 
 package org.nuxeo.ecm.platform.semanticentities.listener;
 
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.event.Event;
@@ -35,7 +31,6 @@ import org.nuxeo.runtime.api.Framework;
  */
 public class EntityNameNormalizerListener implements EventListener {
 
-    @SuppressWarnings("unchecked")
     @Override
     public void handleEvent(Event event) throws ClientException {
         EventContext ctx = event.getContext();
@@ -44,26 +39,11 @@ public class EntityNameNormalizerListener implements EventListener {
         }
         DocumentEventContext docCtx = (DocumentEventContext) ctx;
         DocumentModel doc = docCtx.getSourceDocument();
-        if (doc.hasSchema("entity")) {
-            if (doc.getPropertyValue("entity:normalizednames") != null
-                    && !doc.getProperty("dc:title").isDirty()
-                    && !doc.getProperty("entity:altnames").isDirty()) {
-                // nothing to update
-                return;
-            }
-            Set<String> names = new LinkedHashSet<String>();
-            Set<String> normalized = new LinkedHashSet<String>();
-            names.add(doc.getTitle());
-            if (doc.getPropertyValue("entity:altnames") != null) {
-                names.addAll(doc.getProperty("entity:altnames").getValue(
-                        List.class));
-            }
-            LocalEntityService entityService = Framework.getLocalService(LocalEntityService.class);
-            for (String name : names) {
-                normalized.add(entityService.normalizeName(name));
-            }
-            doc.setPropertyValue("entity:normalizednames", normalized.toArray());
+        if (!doc.hasSchema("entity")) {
+            return;
         }
+        LocalEntityService entityService = Framework.getLocalService(LocalEntityService.class);
+        entityService.updateNormalizedNames(doc, false);
     }
 
 }
