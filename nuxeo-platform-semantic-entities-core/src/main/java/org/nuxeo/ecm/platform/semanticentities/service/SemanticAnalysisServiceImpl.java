@@ -24,6 +24,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.params.ConnManagerParams;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
@@ -32,6 +33,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.nuxeo.common.utils.StringUtils;
 import org.nuxeo.ecm.core.api.Blob;
@@ -234,6 +236,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         // This connection manager must be used if more than one thread will
         // be using the HttpClient.
         HttpParams params = new BasicHttpParams();
+        HttpConnectionParams.setSoTimeout(params, 600 * 1000); // 10 min
+        HttpConnectionParams.setConnectionTimeout(params, 600 * 1000); // 10 min
         ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(
                 params, schemeRegistry);
         httpClient = new DefaultHttpClient(cm, params);
@@ -621,7 +625,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                     e.getMessage(), e));
         } catch (IOException e) {
             post.abort();
-            throw e;
+            throw new IOException(String.format("Error connecting to '%s': %s",
+                    effectiveEnhancerUrl, e.getMessage()), e);
         }
     }
 
