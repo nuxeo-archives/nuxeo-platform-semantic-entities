@@ -204,6 +204,7 @@
       </widget>
       <widget name="normalizednames" type="namelist">
         <widgetModes>
+          <mode value="view">hidden</mode>
           <mode value="any">view</mode>
         </widgetModes>
         <fields>
