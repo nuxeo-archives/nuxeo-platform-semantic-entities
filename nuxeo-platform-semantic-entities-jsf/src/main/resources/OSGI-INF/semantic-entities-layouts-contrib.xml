@@ -171,6 +171,7 @@
       <widget name="depiction" type="template">
         <fields>
           <field>entity:depiction</field>
+          <field>entity:depiction/filename</field>
         </fields>
         <widgetModes>
           <mode value="view">hidden</mode>
