@@ -53,6 +53,8 @@ public interface OccurrenceRelation {
      */
     List<OccurrenceInfo> getOccurrences() throws ClientException;
 
+    List<OccurrenceInfo> getOccurrences(int maxOccurrences) throws ClientException;
+
     /**
      * Merge the list of occurrences with the existing occurrence info held by
      * the underlying document model using. Remove the duplicated entries

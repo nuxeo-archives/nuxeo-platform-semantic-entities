@@ -53,6 +53,15 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
     }
 
     @Override
+    public List<OccurrenceInfo> getOccurrences(int maxOccurrences) throws ClientException {
+        List<OccurrenceInfo> occurrences = getOccurrences();
+        if (occurrences.size() <= maxOccurrences) {
+            return occurrences;
+        }
+        return occurrences.subList(0, maxOccurrences);
+    }
+
+    @Override
     public void addOccurrences(List<OccurrenceInfo> occurrences) throws ClientException {
         Set<OccurrenceInfo> dedupedOccurrences = new LinkedHashSet<OccurrenceInfo>(
                 getOccurrences());
