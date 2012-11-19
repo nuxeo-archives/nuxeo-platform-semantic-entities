@@ -43,81 +43,6 @@
       <widget name="summary_current_entity_sync" type="summary_current_entity_sync" />
     </layout>
 
-    <!-- FIXME: remove override -->
-    <layout name="default_summary_layout">
-      <templates>
-        <template mode="any">/layouts/layout_summary_template.xhtml</template>
-      </templates>
-      <rows>
-        <row>
-          <widget>summary_current_document_files</widget>
-          <widget>summary_current_document_description</widget>
-          <widget>summary_current_document_view</widget>
-          <widget>summary_current_document_dublincore</widget>
-          <widget>summary_current_document_comments</widget>
-        </row>
-        <row>
-          <widget>summary_current_document_lc_and_version</widget>
-          <widget>summary_current_document_actions</widget>
-          <widget>summary_current_document_entities</widget>
-          <widget>summary_current_document_tagging</widget>
-          <widget>summary_current_document_relations</widget>
-        </row>
-        <row>
-          <widget>summary_current_document_publications</widget>
-        </row>
-        <row>
-          <widget>summary_current_document_single_tasks</widget>
-        </row>
-      </rows>
-      <widget name="summary_current_document_entities"
-       type="summary_current_document_entities"/>
-    </layout>
-
-    <!-- FIXME: remove override -->
-    <layout name="note_summary_layout">
-      <templates>
-        <template mode="any">/layouts/layout_summary_template.xhtml</template>
-      </templates>
-      <rows>
-        <row>
-          <widget>summary_current_document_description</widget>
-          <widget>note_text</widget>
-          <widget>summary_current_document_files</widget>
-          <widget>summary_current_document_dublincore</widget>
-          <widget>summary_current_document_comments</widget>
-        </row>
-        <row>
-          <widget>summary_current_document_lc_and_version</widget>
-          <widget>summary_current_document_actions</widget>
-          <widget>summary_current_document_entities</widget>
-          <widget>summary_current_document_tagging</widget>
-          <widget>summary_current_document_relations</widget>
-        </row>
-        <row>
-          <widget>summary_current_document_publications</widget>
-        </row>
-        <row>
-          <widget>summary_current_document_single_tasks</widget>
-        </row>
-      </rows>
-      <widget name="note_text" type="richtext_with_mimetype">
-        <fields>
-          <field>note:note</field>
-          <field>note:mime_type</field>
-        </fields>
-        <properties mode="view">
-          <property name="translatedHtml">
-            #{noteActions.translateImageLinks(field_0)}
-          </property>
-          <property name="cssClass">note_content_block</property>
-        </properties>
-      </widget>
-      <widget name="summary_current_document_entities"
-       type="summary_current_document_entities"/>
-    </layout>
-
-
     <layout name="entity_heading">
       <templates>
         <template mode="any">/layouts/layout_default_template.xhtml
@@ -555,7 +480,7 @@
     
     <widgetType name="summary_current_document_entities">
       <documentation>
-        Template widget dedicated to displaying and editiong the list
+        Template widget dedicated to displaying and editing the list
         of entities linked to the current document.
       </documentation>
       <handler-class>
@@ -564,7 +489,24 @@
       <property name="template">/widgets/summary/summary_current_document_entities_widget_template.xhtml
       </property>
     </widgetType>
-    
+
+  </extension>
+
+  <extension target="org.nuxeo.ecm.platform.forms.layout.WebLayoutManager"
+    point="widgets">
+    <widget name="summary_current_document_entities"
+     type="summary_current_document_entities"/>
+  </extension>
+
+  <extension target="org.nuxeo.ecm.platform.actions.ActionService"
+    point="actions">
+
+    <action id="summary_entities_right" type="widget" order="0">
+      <category>SUMMARY_PANEL_RIGHT</category>
+      <properties>
+        <property name="widgetName">summary_current_document_entities</property>
+      </properties>
+    </action>
 
   </extension>
 
