@@ -481,8 +481,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         name = Normalizer.normalize(name, Normalizer.Form.NFD).replaceAll(
                 CHARS_TO_IGNORE, "");
 
-        // remove more characters such as the arabic h
-        // lower case
+        // make name lookups case insensitive by normalizing case
         return name.toLowerCase();
     }
 
