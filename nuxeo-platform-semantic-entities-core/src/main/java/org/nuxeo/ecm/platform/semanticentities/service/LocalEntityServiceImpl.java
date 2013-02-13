@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -66,7 +65,8 @@ import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.DefaultComponent;
 
-import com.google.common.collect.MapMaker;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 /**
  * Service to handle semantic entities linked to documents in the local
@@ -92,11 +92,11 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
 
     public static final String ENTITY_CONTAINER_TITLE = "Entities";
 
-    protected Map<String, DocumentRef> recentlyDereferenced = new MapMaker().concurrencyLevel(
-            4).expiration(5, TimeUnit.SECONDS).makeMap();
+    protected Cache<String, DocumentRef> recentlyDereferenced = CacheBuilder.newBuilder().concurrencyLevel(
+            4).expireAfterWrite(5, TimeUnit.SECONDS).build();
 
-    protected Map<DocumentRef, String> progressMessages = new MapMaker().concurrencyLevel(
-            4).expiration(30, TimeUnit.MINUTES).makeMap();
+    protected Cache<DocumentRef, String> progressMessages = CacheBuilder.newBuilder().concurrencyLevel(
+            4).expireAfterWrite(30, TimeUnit.MINUTES).build();
 
     @Override
     synchronized public DocumentModel getEntityContainer(CoreSession session)
@@ -303,7 +303,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             // and concurrent transaction to avoid dereferencing the same remote
             // entity to duplicated local entities
             for (String uri : entitySuggestion.remoteEntityUris) {
-                entityRef = recentlyDereferenced.get(uri);
+                entityRef = recentlyDereferenced.getIfPresent(uri);
                 if (entityRef != null) {
                     break;
                 }
