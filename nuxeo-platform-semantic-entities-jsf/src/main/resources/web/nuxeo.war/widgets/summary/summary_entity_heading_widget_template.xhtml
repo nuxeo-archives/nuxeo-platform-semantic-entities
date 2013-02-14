@@ -18,7 +18,7 @@
   rendered="#{value.hasSchema('entity') and empty value.entity.depiction}"
   styleClass="genericEntityDepiction" />
 </div>
-<div class="entitySummary">
+<div class="entitySummary" dir="auto">
   <h2><h:outputText value="#{value.title}" /></h2>
   <h:outputText value="#{semanticEntitiesActions.ellipsis(value.entity.summary, 100)}" />
 </div>

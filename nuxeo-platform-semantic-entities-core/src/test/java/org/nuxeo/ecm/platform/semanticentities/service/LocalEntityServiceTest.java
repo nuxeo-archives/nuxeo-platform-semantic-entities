@@ -52,17 +52,23 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
     LocalEntityService service;
 
-    private DocumentModel john;
+    protected DocumentModel john;
 
-    private DocumentModel johndoe;
+    protected DocumentModel johndoe;
+    
+    protected DocumentModel obama;
 
-    private DocumentModel beatles;
+    protected DocumentModel beatles;
 
-    private DocumentModel liverpool;
+    protected DocumentModel liverpool;
 
-    private DocumentModel doc1;
+    protected DocumentModel doc1;
 
-    private DocumentModel doc2;
+    protected DocumentModel doc2;
+
+    String obamaWithHamza = "\u0623\u0648\u0628\u0627\u0645\u0627";
+
+    String obamaWithoutHamza = "\u0627\u0648\u0628\u0627\u0645\u0627";
 
     @Before
     public void setUp() throws Exception {
@@ -191,6 +197,22 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
                 null, "Person");
         johndoe.setPropertyValue("dc:title", "John Doe");
         johndoe = session.createDocument(johndoe);
+        
+        // add a name with a diacritic in arabic
+        obama = session.createDocumentModel(container.getPathAsString(), null,
+                "Person");
+        obama.setPropertyValue("dc:title", "Barack Obama");
+        obama.setPropertyValue(
+                "entity:summary",
+                "44th President of the United States of America.");
+        obama.setPropertyValue(
+                "entity:sameas",
+                (Serializable) Arrays.asList("http://dbpedia.org/resource/Barack_Obama"));
+        obama.setPropertyValue("entity:sameasDisplayLabel",
+                (Serializable) Arrays.asList("Barack Obama"));
+        obama.setPropertyValue("entity:altnames", new String[] { "Obama",
+                "Barack Hussein Obama", obamaWithHamza });
+        obama = session.createDocument(obama);
 
         beatles = session.createDocumentModel(container.getPathAsString(),
                 null, "Organization");
@@ -464,6 +486,40 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(john, suggestions.get(0).entity);
         assertEquals(johndoe, suggestions.get(1).entity);
     }
+    
+    
+    @Test
+    public void testSuggestLocalEntitiesWithNormalizedNames() throws ClientException {
+        if (!database.supportsMultipleFulltextIndexes()) {
+            warnSkippedTest();
+            return;
+        }
+
+        makeSomeEntities();
+
+        // Sanity check: using the fulltext index for the title
+        List<EntitySuggestion> suggestions = service.suggestLocalEntity(
+                session, "Obama", "Person", 3);
+        assertEquals(1, suggestions.size());
+        
+        // Sanity check: negative lookups
+        suggestions = service.suggestLocalEntity(
+                session, "someone_that_does_not_exist", "Person", 3);
+        assertEquals(0, suggestions.size());
+        
+        // Check alternative names that does not require much normalization
+        suggestions = service.suggestLocalEntity(
+                session, "Barack Hussein Obama", "Person", 3);
+        assertEquals(1, suggestions.size());
+        suggestions = service.suggestLocalEntity(
+                session, obamaWithHamza, "Person", 3);
+        assertEquals(1, suggestions.size());
+        
+        // Check alternative names that does require normalization
+        suggestions = service.suggestLocalEntity(
+                session, obamaWithoutHamza, "Person", 3);
+        assertEquals(1, suggestions.size());
+    }
 
     @Test
     public void testSuggestEntities() throws Exception {
@@ -704,10 +760,24 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     }
 
     @Test
-    public void testCleanupKeywords() {
-        assertEquals("This is a test",
-                LocalEntityServiceImpl.cleanupKeywords("This is. a\n test?"));
-        assertEquals("a b", LocalEntityServiceImpl.cleanupKeywords("a'.;,<>b"));
+    public void testNameNormalization() {
+        assertEquals("this is a test",
+                service.normalizeName("This is. a\n test?"));
+        assertEquals("a b", service.normalizeName("a'.;,<>b"));
+
+        // check french accents normalization (french diacritics)
+        assertEquals("youpi c est l ete",
+                service.normalizeName("Youpi, c'est l'\u00e9t\u00e9!"));
+
+        // check arabic diacritics normalization: hamza below
+        String israelArabicWithoutHamza = "\u0627\u0633\u0631\u0627\u0626\u064a\u0644";
+        String israelArabicWithHamza = "\u0625\u0633\u0631\u0627\u0626\u064a\u0644";
+        assertEquals(service.normalizeName(israelArabicWithoutHamza),
+                service.normalizeName(israelArabicWithHamza));
+
+        // check arabic diacritics normalization: hamza above
+        assertEquals(service.normalizeName(obamaWithoutHamza),
+                service.normalizeName(obamaWithHamza));
     }
 
     protected void warnSkippedTest() {

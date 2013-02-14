@@ -19,12 +19,13 @@ package org.nuxeo.ecm.platform.semanticentities.service;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -42,6 +43,7 @@ import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.PathRef;
 import org.nuxeo.ecm.core.api.UnrestrictedSessionRunner;
+import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.core.api.pathsegment.PathSegmentService;
 import org.nuxeo.ecm.core.api.security.ACE;
 import org.nuxeo.ecm.core.api.security.ACL;
@@ -51,6 +53,7 @@ import org.nuxeo.ecm.core.api.security.impl.ACPImpl;
 import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.trash.TrashService;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
+import org.nuxeo.ecm.platform.query.nxql.NXQLQueryBuilder;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
@@ -62,7 +65,8 @@ import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.DefaultComponent;
 
-import com.google.common.collect.MapMaker;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 /**
  * Service to handle semantic entities linked to documents in the local
@@ -78,15 +82,21 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     public static final Log log = LogFactory.getLog(LocalEntityServiceImpl.class);
 
     // TODO: make me configurable in an extension point
+    public String SEPARATOR_CHARS_TO_IGNORE = "(\\p{P}|\\n| |<|>|\\+|\\-)+";
+
+    // remove diacritics and the arabic hamzah
+    public String CHARS_TO_IGNORE = "(\\p{InCombiningDiacriticalMarks}|\u0654|\u0655)+";
+
+    // TODO: make me configurable in an extension point
     public static final String ENTITY_CONTAINER_PATH = "/default-domain/entities";
 
     public static final String ENTITY_CONTAINER_TITLE = "Entities";
 
-    protected Map<String, DocumentRef> recentlyDereferenced = new MapMaker().concurrencyLevel(
-            4).expiration(5, TimeUnit.SECONDS).makeMap();
+    protected Cache<String, DocumentRef> recentlyDereferenced = CacheBuilder.newBuilder().concurrencyLevel(
+            4).expireAfterWrite(5, TimeUnit.SECONDS).build();
 
-    protected Map<DocumentRef, String> progressMessages = new MapMaker().concurrencyLevel(
-            4).expiration(30, TimeUnit.MINUTES).makeMap();
+    protected Cache<DocumentRef, String> progressMessages = CacheBuilder.newBuilder().concurrencyLevel(
+            4).expireAfterWrite(30, TimeUnit.MINUTES).build();
 
     @Override
     synchronized public DocumentModel getEntityContainer(CoreSession session)
@@ -230,7 +240,8 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                     session.removeDocuments(docToDeleteArray);
                 } else {
                     try {
-                        // try to perform the actual deletion using the trash service
+                        // try to perform the actual deletion using the trash
+                        // service
                         TrashService trashService = Framework.getService(TrashService.class);
                         trashService.trashDocuments(session.getDocuments(docToDeleteArray));
                     } catch (Exception e) {
@@ -292,7 +303,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             // and concurrent transaction to avoid dereferencing the same remote
             // entity to duplicated local entities
             for (String uri : entitySuggestion.remoteEntityUris) {
-                entityRef = recentlyDereferenced.get(uri);
+                entityRef = recentlyDereferenced.getIfPresent(uri);
                 if (entityRef != null) {
                     break;
                 }
@@ -321,7 +332,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
             relation.addOccurrences(occurrences);
         }
         UpdateOrCreateOccurrenceRelation op = new UpdateOrCreateOccurrenceRelation(
-                session, relation);
+                session, relation, this);
         op.runUnrestricted();
         return session.getDocument(op.occRef).getAdapter(
                 OccurrenceRelation.class, true);
@@ -334,10 +345,13 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
 
         protected DocumentRef occRef;
 
+        protected final LocalEntityService service;
+
         public UpdateOrCreateOccurrenceRelation(CoreSession session,
-                OccurrenceRelation relation) {
+                OccurrenceRelation relation, LocalEntityService service) {
             super(session);
             this.relation = relation;
+            this.service = service;
         }
 
         @SuppressWarnings("unchecked")
@@ -371,6 +385,27 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                         (Serializable) altnames);
             }
 
+            // materialize the target entities id ref directly on the document
+            // to make
+            // it possible to do fast concept queries
+            DocumentModel doc = session.getDocument(relation.getSourceDocumentRef());
+            if (!doc.hasFacet(HAS_SEMANTICS_FACET)) {
+                doc.addFacet(HAS_SEMANTICS_FACET);
+            }
+            List<String> entities = new ArrayList<String>();
+            if (doc.getPropertyValue("semantics:entities") != null) {
+                entities = doc.getProperty("semantics:entities").getValue(
+                        List.class);
+            }
+            if (!entities.contains(relation.getTargetEntityRef())) {
+                entities = new ArrayList<String>(entities);
+                entities.add(relation.getTargetEntityRef().toString());
+            }
+            doc.setPropertyValue("semantics:entities", (Serializable) entities);
+            // TODO: handle deletion of relation to cleanup that list
+            session.saveDocument(doc);
+
+            // create / update the relation document itself
             if (relation.getOccurrenceDocument().getId() == null) {
                 // this is a creation of a new relation between a document and
                 // the entity
@@ -388,6 +423,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 occRef = session.saveDocument(relation.getOccurrenceDocument()).getRef();
             }
             if (entity != null) {
+                // save popularity and altnames info at once
                 session.saveDocument(entity);
             }
             session.save();
@@ -437,8 +473,50 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                 "Ent.cmis:objectId", "relatedEntities");
     }
 
-    public static String cleanupKeywords(String keywords) {
-        return keywords.replaceAll("(\\p{P}|\\n| |<|>|\\+|\\-)+", " ").trim();
+    public String normalizeName(String name) {
+        // remove punctuation and normalize whitespaces
+        name = name.replaceAll(SEPARATOR_CHARS_TO_IGNORE, " ").trim();
+
+        // strip accents and diacritics
+        name = Normalizer.normalize(name, Normalizer.Form.NFD).replaceAll(
+                CHARS_TO_IGNORE, "");
+
+        // make name lookups case insensitive by normalizing case
+        return name.toLowerCase();
+    }
+
+    @SuppressWarnings("unchecked")
+    public boolean updateNormalizedNames(DocumentModel doc, boolean forceUpdate)
+            throws PropertyException, ClientException {
+        if (!doc.hasSchema("entity")) {
+            log.warn(String.format(
+                    "Cannot normalize names on document '%s' as it does not have the 'entity' schema",
+                    doc.getTitle()));
+        }
+        if (!forceUpdate
+                && doc.getPropertyValue("entity:normalizednames") != null
+                && !doc.getProperty("dc:title").isDirty()
+                && !doc.getProperty("entity:altnames").isDirty()) {
+            // nothing to update
+            return false;
+        }
+        Set<String> names = new LinkedHashSet<String>();
+        Set<String> normalized = new LinkedHashSet<String>();
+        names.add(doc.getTitle());
+        if (doc.getPropertyValue("entity:altnames") != null) {
+            names.addAll(doc.getProperty("entity:altnames").getValue(List.class));
+        }
+        for (String name : names) {
+            normalized.add(normalizeName(name));
+        }
+        doc.setPropertyValue("entity:normalizednames", normalized.toArray());
+        if (log.isDebugEnabled()) {
+            log.debug(String.format(
+                    "Updated names for document '%s'. Form tource names: '%s' to normalized names: '%s'",
+                    doc.getTitle(), StringUtils.join(names, "', '"),
+                    StringUtils.join(normalized, "', '")));
+        }
+        return true;
     }
 
     @Override
@@ -456,14 +534,15 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         } else {
             entityTypeNames.add(type);
         }
-        String escapedName = cleanupKeywords(keywords);
+        String sanitized = NXQLQueryBuilder.sanitizeFulltextInput(keywords);
+        String normalized = normalizeName(keywords);
         String q = String.format(
-                "SELECT * FROM %s WHERE (ecm:fulltext_title = '%s' OR entity:altnames = '%s')"
+                "SELECT * FROM %s WHERE (ecm:fulltext_title = '%s' OR entity:normalizednames = '%s')"
                         + " AND ecm:primaryType IN ('%s')"
                         + " AND ecm:currentLifeCycleState != 'deleted'"
                         + " AND ecm:isCheckedInVersion = 0"
                         + " ORDER BY entity:popularity DESC, dc:title LIMIT %d",
-                Constants.ENTITY_TYPE, escapedName, escapedName,
+                Constants.ENTITY_TYPE, sanitized, normalized,
                 StringUtils.join(entityTypeNames, "', '"), maxSuggestions);
 
         // TODO: read the score info as well
@@ -491,8 +570,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
     public List<EntitySuggestion> suggestEntity(CoreSession session,
             String keywords, String type, int maxSuggestions)
             throws ClientException, DereferencingException {
-        return suggestEntity(session, keywords, type, null,
-                maxSuggestions);
+        return suggestEntity(session, keywords, type, null, maxSuggestions);
     }
 
     protected List<EntitySuggestion> suggestEntity(CoreSession session,
@@ -526,7 +604,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
         List<EntitySuggestion> suggestions = suggestLocalEntity(session,
                 keywords, type, maxSuggestions);
         Set<String> alreadySeenRemoteUris = new HashSet<String>();
-        for (EntitySuggestion suggestion: suggestions) {
+        for (EntitySuggestion suggestion : suggestions) {
             alreadySeenRemoteUris.addAll(suggestion.remoteEntityUris);
         }
 
@@ -557,7 +635,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements
                         + " AND cmis:objectTypeId NOT IN ('%s')"
                         + " AND nuxeo:isVersion = false "
                         + "ORDER BY relevance DESC", type,
-                cleanupKeywords(keywords),
+                normalizeName(keywords),
                 StringUtils.join(getEntityTypeNames(), "', '"));
         PageProvider<DocumentModel> provider = new CMISQLDocumentPageProvider(
                 session, query, "cmis:objectId", "suggestedDocuments");

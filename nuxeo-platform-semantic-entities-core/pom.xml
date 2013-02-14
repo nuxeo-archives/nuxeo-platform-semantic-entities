@@ -47,8 +47,8 @@
       <artifactId>nuxeo-opencmis-impl</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.google.collections</groupId>
-      <artifactId>google-collections</artifactId>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
     </dependency>
     <!--
       jena is required to parse the RDF payload of linked data resources

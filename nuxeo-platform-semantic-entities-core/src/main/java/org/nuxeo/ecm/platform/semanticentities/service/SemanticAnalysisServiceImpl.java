@@ -32,6 +32,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.nuxeo.common.utils.StringUtils;
 import org.nuxeo.ecm.core.api.Blob;
@@ -70,7 +71,8 @@ import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.model.ComponentContext;
 import org.nuxeo.runtime.model.DefaultComponent;
 
-import com.google.common.collect.MapMaker;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
@@ -88,8 +90,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     Pattern INVALID_XML_CHARS = Pattern.compile("[^\\u0009\\u000A\\u000D\\u0020-\\uD7FF\\uE000-\\uFFFD\uD800\uDC00-\uDBFF\uDFFF]");
 
-    protected final Map<DocumentLocation, String> states = new MapMaker().concurrencyLevel(
-            10).expiration(30, TimeUnit.MINUTES).makeMap();
+    protected final Cache<DocumentLocation, String> states = CacheBuilder.newBuilder().concurrencyLevel(
+            10).expireAfterWrite(30, TimeUnit.MINUTES).build();
 
     private static final String ANY2TEXT = "any2text";
 
@@ -234,6 +236,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         // This connection manager must be used if more than one thread will
         // be using the HttpClient.
         HttpParams params = new BasicHttpParams();
+        HttpConnectionParams.setSoTimeout(params, 600 * 1000); // 10 min
+        HttpConnectionParams.setConnectionTimeout(params, 600 * 1000); // 10 min
         ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(
                 params, schemeRegistry);
         httpClient = new DefaultHttpClient(cm, params);
@@ -280,7 +284,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             results.savePropertiesToDocument(session, doc);
             createLinks(doc, session, results.groups);
         } finally {
-            states.remove(new DocumentLocationImpl(doc.getRepositoryName(),
+            states.invalidate(new DocumentLocationImpl(doc.getRepositoryName(),
                     doc.getRef()));
         }
     }
@@ -621,7 +625,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                     e.getMessage(), e));
         } catch (IOException e) {
             post.abort();
-            throw e;
+            throw new IOException(String.format("Error connecting to '%s': %s",
+                    effectiveEnhancerUrl, e.getMessage()), e);
         }
     }
 
@@ -712,7 +717,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     public ProgressStatus getProgressStatus(String repositoryName,
             DocumentRef docRef) {
         DocumentLocation loc = new DocumentLocationImpl(repositoryName, docRef);
-        String status = states.get(loc);
+        String status = states.getIfPresent(loc);
         if (status == null) {
             // early return
             return null;
@@ -741,7 +746,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
     @Override
     public void clearProgressStatus(String repositoryName, DocumentRef docRef) {
-        states.remove(new DocumentLocationImpl(repositoryName, docRef));
+        states.invalidate(new DocumentLocationImpl(repositoryName, docRef));
     }
 
     /**

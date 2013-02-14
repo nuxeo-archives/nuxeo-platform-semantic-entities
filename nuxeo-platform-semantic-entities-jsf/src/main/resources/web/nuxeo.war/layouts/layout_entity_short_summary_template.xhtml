@@ -32,12 +32,12 @@
   </a4j:commandLink>
 </div>
 <div class="entityLinkAndSummary">
-<p class="entityLink">
+<p class="entityLink" dir="auto">
   <nxd:restDocumentLink document="#{value.entityModel}">
     #{nxd:titleOrId(value.entityModel)}
   </nxd:restDocumentLink>
 </p>
-<p class="entityShortSummary">#{semanticEntitiesActions.ellipsis(value.entityModel.entity.summary, 20)}</p>
+<p class="entityShortSummary" dir="auto">#{semanticEntitiesActions.ellipsis(value.entityModel.entity.summary, 20)}</p>
 </div>
 <div style="clear: both;"></div>
 </div>
@@ -90,7 +90,7 @@
 <h3 class="summaryTitle">#{messages['heading.mentionsInCurrentDocument']}</h3>
 <div class="entityMentions">
 <ui:repeat value="#{value.occurrences}" var="occInfo">
- <p><h:outputText
+ <p dir="auto"><h:outputText
   value="#{semanticEntitiesActions.reverseEllipsis(occInfo.prefixContext, 20)}"
   /><strong><h:outputText
   value="#{occInfo.mention}"/></strong><h:outputText

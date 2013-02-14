@@ -12,7 +12,9 @@
   border: 1px solid #dedede;
   padding: 1em;
   width: 450px;
-  box-shadow: 0 0 10px #ddd }
+  box-shadow: 0 0 10px #ddd;
+  z-index: 3; /* Above the button of the video-js player */
+}
 
 .entityOccurrences .entityLink { text-transform:capitalize }
 

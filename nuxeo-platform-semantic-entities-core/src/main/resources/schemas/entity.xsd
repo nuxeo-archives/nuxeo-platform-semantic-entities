@@ -21,6 +21,11 @@
   -->
   <xs:element name="altnames" type="nxs:simpleStringList" />
 
+  <!-- Technical field used to store aggregated names normalized in some way
+       that makes it possible to match entity by name even if there is no
+       good fulltext index configuration available -->
+  <xs:element name="normalizednames" type="nxs:simpleStringList" />
+
   <!--
     popularity metric score to be used to rank suggested entities (based
     on count of incoming references to the entity or some eigenvector

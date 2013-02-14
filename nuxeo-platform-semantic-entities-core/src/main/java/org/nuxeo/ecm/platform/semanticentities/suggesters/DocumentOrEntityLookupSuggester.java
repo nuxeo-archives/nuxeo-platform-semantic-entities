@@ -13,6 +13,7 @@ import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.query.api.PageProviderService;
 import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
 import org.nuxeo.ecm.platform.query.nxql.NXQLQueryBuilder;
+import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.suggestbox.service.DocumentSuggestion;
 import org.nuxeo.ecm.platform.suggestbox.service.Suggestion;
 import org.nuxeo.ecm.platform.suggestbox.service.SuggestionContext;
@@ -36,21 +37,22 @@ public class DocumentOrEntityLookupSuggester extends DocumentLookupSuggester {
                 (Serializable) context.session);
         String trimedInput = userInput.trim();
         String sanitizedInput = NXQLQueryBuilder.sanitizeFulltextInput(trimedInput);
+        LocalEntityService entityService = Framework.getLocalService(LocalEntityService.class);
         String fulltextInput = sanitizedInput;
-        String likeUserInput = sanitizedInput;
+        String normalizedInput = entityService.normalizeName(sanitizedInput);
         if (trimedInput.isEmpty()) {
             return Collections.emptyList();
         }
         if (!userInput.endsWith(" ")) {
             // perform a prefix search on the last typed word
             fulltextInput += "*";
-            likeUserInput += "%";
+            normalizedInput += "%";
         }
         try {
             List<Suggestion> suggestions = new ArrayList<Suggestion>();
             PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) ppService.getPageProvider(
                     providerName, null, null, null, props,
-                    new Object[] { fulltextInput, likeUserInput });
+                    new Object[] { fulltextInput, normalizedInput });
             for (DocumentModel doc : pp.getCurrentPage()) {
                 suggestions.add(DocumentSuggestion.fromDocumentModel(doc));
             }
