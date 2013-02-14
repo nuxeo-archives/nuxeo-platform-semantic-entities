@@ -116,7 +116,7 @@ public class CMISQLDocumentPageProvider extends
 
     @Override
     public void refresh() {
-        super.refresh();
         currentPageDocumentModels = null;
+        super.refresh();
     }
 }
