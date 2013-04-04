@@ -19,7 +19,7 @@
 <a4j:region renderRegionOnly="true">
 <a4j:outputPanel id="relatedEntitiesPanel">
 
-<a4j:poll interval="5000" eventsQueue="entitiesQueue"
+<a4j:poll interval="5000"
   reRender="relatedEntitiesPanel,relatedEntitiesButtonsPanel" ignoreDupResponses="true"
   enabled="#{!empty semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}" />
 
@@ -143,12 +143,10 @@ jQuery(document).ready(function() {
   suggestionAction="#{semanticEntitiesActions.suggestEntities}" var="entitySuggestion"
   for="entitySuggestionKeywords"
   nothingLabel="${messages['label.results.noMatchingEntity']}"
-  eventsQueue="entitiesQueue"
   ajaxSingle="true"
   width="500">
   <a4j:support event="onselect"
     reRender="relatedEntitiesPanel"
-    eventsQueue="entitiesQueue"
     action="#{semanticEntitiesActions.addNewOccurrenceRelation}"
     ajaxSingle="true">
     <f:setPropertyActionListener value="#{entitySuggestion}"

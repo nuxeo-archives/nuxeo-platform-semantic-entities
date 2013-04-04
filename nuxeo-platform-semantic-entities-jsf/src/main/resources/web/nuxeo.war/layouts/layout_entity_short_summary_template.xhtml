@@ -25,7 +25,6 @@
 <div style="float: right">
   <a4j:commandLink immediate="true"
     reRender="relatedEntitiesPanel"
-    eventsQueue="entitiesQueue"
     action="#{semanticEntitiesActions.removeOccurrenceRelation(value.documentModel.id, value.entityModel.id)}"
     rendered="#{!empty value and documentManager.hasPermission(value.documentModel.ref, 'WriteProperties')}">
     <h:graphicImage value="/icons/action_delete_mini_over.png" />
@@ -60,12 +59,10 @@
       var="entitySuggestion"
       for="entitySuggestionKeywords2"
       nothingLabel="${messages['label.results.noMatchingEntity']}"
-      eventsQueue="entitiesQueue"
       ajaxSingle="true"
       width="500">
       <a4j:support event="onselect"
         reRender="relatedEntitiesPanel"
-        eventsQueue="entitiesQueue"
         action="#{semanticEntitiesActions.updateOccurrenceRelation(value.occurrenceModel.id)}"
         ajaxSingle="true">
         <f:setPropertyActionListener value="#{entitySuggestion}"
