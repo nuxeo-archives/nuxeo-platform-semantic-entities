@@ -51,8 +51,8 @@ public class DocumentOrEntityLookupSuggester extends DocumentLookupSuggester {
         try {
             List<Suggestion> suggestions = new ArrayList<Suggestion>();
             PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) ppService.getPageProvider(
-                    providerName, null, null, null, props,
-                    null, new Object[] { fulltextInput, normalizedInput });
+                    providerName, null, null, null, props, new Object[] {
+                            fulltextInput, normalizedInput });
             for (DocumentModel doc : pp.getCurrentPage()) {
                 suggestions.add(DocumentSuggestion.fromDocumentModel(doc));
             }
@@ -63,5 +63,5 @@ public class DocumentOrEntityLookupSuggester extends DocumentLookupSuggester {
                     descriptor.getName(), userInput), e);
         }
     }
-    
+
 }
