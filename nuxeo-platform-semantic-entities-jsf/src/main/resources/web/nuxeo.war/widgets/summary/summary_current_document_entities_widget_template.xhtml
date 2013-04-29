@@ -17,7 +17,7 @@
 
 <a4j:queue name="entitiesQueue"/>
 <a4j:region renderRegionOnly="true">
-<a4j:outputPanel id="relatedEntitiesPanel">
+<a4j:outputPanel id="relatedEntitiesPanel" layout="block">
 
 <a4j:poll interval="5000"
   reRender="relatedEntitiesPanel,relatedEntitiesButtonsPanel" ignoreDupResponses="true"
@@ -162,7 +162,7 @@ jQuery(document).ready(function() {
 </rich:suggestionbox>
 </p>
 
-<a4j:outputPanel id="relatedEntitiesButtonsPanel">
+<a4j:outputPanel id="relatedEntitiesButtonsPanel" layout="block">
 <p>
 <f:subview rendered="#{empty semanticEntitiesActions.getSemanticWorkInProgressMessageFor(docId)}">
   <a4j:commandButton value="#{messages['label.button.launchSemanticAnalysis']}"
