@@ -16,19 +16,25 @@
  */
 package org.nuxeo.ecm.platform.semanticentities.service;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.GregorianCalendar;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
-import static org.junit.Assert.*;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.event.EventService;
@@ -223,6 +229,8 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
     }
 
     @Test
+    // NXP-12551: disabled because failing randomly
+    @Ignore
     public void testAsyncAnalysis() throws Exception {
         if (!database.supportsMultipleFulltextIndexes()) {
             warnSkippedTest();
@@ -346,13 +354,13 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
                 session, doc.getRef(), "Place").getCurrentPage();
         assertEquals(1, relatedPlaces.size());
         assertEquals("Liverpool", relatedPlaces.get(0).getTitle());
-        
+
         // check the the doc refs of the related concepts are materialized
         // on the doc
         assertTrue(doc.hasFacet(LocalEntityService.HAS_SEMANTICS_FACET));
         assertNotNull(doc.getPropertyValue("semantics:entities"));
         @SuppressWarnings("unchecked")
-        List<String> entityIds = (List<String>) doc.getProperty("semantics:entities").getValue(List.class);
+        List<String> entityIds = doc.getProperty("semantics:entities").getValue(List.class);
         assertTrue(entityIds.contains(firstPerson.getId()));
         assertTrue(entityIds.contains(relatedPlaces.get(0).getId()));
     }
