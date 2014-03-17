@@ -1,16 +1,11 @@
 package org.nuxeo.ecm.platform.semanticentities;
 
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.nuxeo.ecm.core.api.CoreInstance;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentLocation;
 import org.nuxeo.ecm.core.api.DocumentRef;
-import org.nuxeo.ecm.core.api.repository.Repository;
-import org.nuxeo.ecm.core.api.repository.RepositoryManager;
-import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
 /**
@@ -26,18 +21,11 @@ public class AnalysisTask implements Runnable {
 
     protected final SemanticAnalysisService service;
 
-    protected final RepositoryManager manager;
-
     public AnalysisTask(String repositoryName, DocumentRef docRef,
             SemanticAnalysisService service) {
         this.repositoryName = repositoryName;
         this.docRef = docRef;
         this.service = service;
-        try {
-            manager = Framework.getService(RepositoryManager.class);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public boolean isServiceActiveOrWarn() {
@@ -56,23 +44,20 @@ public class AnalysisTask implements Runnable {
             return;
         }
         boolean isTransactionActive = TransactionHelper.startTransaction();
-        LoginContext lc = null;
         try {
-            lc = Framework.login();
-            CoreSession session = manager.getRepository(repositoryName).open();
-            if (!session.exists(docRef)) {
-                log.info(String.format(
-                        "Document %s:%s has been deleted, skipping semantic analysis.",
-                        repositoryName, docRef));
-                service.clearProgressStatus(repositoryName, docRef);
-                return;
-            }
-            try {
+            try (CoreSession session = CoreInstance.openCoreSession(repositoryName)) {
+                if (!session.exists(docRef)) {
+                    log.info(String.format(
+                            "Document %s:%s has been deleted, skipping semantic analysis.",
+                            repositoryName, docRef));
+                    service.clearProgressStatus(repositoryName, docRef);
+                    return;
+                }
                 if (!isServiceActiveOrWarn()) {
                     return;
                 }
-                AnalysisResults results = service.analyze(
-                        session, session.getDocument(docRef));
+                AnalysisResults results = service.analyze(session,
+                        session.getDocument(docRef));
                 if (results.isEmpty()) {
                     service.clearProgressStatus(repositoryName, docRef);
                     return;
@@ -83,23 +68,14 @@ public class AnalysisTask implements Runnable {
                     return;
                 }
                 service.scheduleSerializationTask(task);
-            } finally {
-                Repository.close(session);
-            }
-        } catch (Exception e) {
-            service.clearProgressStatus(repositoryName, docRef);
-            if (isTransactionActive) {
-                TransactionHelper.setTransactionRollbackOnly();
-            }
-            log.error(e.getMessage(), e);
-        } finally {
-            if (lc != null) {
-                try {
-                    lc.logout();
-                } catch (LoginException e) {
-                    log.error(e, e);
+            } catch (Exception e) {
+                service.clearProgressStatus(repositoryName, docRef);
+                if (isTransactionActive) {
+                    TransactionHelper.setTransactionRollbackOnly();
                 }
+                log.error(e.getMessage(), e);
             }
+        } finally {
             if (isTransactionActive) {
                 TransactionHelper.commitOrRollbackTransaction();
             }

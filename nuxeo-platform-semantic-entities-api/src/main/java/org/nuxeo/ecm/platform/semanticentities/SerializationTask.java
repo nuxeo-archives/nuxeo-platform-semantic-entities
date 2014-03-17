@@ -2,18 +2,14 @@ package org.nuxeo.ecm.platform.semanticentities;
 
 import java.util.List;
 
-import javax.security.auth.login.LoginContext;
-import javax.security.auth.login.LoginException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.nuxeo.ecm.core.api.CoreInstance;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentLocation;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.impl.DocumentLocationImpl;
-import org.nuxeo.ecm.core.api.repository.Repository;
-import org.nuxeo.ecm.core.api.repository.RepositoryManager;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
 import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.transaction.TransactionHelper;
@@ -36,8 +32,6 @@ public class SerializationTask implements Runnable {
 
     protected final SemanticAnalysisService service;
 
-    protected final RepositoryManager manager;
-
     public SerializationTask(String repositoryName, DocumentRef docRef,
             AnalysisResults results,
             SemanticAnalysisService service) {
@@ -46,11 +40,6 @@ public class SerializationTask implements Runnable {
         this.results = results;
         location = new DocumentLocationImpl(repositoryName, docRef);
         this.service = service;
-        try {
-            manager = Framework.getService(RepositoryManager.class);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public String getRepositoryName() {
@@ -99,34 +88,21 @@ public class SerializationTask implements Runnable {
             return;
         }
         boolean isTransactionActive = TransactionHelper.startTransaction();
-        LoginContext lc = null;
         try {
-            lc = Framework.login();
-            CoreSession session = manager.getRepository(repositoryName).open();
-            try {
+            try (CoreSession session = CoreInstance.openCoreSession(repositoryName)) {
                 if (!isServiceActiveOrWarn()) {
                     return;
                 }
                 DocumentModel doc = session.getDocument(docRef);
                 results.savePropertiesToDocument(session, doc);
-                service.createLinks(doc, session,
-                        results.groups);
-            } finally {
-                Repository.close(session);
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            if (isTransactionActive) {
-                TransactionHelper.setTransactionRollbackOnly();
-            }
-        } finally {
-            if (lc != null) {
-                try {
-                    lc.logout();
-                } catch (LoginException e) {
-                    log.error(e, e);
+                service.createLinks(doc, session, results.groups);
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+                if (isTransactionActive) {
+                    TransactionHelper.setTransactionRollbackOnly();
                 }
             }
+        } finally {
             if (isTransactionActive) {
                 TransactionHelper.commitOrRollbackTransaction();
             }
