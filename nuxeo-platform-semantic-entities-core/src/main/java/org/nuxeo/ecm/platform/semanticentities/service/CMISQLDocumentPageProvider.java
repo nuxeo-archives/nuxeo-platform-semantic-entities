@@ -32,7 +32,6 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.IterableQueryResult;
-import org.nuxeo.ecm.core.opencmis.impl.server.CMISQLQueryMaker;
 import org.nuxeo.ecm.core.opencmis.impl.server.NuxeoCmisService;
 import org.nuxeo.ecm.core.opencmis.impl.server.NuxeoRepository;
 
@@ -86,8 +85,7 @@ public class CMISQLDocumentPageProvider extends
             NuxeoCmisService cmisService = new NuxeoCmisService(rep, null,
                     session);
             try {
-                result = session.queryAndFetch(query, CMISQLQueryMaker.TYPE,
-                        cmisService);
+                result = session.queryAndFetch(query, "NXQL", cmisService);
                 resultsCount = result.size();
                 if (offset < resultsCount) {
                     result.skipTo(offset);
