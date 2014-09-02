@@ -85,7 +85,7 @@ public class CMISQLDocumentPageProvider extends
             NuxeoCmisService cmisService = new NuxeoCmisService(rep, null,
                     session);
             try {
-                result = session.queryAndFetch(query, "NXQL", cmisService);
+                result = session.queryAndFetch(query, "CMISQL", cmisService);
                 resultsCount = result.size();
                 if (offset < resultsCount) {
                     result.skipTo(offset);
