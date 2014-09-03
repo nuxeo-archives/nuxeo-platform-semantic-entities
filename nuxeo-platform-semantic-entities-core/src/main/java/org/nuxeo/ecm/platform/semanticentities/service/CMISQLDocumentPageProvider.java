@@ -33,7 +33,6 @@ import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.IdRef;
 import org.nuxeo.ecm.core.api.IterableQueryResult;
 import org.nuxeo.ecm.core.opencmis.impl.server.NuxeoCmisService;
-import org.nuxeo.ecm.core.opencmis.impl.server.NuxeoRepository;
 
 import org.nuxeo.ecm.platform.query.api.AbstractPageProvider;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
