@@ -60,14 +60,11 @@ public class CMISQLDocumentPageProvider extends
 
     protected final String docIdColumnName;
 
-    protected final String rootDocId;
-
     protected List<DocumentModel> currentPageDocumentModels;
 
     public CMISQLDocumentPageProvider(CoreSession session, String query,
             String docIdColumnName, String providerName) throws ClientException {
         this.session = session;
-        rootDocId = session.getRootDocument().getId();
         this.query = query;
         this.docIdColumnName = docIdColumnName;
         pageSize = 10;
@@ -80,12 +77,9 @@ public class CMISQLDocumentPageProvider extends
             currentPageDocumentModels = new ArrayList<DocumentModel>();
             IterableQueryResult result = null;
 
-            NuxeoRepository rep = new NuxeoRepository(
-                    session.getRepositoryName(), rootDocId);
-            NuxeoCmisService cmisService = new NuxeoCmisService(rep, null,
-                    session);
+            NuxeoCmisService cmisService = new NuxeoCmisService(session, null);
             try {
-                result = session.queryAndFetch(query, "CMISQL", cmisService);
+                result = cmisService.queryAndFetch(query, true);
                 resultsCount = result.size();
                 if (offset < resultsCount) {
                     result.skipTo(offset);
