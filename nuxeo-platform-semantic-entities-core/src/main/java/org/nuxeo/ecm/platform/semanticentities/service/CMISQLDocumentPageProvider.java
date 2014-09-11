@@ -76,7 +76,7 @@ public class CMISQLDocumentPageProvider extends
             currentPageDocumentModels = new ArrayList<DocumentModel>();
             IterableQueryResult result = null;
 
-            NuxeoCmisService cmisService = new NuxeoCmisService(session, null);
+            NuxeoCmisService cmisService = new NuxeoCmisService(session);
             try {
                 result = cmisService.queryAndFetch(query, true);
                 resultsCount = result.size();

@@ -38,6 +38,7 @@ import org.junit.Test;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.event.EventService;
+import org.nuxeo.ecm.core.opencmis.impl.server.NuxeoRepository;
 import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
@@ -95,6 +96,8 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
         // CMIS query maker
         deployBundle("org.nuxeo.ecm.core.opencmis.impl");
+        Framework.getProperties().setProperty(
+                NuxeoRepository.SUPPORTS_JOINS_PROP, "true");
 
         // initialize the session field
         openSession();

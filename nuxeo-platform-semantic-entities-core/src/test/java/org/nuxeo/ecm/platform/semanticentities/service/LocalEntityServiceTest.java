@@ -27,6 +27,7 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.After;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 import org.apache.commons.logging.Log;
@@ -36,6 +37,7 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.VersioningOption;
 import org.nuxeo.ecm.core.event.EventService;
+import org.nuxeo.ecm.core.opencmis.impl.server.NuxeoRepository;
 import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
 import org.nuxeo.ecm.core.versioning.VersioningService;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
@@ -55,7 +57,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
     protected DocumentModel john;
 
     protected DocumentModel johndoe;
-    
+
     protected DocumentModel obama;
 
     protected DocumentModel beatles;
@@ -88,6 +90,8 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
         // CMIS query maker
         deployBundle("org.nuxeo.ecm.core.opencmis.impl");
+        Framework.getProperties().setProperty(
+                NuxeoRepository.SUPPORTS_JOINS_PROP, "true");
 
         // override remote entity service
         Framework.getProperties().put(
@@ -197,7 +201,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
                 null, "Person");
         johndoe.setPropertyValue("dc:title", "John Doe");
         johndoe = session.createDocument(johndoe);
-        
+
         // add a name with a diacritic in arabic
         obama = session.createDocumentModel(container.getPathAsString(), null,
                 "Person");
@@ -486,8 +490,8 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         assertEquals(john, suggestions.get(0).entity);
         assertEquals(johndoe, suggestions.get(1).entity);
     }
-    
-    
+
+
     @Test
     public void testSuggestLocalEntitiesWithNormalizedNames() throws ClientException {
         if (!database.supportsMultipleFulltextIndexes()) {
@@ -501,12 +505,12 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         List<EntitySuggestion> suggestions = service.suggestLocalEntity(
                 session, "Obama", "Person", 3);
         assertEquals(1, suggestions.size());
-        
+
         // Sanity check: negative lookups
         suggestions = service.suggestLocalEntity(
                 session, "someone_that_does_not_exist", "Person", 3);
         assertEquals(0, suggestions.size());
-        
+
         // Check alternative names that does not require much normalization
         suggestions = service.suggestLocalEntity(
                 session, "Barack Hussein Obama", "Person", 3);
@@ -514,7 +518,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         suggestions = service.suggestLocalEntity(
                 session, obamaWithHamza, "Person", 3);
         assertEquals(1, suggestions.size());
-        
+
         // Check alternative names that does require normalization
         suggestions = service.suggestLocalEntity(
                 session, obamaWithoutHamza, "Person", 3);
