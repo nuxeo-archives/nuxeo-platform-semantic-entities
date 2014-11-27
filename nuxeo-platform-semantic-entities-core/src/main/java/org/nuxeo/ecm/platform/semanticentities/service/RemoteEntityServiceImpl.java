@@ -85,7 +85,7 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
      */
 
     @Override
-    public void registerExtension(Extension extension) throws Exception {
+    public void registerExtension(Extension extension) {
         if (extension.getExtensionPoint().equals(REMOTESOURCES_XP_NAME)) {
             Object[] contribs = extension.getContributions();
             for (Object contrib : contribs) {
@@ -98,9 +98,7 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
     }
 
     protected void registerRemoteEntitySourceDescriptor(
-            RemoteEntitySourceDescriptor descriptor, Extension extension)
-            throws InstantiationException, IllegalAccessException,
-            ClassNotFoundException {
+            RemoteEntitySourceDescriptor descriptor, Extension extension) {
         descriptor.initializeInContext(extension.getContext());
         registeredSourceDescriptors.add(descriptor);
         // invalidate the cache of activeSources
@@ -111,7 +109,7 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public void unregisterExtension(Extension extension) throws Exception {
+    public void unregisterExtension(Extension extension) {
         if (extension.getExtensionPoint().equals(REMOTESOURCES_XP_NAME)) {
             Object[] contribs = extension.getContributions();
             for (Object contrib : contribs) {

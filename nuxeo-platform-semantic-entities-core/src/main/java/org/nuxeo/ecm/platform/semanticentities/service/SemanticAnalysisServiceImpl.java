@@ -151,7 +151,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public void activate(ComponentContext context) throws Exception {
+    public void activate(ComponentContext context) {
         super.activate(context);
         conversionService = Framework.getService(ConversionService.class);
         leService = Framework.getService(LocalEntityService.class);
@@ -194,7 +194,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public void deactivate(ComponentContext context) throws Exception {
+    public void deactivate(ComponentContext context) {
         active = false;
 
         if (asyncWaitHook != null) {

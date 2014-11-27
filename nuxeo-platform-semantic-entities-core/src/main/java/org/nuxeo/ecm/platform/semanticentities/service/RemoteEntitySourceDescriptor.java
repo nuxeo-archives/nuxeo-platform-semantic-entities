@@ -100,15 +100,17 @@ public class RemoteEntitySourceDescriptor {
         return enabled;
     }
 
-    public void initializeInContext(RuntimeContext context)
-            throws InstantiationException, IllegalAccessException,
-            ClassNotFoundException {
+    public void initializeInContext(RuntimeContext context) {
         if (className != null) {
-            source = (ParameterizedHTTPEntitySource) context.loadClass(
-                    className).newInstance();
+            try {
+                source = (ParameterizedHTTPEntitySource) context.loadClass(
+                        className).newInstance();
+            } catch (ReflectiveOperationException e) {
+                throw new RuntimeException(e);
+            }
             source.setDescriptor(this);
         } else if (enabled) {
-            throw new InstantiationException(String.format(
+            throw new RuntimeException(String.format(
                     "Remote source descriptor '%s'  with enabled=\"true\""
                             + " must provide a class to instantiate", name));
         }
