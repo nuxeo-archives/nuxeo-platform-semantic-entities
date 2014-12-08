@@ -68,8 +68,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
         // initialize the session field
         openSession();
-        DocumentModel domain = session.createDocumentModel("/",
-                "default-domain", "Folder");
+        DocumentModel domain = session.createDocumentModel("/", "default-domain", "Folder");
         session.createDocument(domain);
         session.save();
 
@@ -83,21 +82,18 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         super.tearDown();
     }
 
-    protected abstract void deployRemoteEntityServiceOverride()
-            throws Exception;
+    protected abstract void deployRemoteEntityServiceOverride() throws Exception;
 
     @Test
     public void testSuggestRemoteEntity() throws IOException {
         assertTrue(service.canSuggestRemoteEntity());
-        List<EntitySuggestion> suggestions = service.suggestRemoteEntity("Obama",
-                "Person", 3);
+        List<EntitySuggestion> suggestions = service.suggestRemoteEntity("Obama", "Person", 3);
         assertNotNull(suggestions);
         assertEquals(1, suggestions.size());
 
         EntitySuggestion suggested = suggestions.get(0);
         assertEquals("Barack Obama", suggested.label);
-        assertEquals(DBPEDIA_BARACK_OBAMA_URI.toString(),
-                suggested.getRemoteUri());
+        assertEquals(DBPEDIA_BARACK_OBAMA_URI.toString(), suggested.getRemoteUri());
         assertEquals("Person", suggested.type);
         assertFalse(suggested.isLocal());
 
@@ -108,8 +104,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
         suggested = suggestions.get(0);
         assertEquals("Barack Obama", suggested.label);
-        assertEquals(DBPEDIA_BARACK_OBAMA_URI.toString(),
-                suggested.getRemoteUri());
+        assertEquals(DBPEDIA_BARACK_OBAMA_URI.toString(), suggested.getRemoteUri());
         assertEquals("Person", suggested.type);
         assertFalse(suggested.isLocal());
 
@@ -146,39 +141,30 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         // description
         assertEquals("Barack Obama", barackDoc.getTitle());
 
-        String summary = barackDoc.getProperty("entity:summary").getValue(
-                String.class);
+        String summary = barackDoc.getProperty("entity:summary").getValue(String.class);
         String expectedSummary = "Barack Hussein Obama II is the 44th and current President of the United States.";
-        assertEquals(expectedSummary,
-                summary.substring(0, expectedSummary.length()));
+        assertEquals(expectedSummary, summary.substring(0, expectedSummary.length()));
 
-        List<String> altnames = barackDoc.getProperty("entity:altnames").getValue(
-                List.class);
+        List<String> altnames = barackDoc.getProperty("entity:altnames").getValue(List.class);
         assertEquals(4, altnames.size());
         // Western spelling:
         assertTrue(altnames.contains("Barack Obama"));
         // Russian spelling:
         assertTrue(altnames.contains("\u041e\u0431\u0430\u043c\u0430, \u0411\u0430\u0440\u0430\u043a"));
 
-        Calendar birthDate = barackDoc.getProperty("person:birthDate").getValue(
-                Calendar.class);
+        Calendar birthDate = barackDoc.getProperty("person:birthDate").getValue(Calendar.class);
 
         TimeZone tz = TimeZone.getTimeZone("ECT");
-        DateFormat formatter = DateFormat.getDateTimeInstance(DateFormat.LONG,
-                DateFormat.LONG, Locale.US);
+        DateFormat formatter = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG, Locale.US);
         formatter.setTimeZone(tz);
-        assertEquals("August 4, 1961 1:00:00 AM CET",
-                formatter.format(birthDate.getTime()));
+        assertEquals("August 4, 1961 1:00:00 AM CET", formatter.format(birthDate.getTime()));
 
-        Blob depiction = barackDoc.getProperty("entity:depiction").getValue(
-                Blob.class);
+        Blob depiction = barackDoc.getProperty("entity:depiction").getValue(Blob.class);
         assertNotNull(depiction);
-        assertEquals("200px-Official_portrait_of_Barack_Obama.jpg",
-                depiction.getFilename());
+        assertEquals("200px-Official_portrait_of_Barack_Obama.jpg", depiction.getFilename());
         assertEquals(14748, depiction.getLength());
 
-        List<String> sameas = barackDoc.getProperty("entity:sameas").getValue(
-                List.class);
+        List<String> sameas = barackDoc.getProperty("entity:sameas").getValue(List.class);
         assertTrue(sameas.contains(DBPEDIA_BARACK_OBAMA_URI.toString()));
 
         // check that further dereferencing with override == false does not
@@ -189,10 +175,8 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
         service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, false, false);
 
         assertEquals("B. Obama", barackDoc.getTitle());
-        birthDate = barackDoc.getProperty("person:birthDate").getValue(
-                Calendar.class);
-        assertEquals("August 4, 1961 1:00:00 AM CET",
-                formatter.format(birthDate.getTime()));
+        birthDate = barackDoc.getProperty("person:birthDate").getValue(Calendar.class);
+        assertEquals("August 4, 1961 1:00:00 AM CET", formatter.format(birthDate.getTime()));
 
         // existing names are not re-added
         altnames = barackDoc.getProperty("entity:altnames").getValue(List.class);
@@ -200,8 +184,7 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
         // later dereferencing with override == true does not preserve local
         // changes
-        service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true,
-                false);
+        service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true, false);
         assertEquals("Barack Obama", barackDoc.getTitle());
     }
 
@@ -209,14 +192,11 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
     public void testDerefencingTypeConsistency() throws Exception {
         DocumentModel barackDoc = session.createDocumentModel("Organization");
         try {
-            service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true,
-                    false);
+            service.dereferenceInto(barackDoc, DBPEDIA_BARACK_OBAMA_URI, true, false);
             fail("should have thrown DereferencingException");
         } catch (DereferencingException e) {
-            assertEquals(
-                    "Remote entity 'http://dbpedia.org/resource/Barack_Obama'"
-                            + " can be mapped to types: ('Person')"
-                            + " but not to 'Organization'", e.getMessage());
+            assertEquals("Remote entity 'http://dbpedia.org/resource/Barack_Obama'"
+                    + " can be mapped to types: ('Person')" + " but not to 'Organization'", e.getMessage());
         }
     }
 }

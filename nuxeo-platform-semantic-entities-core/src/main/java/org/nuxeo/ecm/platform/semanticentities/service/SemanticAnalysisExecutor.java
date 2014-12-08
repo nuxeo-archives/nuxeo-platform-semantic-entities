@@ -27,7 +27,6 @@ import org.nuxeo.ecm.platform.semanticentities.service.SemanticAnalysisServiceIm
 
 /**
  * @author matic
- *
  */
 public class SemanticAnalysisExecutor {
 
@@ -40,17 +39,14 @@ public class SemanticAnalysisExecutor {
     protected ThreadPoolExecutor serializationExecutor;
 
     public SemanticAnalysisExecutor() {
-        NamedThreadFactory analysisThreadFactory = new NamedThreadFactory(
-                "Nuxeo Async Semantic Analysis");
+        NamedThreadFactory analysisThreadFactory = new NamedThreadFactory("Nuxeo Async Semantic Analysis");
         analysisTaskQueue = new LinkedBlockingQueue<Runnable>();
-        analysisExecutor = new ThreadPoolExecutor(4, 8, 5, TimeUnit.MINUTES,
-                analysisTaskQueue, analysisThreadFactory);
+        analysisExecutor = new ThreadPoolExecutor(4, 8, 5, TimeUnit.MINUTES, analysisTaskQueue, analysisThreadFactory);
 
         NamedThreadFactory serializationThreadFactory = new NamedThreadFactory(
                 "Nuxeo Async Semantic Link Serialization");
         serializationTaskQueue = new LinkedBlockingQueue<Runnable>();
-        serializationExecutor = new ThreadPoolExecutor(1, 1, 5,
-                TimeUnit.MINUTES, serializationTaskQueue,
+        serializationExecutor = new ThreadPoolExecutor(1, 1, 5, TimeUnit.MINUTES, serializationTaskQueue,
                 serializationThreadFactory);
     }
 
@@ -61,7 +57,7 @@ public class SemanticAnalysisExecutor {
         serializationExecutor.execute(task);
     }
 
-    public boolean shutdownNow()  {
+    public boolean shutdownNow() {
         analysisExecutor.shutdownNow();
         try {
             if (!analysisExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
@@ -81,7 +77,7 @@ public class SemanticAnalysisExecutor {
         return true;
     }
 
-    public boolean shutdown(){
+    public boolean shutdown() {
         analysisExecutor.shutdown();
         try {
             if (!analysisExecutor.awaitTermination(10, TimeUnit.SECONDS)) {

@@ -9,7 +9,7 @@ public class ProgressStatus {
 
     public static final String STATUS_ANALYSIS_PENDING = "status.semantic.analysisPending";
 
-    public static final String  STATUS_LINKING_QUEUED = "status.semantic.linkingQueued";
+    public static final String STATUS_LINKING_QUEUED = "status.semantic.linkingQueued";
 
     public static final String STATUS_LINKING_PENDING = "status.semantic.linkingPending";
 

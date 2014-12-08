@@ -13,8 +13,7 @@ import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
 
 /**
- * Data transfer object with a builder API to gather the outcome of a semantic
- * analysis.
+ * Data transfer object with a builder API to gather the outcome of a semantic analysis.
  */
 public class AnalysisResults {
 
@@ -39,17 +38,15 @@ public class AnalysisResults {
         return this;
     }
 
-    public void savePropertiesToDocument(CoreSession session, DocumentModel doc)
-            throws PropertyException, ClientException {
+    public void savePropertiesToDocument(CoreSession session, DocumentModel doc) throws PropertyException,
+            ClientException {
         for (Map.Entry<String, Object> property : properties.entrySet()) {
             if (property.getValue() != null) {
-                doc.setPropertyValue(property.getKey(),
-                        (Serializable) property.getValue());
+                doc.setPropertyValue(property.getKey(), (Serializable) property.getValue());
             }
         }
         // Avoid triggering analysis loops by event listeners
-        doc.getContextData().put(
-                SemanticAnalysisService.SKIP_SEMANTIC_ANALYSIS, Boolean.TRUE);
+        doc.getContextData().put(SemanticAnalysisService.SKIP_SEMANTIC_ANALYSIS, Boolean.TRUE);
         if (!properties.isEmpty()) {
             session.saveDocument(doc);
         }

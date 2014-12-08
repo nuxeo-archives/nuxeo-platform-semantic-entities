@@ -19,8 +19,7 @@ package org.nuxeo.ecm.platform.semanticentities;
 import java.io.IOException;
 
 /**
- * Exception to be thrown when a URI cannot be successfully dereferenced due to
- * a network or remote server problem.
+ * Exception to be thrown when a URI cannot be successfully dereferenced due to a network or remote server problem.
  *
  * @author Olivier Grisel <ogrisel@nuxeo.com>
  */

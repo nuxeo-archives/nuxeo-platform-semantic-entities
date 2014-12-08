@@ -59,13 +59,10 @@ import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFReader;
 
 /**
- * Implementation of the RemoteEntitySource interface that is able to suggest
- * DBpedia entities by name using the http://lookup.dbpedia.org RESTful service
- * and dereference DBpedia URIs using the official DBpedia sparql endpoint.
- *
- * This implementation uses the SPARQL endpoint instead of HTTP GET based
- * queries since the virtuoso implementation arbitrarily truncates the entity
- * graph to around 2000 triples for entities with many properties.
+ * Implementation of the RemoteEntitySource interface that is able to suggest DBpedia entities by name using the
+ * http://lookup.dbpedia.org RESTful service and dereference DBpedia URIs using the official DBpedia sparql endpoint.
+ * This implementation uses the SPARQL endpoint instead of HTTP GET based queries since the virtuoso implementation
+ * arbitrarily truncates the entity graph to around 2000 triples for entities with many properties.
  */
 public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
 
@@ -86,28 +83,24 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
     }
 
     @Override
-    public Set<String> getAdmissibleTypes(URI remoteEntity)
-            throws DereferencingException {
+    public Set<String> getAdmissibleTypes(URI remoteEntity) throws DereferencingException {
         Model rdfModel = fetchRDFDescription(remoteEntity);
         return extractMappedTypesFromModel(remoteEntity, rdfModel);
     }
 
     @Override
-    public boolean dereferenceInto(DocumentModel localEntity, URI remoteEntity,
-            boolean override, boolean lazyResourceFetch)
-            throws DereferencingException {
+    public boolean dereferenceInto(DocumentModel localEntity, URI remoteEntity, boolean override,
+            boolean lazyResourceFetch) throws DereferencingException {
 
         // fetch and parse the RDF payload describing the remote entity
         Model rdfModel = fetchRDFDescription(remoteEntity);
 
         // fill in the localEntity document with the content of the RDF payload
         // using the property mapping defined in the source descriptor
-        return dereferenceIntoFromModel(localEntity, remoteEntity, rdfModel,
-                override, lazyResourceFetch);
+        return dereferenceIntoFromModel(localEntity, remoteEntity, rdfModel, override, lazyResourceFetch);
     }
 
-    protected Model fetchRDFDescription(URI remoteEntity)
-            throws DereferencingException {
+    protected Model fetchRDFDescription(URI remoteEntity) throws DereferencingException {
 
         Model rdfModel = cachedModels.get(remoteEntity);
         if (rdfModel != null) {
@@ -120,21 +113,16 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
             StringBuilder constructPredicates = new StringBuilder();
             StringBuilder wherePredicates = new StringBuilder();
 
-            constructPredicates.append(String.format("<%s> a ?t . ",
-                    remoteEntity));
+            constructPredicates.append(String.format("<%s> a ?t . ", remoteEntity));
             constructPredicates.append("\n");
 
             wherePredicates.append(String.format("<%s> a ?t . ", remoteEntity));
             wherePredicates.append("\n");
             int i = 0;
-            for (String property : new TreeSet<String>(
-                    descriptor.getMappedProperties().values())) {
-                constructPredicates.append(String.format("<%s> <%s> ?v%d . ",
-                        remoteEntity, property, i));
+            for (String property : new TreeSet<String>(descriptor.getMappedProperties().values())) {
+                constructPredicates.append(String.format("<%s> <%s> ?v%d . ", remoteEntity, property, i));
                 constructPredicates.append("\n");
-                wherePredicates.append(String.format(
-                        "OPTIONAL { <%s> <%s> ?v%d } . ", remoteEntity,
-                        property, i));
+                wherePredicates.append(String.format("OPTIONAL { <%s> <%s> ?v%d } . ", remoteEntity, property, i));
                 wherePredicates.append("\n");
                 i++;
             }
@@ -146,14 +134,12 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
             sparqlQuery.append(wherePredicates);
             sparqlQuery.append(" }");
 
-            String encodedQuery = URLEncoder.encode(sparqlQuery.toString(),
-                    "UTF-8");
+            String encodedQuery = URLEncoder.encode(sparqlQuery.toString(), "UTF-8");
 
             String format = "application/rdf+xml";
             String encodedFormat = URLEncoder.encode(format, "UTF-8");
 
-            URI sparqlURI = URI.create(String.format(SPARQL_URL_PATTERN,
-                    SPARQL_ENDPOINT, encodedQuery, encodedFormat));
+            URI sparqlURI = URI.create(String.format(SPARQL_URL_PATTERN, SPARQL_ENDPOINT, encodedQuery, encodedFormat));
             bodyStream = doHttpGet(sparqlURI, format);
 
             rdfModel = ModelFactory.createDefaultModel();
@@ -180,8 +166,8 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
     }
 
     @Override
-    public List<EntitySuggestion> suggestRemoteEntity(String keywords,
-            String type, int maxSuggestions) throws IOException {
+    public List<EntitySuggestion> suggestRemoteEntity(String keywords, String type, int maxSuggestions)
+            throws IOException {
 
         Map<String, String> localTypes = descriptor.getReverseMappedTypes();
         Set<String> acceptedLocalTypes = new TreeSet<String>();
@@ -198,8 +184,7 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
         log.debug("suggestion query for keywords: " + keywords);
         InputStream bodyStream = fetchSuggestions(keywords, maxSuggestions * 3);
         if (bodyStream == null) {
-            throw new IOException(String.format(
-                    "Unable to fetch suggestion response for '%s'", keywords));
+            throw new IOException(String.format("Unable to fetch suggestion response for '%s'", keywords));
         }
         // Fetch the complete payload to make it easier for debugging (should
         // not be big anyway)
@@ -209,41 +194,34 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
         List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
         try {
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            Document document = builder.parse(new ByteArrayInputStream(
-                    content.getBytes("utf-8")));
+            Document document = builder.parse(new ByteArrayInputStream(content.getBytes("utf-8")));
             XPath xpath = XPathFactory.newInstance().newXPath();
-            NodeList resultNodes = (NodeList) xpath.evaluate(RESULT_NODE_XPATH,
-                    document, XPathConstants.NODESET);
+            NodeList resultNodes = (NodeList) xpath.evaluate(RESULT_NODE_XPATH, document, XPathConstants.NODESET);
             for (int i = 0; i < resultNodes.getLength(); i++) {
                 Node resultNode = resultNodes.item(i);
                 String label = null;
                 String uri = null;
-                Node labelNode = (Node) xpath.evaluate("Label/text()",
-                        resultNode, XPathConstants.NODE);
+                Node labelNode = (Node) xpath.evaluate("Label/text()", resultNode, XPathConstants.NODE);
                 if (labelNode != null) {
                     label = labelNode.getNodeValue();
                 }
-                Node uriNode = (Node) xpath.evaluate("URI/text()", resultNode,
-                        XPathConstants.NODE);
+                Node uriNode = (Node) xpath.evaluate("URI/text()", resultNode, XPathConstants.NODE);
                 if (uriNode != null) {
                     uri = uriNode.getNodeValue();
                 }
-                NodeList typeNodes = (NodeList) xpath.evaluate(
-                        "Classes/Class/URI/text()", resultNode,
+                NodeList typeNodes = (NodeList) xpath.evaluate("Classes/Class/URI/text()", resultNode,
                         XPathConstants.NODESET);
                 String matchingLocalType = null;
                 for (int k = 0; k < typeNodes.getLength(); k++) {
                     Node typeNode = typeNodes.item(k);
                     String localType = localTypes.get(typeNode.getNodeValue());
-                    if (localType != null
-                            && acceptedLocalTypes.contains(localType)) {
+                    if (localType != null && acceptedLocalTypes.contains(localType)) {
                         matchingLocalType = localType;
                         break;
                     }
                 }
                 if (matchingLocalType != null && label != null && uri != null) {
-                    suggestions.add(new EntitySuggestion(label, uri,
-                            matchingLocalType));
+                    suggestions.add(new EntitySuggestion(label, uri, matchingLocalType));
                     if (suggestions.size() >= maxSuggestions) {
                         break;
                     }
@@ -259,21 +237,18 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
             log.error(e, e);
             return Collections.emptyList();
         } catch (SAXException e) {
-            throw new IOException(String.format(
-                    "Invalid suggestion response for '%s' with type '%s'",
-                    keywords, type), e);
+            throw new IOException(String.format("Invalid suggestion response for '%s' with type '%s'", keywords, type),
+                    e);
         } finally {
             bodyStream.close();
         }
         return suggestions;
     }
 
-    protected InputStream fetchSuggestions(String keywords, int maxSuggestions)
-            throws UnsupportedEncodingException, MalformedURLException,
-            IOException {
+    protected InputStream fetchSuggestions(String keywords, int maxSuggestions) throws UnsupportedEncodingException,
+            MalformedURLException, IOException {
         String escapedKeywords = URLEncoder.encode(keywords, "UTF-8");
-        String query = String.format(SUGGESTION_URL_PATTERN, escapedKeywords,
-                maxSuggestions);
+        String query = String.format(SUGGESTION_URL_PATTERN, escapedKeywords, maxSuggestions);
         log.debug(query);
 
         URL url = new URL(query);

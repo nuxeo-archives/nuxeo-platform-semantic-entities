@@ -88,21 +88,17 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         // deploy off-line mock DBpedia source to override the default source
         // that needs an internet connection: comment the following contrib to
         // test again a real Stanbol server
-        Framework.getProperties().put(
-                SemanticAnalysisServiceImpl.STANBOL_URL_PROPERTY,
-                "http://localhost:9090/");
+        Framework.getProperties().put(SemanticAnalysisServiceImpl.STANBOL_URL_PROPERTY, "http://localhost:9090/");
         deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
                 "OSGI-INF/test-semantic-entities-stanbol-entity-contrib.xml");
 
         // CMIS query maker
         deployBundle("org.nuxeo.ecm.core.opencmis.impl");
-        Framework.getProperties().setProperty(
-                NuxeoRepository.SUPPORTS_JOINS_PROP, "true");
+        Framework.getProperties().setProperty(NuxeoRepository.SUPPORTS_JOINS_PROP, "true");
 
         // initialize the session field
         openSession();
-        DocumentModel domain = session.createDocumentModel("/",
-                "default-domain", "Folder");
+        DocumentModel domain = session.createDocumentModel("/", "default-domain", "Folder");
         session.createDocument(domain);
         session.save();
 
@@ -130,71 +126,46 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         assertNotNull(container);
         assertEquals(Constants.ENTITY_CONTAINER_TYPE, container.getType());
 
-        john = session.createDocumentModel(container.getPathAsString(), null,
-                "Person");
+        john = session.createDocumentModel(container.getPathAsString(), null, "Person");
         john.setPropertyValue("dc:title", "John Lennon");
-        john.setPropertyValue(
-                "entity:summary",
-                "John Winston Ono Lennon, MBE (9 October 1940 – 8 December 1980)"
-                        + " was an English rock musician, singer-songwriter, author, and peace"
-                        + " activist who gained worldwide fame as one of the founding members of"
-                        + " The Beatles.");
-        john.setPropertyValue(
-                "entity:sameas",
-                (Serializable) Arrays.asList("http://dbpedia.org/resource/John_Lennon"));
-        john.setPropertyValue("entity:sameasDisplayLabel",
-                (Serializable) Arrays.asList("John Lennon"));
-        john.setPropertyValue(
-                "entity:types",
-                (Serializable) Arrays.asList("http://dbpedia.org/ontology/MusicalArtist"));
-        john.setPropertyValue("person:birthDate", new GregorianCalendar(1940,
-                10, 9));
-        john.setPropertyValue("person:birthDate", new GregorianCalendar(1980,
-                12, 8));
+        john.setPropertyValue("entity:summary", "John Winston Ono Lennon, MBE (9 October 1940 – 8 December 1980)"
+                + " was an English rock musician, singer-songwriter, author, and peace"
+                + " activist who gained worldwide fame as one of the founding members of" + " The Beatles.");
+        john.setPropertyValue("entity:sameas", (Serializable) Arrays.asList("http://dbpedia.org/resource/John_Lennon"));
+        john.setPropertyValue("entity:sameasDisplayLabel", (Serializable) Arrays.asList("John Lennon"));
+        john.setPropertyValue("entity:types", (Serializable) Arrays.asList("http://dbpedia.org/ontology/MusicalArtist"));
+        john.setPropertyValue("person:birthDate", new GregorianCalendar(1940, 10, 9));
+        john.setPropertyValue("person:birthDate", new GregorianCalendar(1980, 12, 8));
         john = session.createDocument(john);
 
         // add another john
-        johndoe = session.createDocumentModel(container.getPathAsString(),
-                null, "Person");
+        johndoe = session.createDocumentModel(container.getPathAsString(), null, "Person");
         johndoe.setPropertyValue("dc:title", "John Doe");
         johndoe = session.createDocument(johndoe);
 
-        beatles = session.createDocumentModel(container.getPathAsString(),
-                null, "Organization");
+        beatles = session.createDocumentModel(container.getPathAsString(), null, "Organization");
         beatles.setPropertyValue("dc:title", "The Beatles");
-        beatles.setPropertyValue(
-                "entity:summary",
-                "The Beatles were an English rock band, formed in Liverpool in 1960"
-                        + " and one of the most commercially successful and critically acclaimed"
-                        + " acts in the history of popular music.");
+        beatles.setPropertyValue("entity:summary", "The Beatles were an English rock band, formed in Liverpool in 1960"
+                + " and one of the most commercially successful and critically acclaimed"
+                + " acts in the history of popular music.");
 
-        beatles.setPropertyValue(
-                "entity:sameas",
+        beatles.setPropertyValue("entity:sameas",
                 (Serializable) Arrays.asList("http://dbpedia.org/resource/The_Beatles"));
-        beatles.setPropertyValue("entity:sameasDisplayLabel",
-                (Serializable) Arrays.asList("The Beatles"));
-        beatles.setPropertyValue(
-                "entity:types",
-                (Serializable) Arrays.asList("http://dbpedia.org/ontology/Band"));
+        beatles.setPropertyValue("entity:sameasDisplayLabel", (Serializable) Arrays.asList("The Beatles"));
+        beatles.setPropertyValue("entity:types", (Serializable) Arrays.asList("http://dbpedia.org/ontology/Band"));
         beatles = session.createDocument(beatles);
 
-        liverpool = session.createDocumentModel(container.getPathAsString(),
-                null, "Place");
+        liverpool = session.createDocumentModel(container.getPathAsString(), null, "Place");
         liverpool.setPropertyValue("dc:title", "Liverpool");
-        liverpool.setPropertyValue(
-                "entity:summary",
+        liverpool.setPropertyValue("entity:summary",
                 "Liverpool is a city and metropolitan borough of Merseyside, England, along"
                         + " the eastern side of the Mersey Estuary. It was founded as a borough"
                         + " in 1207 and was granted city status in 1880.");
 
-        liverpool.setPropertyValue(
-                "entity:sameas",
+        liverpool.setPropertyValue("entity:sameas",
                 (Serializable) Arrays.asList("http://dbpedia.org/resource/Liverpool"));
-        liverpool.setPropertyValue("entity:sameasDisplayLabel",
-                (Serializable) Arrays.asList("http://Liverpool"));
-        liverpool.setPropertyValue(
-                "entity:types",
-                (Serializable) Arrays.asList("http://dbpedia.org/ontology/City"));
+        liverpool.setPropertyValue("entity:sameasDisplayLabel", (Serializable) Arrays.asList("http://Liverpool"));
+        liverpool.setPropertyValue("entity:types", (Serializable) Arrays.asList("http://dbpedia.org/ontology/City"));
         liverpool.setPropertyValue("place:latitude", 53.4);
         liverpool.setPropertyValue("place:longitude", -2.983);
         liverpool = session.createDocument(liverpool);
@@ -202,31 +173,23 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         Framework.getLocalService(EventService.class).waitForAsyncCompletion();
     }
 
-    public DocumentModel createSampleDocumentModel(String id)
-            throws ClientException {
+    public DocumentModel createSampleDocumentModel(String id) throws ClientException {
         return createSampleDocumentModel(id, true);
     }
 
-    public DocumentModel createSampleDocumentModel(String id,
-            boolean saveAndWait) throws ClientException {
+    public DocumentModel createSampleDocumentModel(String id, boolean saveAndWait) throws ClientException {
         DocumentModel doc = session.createDocumentModel("/", id, "Note");
         doc.setPropertyValue("dc:title", "A short bio for John Lennon");
-        doc.setPropertyValue(
-                "note:note",
-                "<html><body>"
-                        + "<h1>This is an HTML title</h1>"
-                        + "<p>John Lennon was born in Liverpool in 1940. John was a musician."
-                        + " This document about John Lennon has many occurrences"
-                        + " of the words 'John' and 'Lennon' hence should rank high"
-                        + " for suggestions on such keywords.</p>"
+        doc.setPropertyValue("note:note", "<html><body>" + "<h1>This is an HTML title</h1>"
+                + "<p>John Lennon was born in Liverpool in 1940. John was a musician."
+                + " This document about John Lennon has many occurrences"
+                + " of the words 'John' and 'Lennon' hence should rank high" + " for suggestions on such keywords.</p>"
 
-                        + "<!-- this is a HTML comment about Bob Marley. -->"
-                        + " </body></html>");
+                + "<!-- this is a HTML comment about Bob Marley. -->" + " </body></html>");
         doc = session.createDocument(doc);
         if (saveAndWait) {
             session.save(); // force write to SQL backend
-            Framework.getLocalService(EventService.class).waitForAsyncCompletion(
-                    1000 * 10);
+            Framework.getLocalService(EventService.class).waitForAsyncCompletion(1000 * 10);
         }
         return doc;
     }
@@ -242,8 +205,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         EventService es = Framework.getLocalService(EventService.class);
         List<DocumentModel> docs = new ArrayList<DocumentModel>();
         for (int i = 0; i < 5; i++) {
-            docs.add(createSampleDocumentModel(String.format("john-bio-%d", i),
-                    false));
+            docs.add(createSampleDocumentModel(String.format("john-bio-%d", i), false));
         }
         session.save(); // force write to SQL backend
         es.waitForAsyncCompletion();
@@ -262,8 +224,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
         // check the results of the analysis
         for (DocumentModel doc : docs) {
-            assertNull(saService.getProgressStatus(doc.getRepositoryName(),
-                    doc.getRef()));
+            assertNull(saService.getProgressStatus(doc.getRepositoryName(), doc.getRef()));
             // refetch the document from the repository
             doc = session.getDocument(doc.getRef());
             // the same entities are linked to all the docs
@@ -331,30 +292,23 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         assertEquals("Place", liverpool.getType());
         assertEquals(Arrays.asList("http://dbpedia.org/resource/Liverpool"),
                 liverpool.getProperty("entity:sameas").getValue(List.class));
-        assertEquals(
-                "Liverpool is a city and metropolitan borough of Merseyside,"
-                        + " England, along the eastern side of the Mersey Estuary. It "
-                        + "was founded as a borough in 1207 and was granted city status "
-                        + "in 1880. Liverpool is the fourth largest city in the United "
-                        + "Kingdom (third largest in England) and has a population of "
-                        + "435,500, and lies at the centre of the wider Liverpool Urban "
-                        + "Area, which has a population of 816,216.",
-                liverpool.getPropertyValue("entity:summary"));
+        assertEquals("Liverpool is a city and metropolitan borough of Merseyside,"
+                + " England, along the eastern side of the Mersey Estuary. It "
+                + "was founded as a borough in 1207 and was granted city status "
+                + "in 1880. Liverpool is the fourth largest city in the United "
+                + "Kingdom (third largest in England) and has a population of "
+                + "435,500, and lies at the centre of the wider Liverpool Urban "
+                + "Area, which has a population of 816,216.", liverpool.getPropertyValue("entity:summary"));
     }
 
-    protected void checkRelatedEntities(DocumentModel doc)
-            throws ClientException {
-        List<DocumentModel> relatedPeople = leService.getRelatedEntities(
-                session, doc.getRef(), "Person").getCurrentPage();
-        assertEquals(
-                String.format(doc.getPathAsString()
-                        + " should have been linked to an entity"), 1,
+    protected void checkRelatedEntities(DocumentModel doc) throws ClientException {
+        List<DocumentModel> relatedPeople = leService.getRelatedEntities(session, doc.getRef(), "Person").getCurrentPage();
+        assertEquals(String.format(doc.getPathAsString() + " should have been linked to an entity"), 1,
                 relatedPeople.size());
         DocumentModel firstPerson = relatedPeople.get(0);
         assertEquals("John Lennon", firstPerson.getTitle());
 
-        List<DocumentModel> relatedPlaces = leService.getRelatedEntities(
-                session, doc.getRef(), "Place").getCurrentPage();
+        List<DocumentModel> relatedPlaces = leService.getRelatedEntities(session, doc.getRef(), "Place").getCurrentPage();
         assertEquals(1, relatedPlaces.size());
         assertEquals("Liverpool", relatedPlaces.get(0).getTitle());
 
@@ -369,42 +323,33 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
     }
 
     /**
-     * Check that the expected relations are there and that removal of the link
-     * also remove automatically created entities
+     * Check that the expected relations are there and that removal of the link also remove automatically created
+     * entities
      */
-    protected void checkRemoveRelatedEntities(DocumentModel doc)
-            throws ClientException {
-        List<DocumentModel> relatedPeople = leService.getRelatedEntities(
-                session, doc.getRef(), "Person").getCurrentPage();
-        assertEquals(
-                String.format(doc.getPathAsString()
-                        + " should have been linked to an entity"), 1,
+    protected void checkRemoveRelatedEntities(DocumentModel doc) throws ClientException {
+        List<DocumentModel> relatedPeople = leService.getRelatedEntities(session, doc.getRef(), "Person").getCurrentPage();
+        assertEquals(String.format(doc.getPathAsString() + " should have been linked to an entity"), 1,
                 relatedPeople.size());
         DocumentModel firstPerson = relatedPeople.get(0);
         assertEquals("John Lennon", firstPerson.getTitle());
 
         // check removal of the link
-        leService.removeOccurrences(session, doc.getRef(),
-                firstPerson.getRef(), false);
+        leService.removeOccurrences(session, doc.getRef(), firstPerson.getRef(), false);
         if (session.exists(firstPerson.getRef())) {
-            assertEquals("deleted",
-                    session.getCurrentLifeCycleState(firstPerson.getRef()));
+            assertEquals("deleted", session.getCurrentLifeCycleState(firstPerson.getRef()));
         } else {
             fail(firstPerson.getTitle() + " should have been deleted");
         }
 
-        List<DocumentModel> relatedPlaces = leService.getRelatedEntities(
-                session, doc.getRef(), "Place").getCurrentPage();
+        List<DocumentModel> relatedPlaces = leService.getRelatedEntities(session, doc.getRef(), "Place").getCurrentPage();
         assertEquals(1, relatedPlaces.size());
         DocumentModel firstPlace = relatedPlaces.get(0);
         assertEquals("Liverpool", firstPlace.getTitle());
 
         // check removal of the link
-        leService.removeOccurrences(session, doc.getRef(), firstPlace.getRef(),
-                false);
+        leService.removeOccurrences(session, doc.getRef(), firstPlace.getRef(), false);
         if (session.exists(firstPlace.getRef())) {
-            assertEquals("deleted",
-                    session.getCurrentLifeCycleState(firstPlace.getRef()));
+            assertEquals("deleted", session.getCurrentLifeCycleState(firstPlace.getRef()));
         } else {
             fail(firstPlace.getTitle() + " should have been deleted");
         }
@@ -412,42 +357,33 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
     @Test
     public void testTextExtract() throws ClientException {
-        DocumentModel doc = session.createDocumentModel("/",
-                "docWithControlChars", "Note");
+        DocumentModel doc = session.createDocumentModel("/", "docWithControlChars", "Note");
         doc.setPropertyValue("dc:title", "A short bio for John Lennon");
         doc.setPropertyValue("dc:description",
                 "'\ud800\udc00' is a valid character outside of the BMP that should be kept.");
-        doc.setPropertyValue(
-                "note:note",
-                "<html><body>"
-                        + "<h1>This is an HTML title</h1>"
-                        + "<p>John Lennon was born in Liverpool in 1940. John was a musician."
-                        + " This document about John Lennon has many occurrences"
-                        + " of the words 'John' and 'Lennon' hence should rank high"
-                        + " for suggestions on such keywords.</p>"
-                        + "<p>'\uFFFE' is an invalid control char and should be ignored.</p>"
-                        + "<!-- this is a HTML comment about Bob Marley. -->"
-                        + "</body></html>");
+        doc.setPropertyValue("note:note", "<html><body>" + "<h1>This is an HTML title</h1>"
+                + "<p>John Lennon was born in Liverpool in 1940. John was a musician."
+                + " This document about John Lennon has many occurrences"
+                + " of the words 'John' and 'Lennon' hence should rank high" + " for suggestions on such keywords.</p>"
+                + "<p>'\uFFFE' is an invalid control char and should be ignored.</p>"
+                + "<!-- this is a HTML comment about Bob Marley. -->" + "</body></html>");
         SemanticAnalysisServiceImpl sasi = (SemanticAnalysisServiceImpl) saService;
         String extractedText = sasi.extractText(doc);
-        assertEquals(
-                "A short bio for John Lennon\n\n"
+        assertEquals("A short bio for John Lennon\n\n"
 
-                        + "'\ud800\udc00' is a valid character outside of the BMP that should be kept.\n\n"
+        + "'\ud800\udc00' is a valid character outside of the BMP that should be kept.\n\n"
 
-                        + "This is an HTML title\n\n"
+        + "This is an HTML title\n\n"
 
-                        + "John Lennon was born in Liverpool in 1940. John was a musician. This\n"
-                        + "document about John Lennon has many occurrences of the words 'John' and\n"
-                        + "'Lennon' hence should rank high for suggestions on such keywords.\n\n"
+        + "John Lennon was born in Liverpool in 1940. John was a musician. This\n"
+                + "document about John Lennon has many occurrences of the words 'John' and\n"
+                + "'Lennon' hence should rank high for suggestions on such keywords.\n\n"
 
-                        + "'' is an invalid control char and should be ignored.",
-                extractedText);
+                + "'' is an invalid control char and should be ignored.", extractedText);
     }
 
     protected void warnSkippedTest() {
-        log.warn("Skipping test that needs multi-fulltext support for database: "
-                + database.getClass().getName());
+        log.warn("Skipping test that needs multi-fulltext support for database: " + database.getClass().getName());
     }
 
 }

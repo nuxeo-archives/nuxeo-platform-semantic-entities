@@ -7,8 +7,8 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceInfo;
 
 /**
- * Data transfer object that provides all the required data to build JSF views
- * to introspect the details of an occurrence and review it.
+ * Data transfer object that provides all the required data to build JSF views to introspect the details of an
+ * occurrence and review it.
  */
 public class EntityOccurrence {
 
@@ -22,9 +22,8 @@ public class EntityOccurrence {
 
     protected final List<OccurrenceInfo> occurrences = new ArrayList<OccurrenceInfo>();
 
-    public EntityOccurrence(DocumentModel doc, DocumentModel entity,
-            DocumentModel occurrence, List<OccurrenceInfo> occurrences,
-            int maxDisplayedOccurrences) {
+    public EntityOccurrence(DocumentModel doc, DocumentModel entity, DocumentModel occurrence,
+            List<OccurrenceInfo> occurrences, int maxDisplayedOccurrences) {
         documentModel = doc;
         entityModel = entity;
         occurrenceModel = occurrence;

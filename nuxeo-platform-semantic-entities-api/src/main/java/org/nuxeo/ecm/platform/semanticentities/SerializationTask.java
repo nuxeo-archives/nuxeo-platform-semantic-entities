@@ -15,8 +15,7 @@ import org.nuxeo.runtime.api.Framework;
 import org.nuxeo.runtime.transaction.TransactionHelper;
 
 /**
- * Data transfer object use to serialize the core write access link creation
- * using a BlockingQueue
+ * Data transfer object use to serialize the core write access link creation using a BlockingQueue
  */
 public class SerializationTask implements Runnable {
 
@@ -32,8 +31,7 @@ public class SerializationTask implements Runnable {
 
     protected final SemanticAnalysisService service;
 
-    public SerializationTask(String repositoryName, DocumentRef docRef,
-            AnalysisResults results,
+    public SerializationTask(String repositoryName, DocumentRef docRef, AnalysisResults results,
             SemanticAnalysisService service) {
         this.repositoryName = repositoryName;
         this.docRef = docRef;
@@ -62,21 +60,18 @@ public class SerializationTask implements Runnable {
     public boolean equals(Object o) {
         if (o instanceof SerializationTask) {
             SerializationTask otherTask = (SerializationTask) o;
-            return repositoryName.equals(otherTask.repositoryName)
-                    && docRef.equals(((SerializationTask) o).docRef);
+            return repositoryName.equals(otherTask.repositoryName) && docRef.equals(((SerializationTask) o).docRef);
         } else if (o instanceof DocumentLocation) {
             DocumentLocation otherLocation = (DocumentLocation) o;
-            return repositoryName.equals(otherLocation.getServerName())
-                    && docRef.equals(otherLocation.getDocRef());
+            return repositoryName.equals(otherLocation.getServerName()) && docRef.equals(otherLocation.getDocRef());
         }
         return false;
     }
 
     public boolean isServiceActiveOrWarn() {
         if (!service.isActive()) {
-            log.warn(String.format(
-                    "%s has been disabled, skipping analysis for %s:%s",
-                    service.getClass(), repositoryName, docRef));
+            log.warn(String.format("%s has been disabled, skipping analysis for %s:%s", service.getClass(),
+                    repositoryName, docRef));
             return false;
         }
         return true;

@@ -40,13 +40,10 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
     @SuppressWarnings("unchecked")
     public List<OccurrenceInfo> getOccurrences() throws ClientException {
         List<OccurrenceInfo> occurrences = new ArrayList<OccurrenceInfo>();
-        List<Map<String, Serializable>> occMaps = doc.getProperty(
-                "occurrence:quotes").getValue(List.class);
+        List<Map<String, Serializable>> occMaps = doc.getProperty("occurrence:quotes").getValue(List.class);
         for (Map<String, Serializable> occMap : occMaps) {
-            OccurrenceInfo info = new OccurrenceInfo(
-                    occMap.get("text").toString(),
-                    ((Long) occMap.get("startPos")).intValue(),
-                    ((Long) occMap.get("endPos")).intValue());
+            OccurrenceInfo info = new OccurrenceInfo(occMap.get("text").toString(),
+                    ((Long) occMap.get("startPos")).intValue(), ((Long) occMap.get("endPos")).intValue());
             occurrences.add(info);
         }
         return occurrences;
@@ -63,8 +60,7 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
 
     @Override
     public void addOccurrences(List<OccurrenceInfo> occurrences) throws ClientException {
-        Set<OccurrenceInfo> dedupedOccurrences = new LinkedHashSet<OccurrenceInfo>(
-                getOccurrences());
+        Set<OccurrenceInfo> dedupedOccurrences = new LinkedHashSet<OccurrenceInfo>(getOccurrences());
         dedupedOccurrences.addAll(occurrences);
         List<Map<String, Serializable>> quotes = new ArrayList<Map<String, Serializable>>();
         for (OccurrenceInfo info : dedupedOccurrences) {
@@ -74,13 +70,11 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
     }
 
     @Override
-    public void setOccurrences(List<OccurrenceInfo> occurrences)
-            throws ClientException {
+    public void setOccurrences(List<OccurrenceInfo> occurrences) throws ClientException {
         List<Map<String, Serializable>> newQuotes = new ArrayList<Map<String, Serializable>>();
         // use a temporary LinkedHashSet to remove any dupe without altering the
         // ordering
-        for (OccurrenceInfo info : new LinkedHashSet<OccurrenceInfo>(
-                occurrences)) {
+        for (OccurrenceInfo info : new LinkedHashSet<OccurrenceInfo>(occurrences)) {
             newQuotes.add(info.asQuoteyMap());
         }
         doc.setPropertyValue("occurrence:quotes", (Serializable) newQuotes);

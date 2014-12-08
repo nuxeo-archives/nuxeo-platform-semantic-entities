@@ -21,9 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Helper data transfer object to handle the occurrence of the name of an entity
- * in some pure text context (typically a document snippet of maximum 3
- * sentences).
+ * Helper data transfer object to handle the occurrence of the name of an entity in some pure text context (typically a
+ * document snippet of maximum 3 sentences).
  *
  * @author ogrisel
  */
@@ -50,23 +49,19 @@ public class OccurrenceInfo implements Comparable<OccurrenceInfo> {
     public final int endPosInContext;
 
     /**
-     * Ordering info such as position in source document to be able to order the
-     * occurrences relative to one another.
+     * Ordering info such as position in source document to be able to order the occurrences relative to one another.
      */
     public double order = 0.0;
 
     public OccurrenceInfo(String mention, String context) {
         if (context == null || context.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Cannot build OccurrenceInfo instance without a context");
+            throw new IllegalArgumentException("Cannot build OccurrenceInfo instance without a context");
         }
         if (mention == null || mention.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Cannot build OccurrenceInfo instance without a mention");
+            throw new IllegalArgumentException("Cannot build OccurrenceInfo instance without a mention");
         }
         if (!context.contains(mention)) {
-            throw new IllegalArgumentException(String.format(
-                    "'%s' should occur in context '%s'", mention, context));
+            throw new IllegalArgumentException(String.format("'%s' should occur in context '%s'", mention, context));
         }
         this.context = context;
         this.mention = mention;
@@ -74,25 +69,19 @@ public class OccurrenceInfo implements Comparable<OccurrenceInfo> {
         endPosInContext = startPosInContext + mention.length();
     }
 
-    public OccurrenceInfo(String context, int startPosInContext,
-            int endPosInContext) {
+    public OccurrenceInfo(String context, int startPosInContext, int endPosInContext) {
         if (context == null || context.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Cannot build OccurrenceInfo instance without a context");
+            throw new IllegalArgumentException("Cannot build OccurrenceInfo instance without a context");
         }
         if (startPosInContext >= endPosInContext) {
-            throw new IllegalArgumentException(String.format(
-                    "Start position %d must be larger that end position %d",
+            throw new IllegalArgumentException(String.format("Start position %d must be larger that end position %d",
                     startPosInContext, endPosInContext));
         } else if (startPosInContext < 0) {
-            throw new IllegalArgumentException(String.format(
-                    "Start position %d must be zero or positive",
+            throw new IllegalArgumentException(String.format("Start position %d must be zero or positive",
                     startPosInContext));
         } else if (endPosInContext > context.length()) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "End position %d must be smaller or equal to context length %d",
-                            endPosInContext, context.length()));
+            throw new IllegalArgumentException(String.format(
+                    "End position %d must be smaller or equal to context length %d", endPosInContext, context.length()));
         }
         this.context = context;
         mention = context.substring(startPosInContext, endPosInContext);
@@ -101,8 +90,7 @@ public class OccurrenceInfo implements Comparable<OccurrenceInfo> {
     }
 
     /**
-     * @return a map suitable for saving the item in the occurrence:quotes
-     *         field.
+     * @return a map suitable for saving the item in the occurrence:quotes field.
      */
     public Map<String, Serializable> asQuoteyMap() {
         Map<String, Serializable> quote = new HashMap<String, Serializable>();
@@ -182,7 +170,7 @@ public class OccurrenceInfo implements Comparable<OccurrenceInfo> {
      * The end offset to locate the mention inside the context.
      */
     public OccurrenceInfo withOrder(double order) {
-        this.order  = order;
+        this.order = order;
         return this;
     }
 }

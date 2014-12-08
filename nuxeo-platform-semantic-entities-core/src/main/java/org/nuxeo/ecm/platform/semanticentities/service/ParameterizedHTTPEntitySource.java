@@ -49,14 +49,10 @@ import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 
 /**
- * Abstract base class to be used by all contributions to the
- * RemoteEntityServiceImpl service.
- *
- * Factorize common mapping logic and offer public methods to help the service
- * set parameters from the descriptor.
+ * Abstract base class to be used by all contributions to the RemoteEntityServiceImpl service. Factorize common mapping
+ * logic and offer public methods to help the service set parameters from the descriptor.
  */
-public abstract class ParameterizedHTTPEntitySource implements
-        RemoteEntitySource {
+public abstract class ParameterizedHTTPEntitySource implements RemoteEntitySource {
 
     private static final Log log = LogFactory.getLog(ParameterizedHTTPEntitySource.class);
 
@@ -80,17 +76,14 @@ public abstract class ParameterizedHTTPEntitySource implements
     protected void initHttpClient() {
         // Create and initialize a scheme registry
         SchemeRegistry schemeRegistry = new SchemeRegistry();
-        schemeRegistry.register(new Scheme("http",
-                PlainSocketFactory.getSocketFactory(), 80));
-        schemeRegistry.register(new Scheme("https",
-                SSLSocketFactory.getSocketFactory(), 443));
+        schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
+        schemeRegistry.register(new Scheme("https", SSLSocketFactory.getSocketFactory(), 443));
 
         // Create an HttpClient with the ThreadSafeClientConnManager.
         // This connection manager must be used if more than one thread will
         // be using the HttpClient.
         HttpParams params = new BasicHttpParams();
-        ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(
-                params, schemeRegistry);
+        ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(params, schemeRegistry);
 
         httpClient = new DefaultHttpClient(cm, params);
     }
@@ -105,8 +98,7 @@ public abstract class ParameterizedHTTPEntitySource implements
             if (response.getStatusLine().getStatusCode() == 200) {
                 return response.getEntity().getContent();
             } else {
-                String errorMsg = String.format("Error resolving '%s' : ",
-                        uri);
+                String errorMsg = String.format("Error resolving '%s' : ", uri);
                 errorMsg += response.getStatusLine().toString();
                 throw new IOException(errorMsg);
             }
@@ -119,8 +111,7 @@ public abstract class ParameterizedHTTPEntitySource implements
         }
     }
 
-    protected InputStream doHttpPost(URI uri, String accept,
-            String contentType, String payload) throws IOException {
+    protected InputStream doHttpPost(URI uri, String accept, String contentType, String payload) throws IOException {
         HttpPost post = new HttpPost(uri);
         try {
             if (accept != null) {
@@ -137,8 +128,7 @@ public abstract class ParameterizedHTTPEntitySource implements
             if (response.getStatusLine().getStatusCode() == 200) {
                 return response.getEntity().getContent();
             } else {
-                String errorMsg = String.format(
-                        "Error querying '%s' with payload '%s': ", uri, payload);
+                String errorMsg = String.format("Error querying '%s' with payload '%s': ", uri, payload);
                 errorMsg += response.getStatusLine().toString();
                 throw new IOException(errorMsg);
             }
@@ -160,19 +150,15 @@ public abstract class ParameterizedHTTPEntitySource implements
 
     @Override
     @SuppressWarnings("unchecked")
-    public boolean dereferenceIntoFromModel(DocumentModel localEntity,
-            URI remoteEntity, Model rdfModel, boolean override,
-            boolean lazyResourceFetch) throws DereferencingException {
+    public boolean dereferenceIntoFromModel(DocumentModel localEntity, URI remoteEntity, Model rdfModel,
+            boolean override, boolean lazyResourceFetch) throws DereferencingException {
 
         // check that the remote entity has a type that is compatible with
         // the local entity document model
-        Collection<String> possibleTypes = extractMappedTypesFromModel(
-                remoteEntity, rdfModel);
+        Collection<String> possibleTypes = extractMappedTypesFromModel(remoteEntity, rdfModel);
         if (!possibleTypes.contains(localEntity.getType())) {
-            throw new DereferencingException(String.format(
-                    "Remote entity '%s' can be mapped to types:"
-                            + " ('%s') but not to '%s'", remoteEntity,
-                    StringUtils.join(possibleTypes, "', '"),
+            throw new DereferencingException(String.format("Remote entity '%s' can be mapped to types:"
+                    + " ('%s') but not to '%s'", remoteEntity, StringUtils.join(possibleTypes, "', '"),
                     localEntity.getType()));
         }
 
@@ -192,28 +178,24 @@ public abstract class ParameterizedHTTPEntitySource implements
             }
             if (!samesas.contains(remoteEntity.toString())) {
                 samesas.add(remoteEntity.toString());
-                localEntity.setPropertyValue("entity:sameas",
-                        (Serializable) samesas);
+                localEntity.setPropertyValue("entity:sameas", (Serializable) samesas);
 
-                String titlePropUri = descriptor.getMappedProperties().get(
-                        "dc:title");
+                String titlePropUri = descriptor.getMappedProperties().get("dc:title");
                 String label = localEntity.getTitle();
                 label = label != null ? label : "Missing label";
                 if (titlePropUri != null) {
-                    String labelFromRDF = (String) readDecodedLiteral(rdfModel,
-                            resource, titlePropUri, StringType.INSTANCE, "en");
+                    String labelFromRDF = (String) readDecodedLiteral(rdfModel, resource, titlePropUri,
+                            StringType.INSTANCE, "en");
                     label = labelFromRDF != null ? labelFromRDF : label;
                 }
                 sameasDisplayLabel.add(label);
-                localEntity.setPropertyValue("entity:sameasDisplayLabel",
-                        (Serializable) sameasDisplayLabel);
+                localEntity.setPropertyValue("entity:sameasDisplayLabel", (Serializable) sameasDisplayLabel);
             }
         } catch (Exception e) {
             throw new DereferencingException(e);
         }
 
-        HashMap<String, String> mapping = new HashMap<String, String>(
-                descriptor.getMappedProperties());
+        HashMap<String, String> mapping = new HashMap<String, String>(descriptor.getMappedProperties());
         // as sameas has a special handling, remove it from the list of
         // properties to synchronize the generic way
         mapping.remove("entity:sameas");
@@ -234,37 +216,30 @@ public abstract class ParameterizedHTTPEntitySource implements
                     if (override) {
                         newValues.clear();
                     }
-                    for (String value : readStringList(rdfModel, resource,
-                            remotePropertyUri)) {
+                    for (String value : readStringList(rdfModel, resource, remotePropertyUri)) {
                         if (!newValues.contains(value)) {
                             newValues.add(value);
                         }
                     }
-                    localEntity.setPropertyValue(localPropertyName,
-                            (Serializable) newValues);
+                    localEntity.setPropertyValue(localPropertyName, (Serializable) newValues);
                 } else {
-                    if (localProperty.getValue() == null
-                            || "".equals(localProperty.getValue()) || override) {
-                        if (type.isComplexType()
-                                && "content".equals(type.getName())) {
+                    if (localProperty.getValue() == null || "".equals(localProperty.getValue()) || override) {
+                        if (type.isComplexType() && "content".equals(type.getName())) {
                             if (lazyResourceFetch) {
                                 // TODO: store the resource and property info in
                                 // a DocumentModel context data entry to be used
                                 // later by the entity serializer
                             } else {
-                                Serializable linkedResource = (Serializable) readLinkedResource(
-                                        rdfModel, resource, remotePropertyUri);
+                                Serializable linkedResource = (Serializable) readLinkedResource(rdfModel, resource,
+                                        remotePropertyUri);
                                 if (linkedResource != null) {
-                                    localEntity.setPropertyValue(
-                                            localPropertyName, linkedResource);
+                                    localEntity.setPropertyValue(localPropertyName, linkedResource);
                                 }
                             }
                         } else {
-                            Serializable literal = readDecodedLiteral(rdfModel,
-                                    resource, remotePropertyUri, type, "en");
+                            Serializable literal = readDecodedLiteral(rdfModel, resource, remotePropertyUri, type, "en");
                             if (literal != null) {
-                                localEntity.setPropertyValue(localPropertyName,
-                                        literal);
+                                localEntity.setPropertyValue(localPropertyName, literal);
                             }
                         }
                     }
@@ -278,19 +253,16 @@ public abstract class ParameterizedHTTPEntitySource implements
         return true;
     }
 
-    protected Serializable readDecodedLiteral(Model rdfModel,
-            Resource resource, String remotePropertyUri, Type type,
+    protected Serializable readDecodedLiteral(Model rdfModel, Resource resource, String remotePropertyUri, Type type,
             String requestedLang) {
         com.hp.hpl.jena.rdf.model.Property remoteProperty = rdfModel.getProperty(remotePropertyUri);
-        NodeIterator it = rdfModel.listObjectsOfProperty(resource,
-                remoteProperty);
+        NodeIterator it = rdfModel.listObjectsOfProperty(resource, remoteProperty);
         while (it.hasNext()) {
             RDFNode node = it.nextNode();
             if (node.isLiteral()) {
                 Literal literal = node.as(Literal.class);
                 String lang = literal.getLanguage();
-                if (lang == null || lang.equals("")
-                        || lang.equals(requestedLang)) {
+                if (lang == null || lang.equals("") || lang.equals(requestedLang)) {
                     Serializable decoded = (Serializable) type.decode(literal.getString());
                     if (decoded instanceof String) {
                         decoded = StringEscapeUtils.unescapeHtml((String) decoded);
@@ -302,13 +274,10 @@ public abstract class ParameterizedHTTPEntitySource implements
         return null;
     }
 
-
-    protected Blob readLinkedResource(Model rdfModel, Resource resource,
-            String remotePropertyUri) {
+    protected Blob readLinkedResource(Model rdfModel, Resource resource, String remotePropertyUri) {
         // download depictions or other kind of linked resources
         com.hp.hpl.jena.rdf.model.Property remoteProperty = rdfModel.getProperty(remotePropertyUri);
-        NodeIterator it = rdfModel.listObjectsOfProperty(resource,
-                remoteProperty);
+        NodeIterator it = rdfModel.listObjectsOfProperty(resource, remoteProperty);
         if (it.hasNext()) {
             String contentURI = it.nextNode().as(Resource.class).getURI();
 
@@ -343,12 +312,10 @@ public abstract class ParameterizedHTTPEntitySource implements
         return null;
     }
 
-    protected List<String> readStringList(Model rdfModel, Resource resource,
-            String remotePropertyUri) {
+    protected List<String> readStringList(Model rdfModel, Resource resource, String remotePropertyUri) {
 
         com.hp.hpl.jena.rdf.model.Property remoteProperty = rdfModel.getProperty(remotePropertyUri);
-        NodeIterator it = rdfModel.listObjectsOfProperty(resource,
-                remoteProperty);
+        NodeIterator it = rdfModel.listObjectsOfProperty(resource, remoteProperty);
 
         List<String> collectedValues = new ArrayList<String>();
         while (it.hasNext()) {
@@ -372,11 +339,10 @@ public abstract class ParameterizedHTTPEntitySource implements
     /**
      * @param remoteEntity URI of the remote entity
      * @param rdfModel RDF model describing the remote entity
-     * @return list of local types that are compatible with the remote entity
-     *         according to the type mapping configuration for this source
+     * @return list of local types that are compatible with the remote entity according to the type mapping
+     *         configuration for this source
      */
-    protected Set<String> extractMappedTypesFromModel(URI remoteEntity,
-            Model rdfModel) {
+    protected Set<String> extractMappedTypesFromModel(URI remoteEntity, Model rdfModel) {
         Resource resource = rdfModel.getResource(remoteEntity.toString());
         com.hp.hpl.jena.rdf.model.Property type = rdfModel.getProperty(RDF_TYPE);
 

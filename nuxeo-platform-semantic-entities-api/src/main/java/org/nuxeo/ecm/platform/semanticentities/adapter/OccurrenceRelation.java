@@ -23,9 +23,8 @@ import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
 
 /**
- * Helper interface to adapt a document model with the occurrence schema and
- * facet to help the manipulation of occurrence of names of entities in the text
- * rendition of a document.
+ * Helper interface to adapt a document model with the occurrence schema and facet to help the manipulation of
+ * occurrence of names of entities in the text rendition of a document.
  *
  * @author ogrisel
  */
@@ -37,8 +36,7 @@ public interface OccurrenceRelation {
     DocumentModel getOccurrenceDocument();
 
     /**
-     * @return the reference of the document that holds the text quotes
-     *         mentioning the entity
+     * @return the reference of the document that holds the text quotes mentioning the entity
      */
     DocumentRef getSourceDocumentRef() throws ClientException;
 
@@ -48,27 +46,23 @@ public interface OccurrenceRelation {
     DocumentRef getTargetEntityRef() throws ClientException;
 
     /**
-     * @return the snippet info and the precise locations of the mentioned names
-     *         inside those of snippets
+     * @return the snippet info and the precise locations of the mentioned names inside those of snippets
      */
     List<OccurrenceInfo> getOccurrences() throws ClientException;
 
     List<OccurrenceInfo> getOccurrences(int maxOccurrences) throws ClientException;
 
     /**
-     * Merge the list of occurrences with the existing occurrence info held by
-     * the underlying document model using. Remove the duplicated entries
-     * without altering the ordering.
-     */
-    void addOccurrences(List<OccurrenceInfo> occurrences)
-            throws ClientException;
-
-    /**
-     * Replace existing occurrences with the a new list of occurrence info.
+     * Merge the list of occurrences with the existing occurrence info held by the underlying document model using.
      * Remove the duplicated entries without altering the ordering.
      */
-    void setOccurrences(List<OccurrenceInfo> occurrences)
-            throws ClientException;
+    void addOccurrences(List<OccurrenceInfo> occurrences) throws ClientException;
+
+    /**
+     * Replace existing occurrences with the a new list of occurrence info. Remove the duplicated entries without
+     * altering the ordering.
+     */
+    void setOccurrences(List<OccurrenceInfo> occurrences) throws ClientException;
 
     /**
      * Lazy fetch the DocumentModel of the entity being mentioned.

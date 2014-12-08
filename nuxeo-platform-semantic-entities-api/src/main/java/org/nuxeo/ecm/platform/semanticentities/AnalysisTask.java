@@ -21,8 +21,7 @@ public class AnalysisTask implements Runnable {
 
     protected final SemanticAnalysisService service;
 
-    public AnalysisTask(String repositoryName, DocumentRef docRef,
-            SemanticAnalysisService service) {
+    public AnalysisTask(String repositoryName, DocumentRef docRef, SemanticAnalysisService service) {
         this.repositoryName = repositoryName;
         this.docRef = docRef;
         this.service = service;
@@ -30,9 +29,8 @@ public class AnalysisTask implements Runnable {
 
     public boolean isServiceActiveOrWarn() {
         if (!service.isActive()) {
-            log.warn(String.format(
-                    "%s has been disabled, skipping analysis for %s:%s",
-                    service.getClass(), repositoryName, docRef));
+            log.warn(String.format("%s has been disabled, skipping analysis for %s:%s", service.getClass(),
+                    repositoryName, docRef));
             return false;
         }
         return true;
@@ -47,8 +45,7 @@ public class AnalysisTask implements Runnable {
         try {
             try (CoreSession session = CoreInstance.openCoreSession(repositoryName)) {
                 if (!session.exists(docRef)) {
-                    log.info(String.format(
-                            "Document %s:%s has been deleted, skipping semantic analysis.",
+                    log.info(String.format("Document %s:%s has been deleted, skipping semantic analysis.",
                             repositoryName, docRef));
                     service.clearProgressStatus(repositoryName, docRef);
                     return;
@@ -56,14 +53,12 @@ public class AnalysisTask implements Runnable {
                 if (!isServiceActiveOrWarn()) {
                     return;
                 }
-                AnalysisResults results = service.analyze(session,
-                        session.getDocument(docRef));
+                AnalysisResults results = service.analyze(session, session.getDocument(docRef));
                 if (results.isEmpty()) {
                     service.clearProgressStatus(repositoryName, docRef);
                     return;
                 }
-                SerializationTask task = new SerializationTask(repositoryName,
-                        docRef, results, service);
+                SerializationTask task = new SerializationTask(repositoryName, docRef, results, service);
                 if (!isServiceActiveOrWarn()) {
                     return;
                 }
@@ -84,22 +79,17 @@ public class AnalysisTask implements Runnable {
 
     /*
      * (non-Javadoc)
-     *
-     * @see java.lang.Object#equals(java.lang.Object)
-     *
-     * Override to make it possible to lookup the position of a document in the
-     * queue and remove duplicates
+     * @see java.lang.Object#equals(java.lang.Object) Override to make it possible to lookup the position of a document
+     * in the queue and remove duplicates
      */
     @Override
     public boolean equals(Object o) {
         if (o instanceof AnalysisTask) {
             AnalysisTask otherTask = (AnalysisTask) o;
-            return repositoryName.equals(otherTask.repositoryName)
-                    && docRef.equals(((AnalysisTask) o).docRef);
+            return repositoryName.equals(otherTask.repositoryName) && docRef.equals(((AnalysisTask) o).docRef);
         } else if (o instanceof DocumentLocation) {
             DocumentLocation otherLocation = (DocumentLocation) o;
-            return repositoryName.equals(otherLocation.getServerName())
-                    && docRef.equals(otherLocation.getDocRef());
+            return repositoryName.equals(otherLocation.getServerName()) && docRef.equals(otherLocation.getDocRef());
         }
         return false;
     }

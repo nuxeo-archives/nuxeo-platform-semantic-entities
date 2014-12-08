@@ -38,15 +38,12 @@ import org.nuxeo.ecm.platform.query.api.AbstractPageProvider;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 
 /**
- * Simple PageProvider implementation that uses the CMISQL api to be able to
- * perform paginated joins. The CMISQL SELECT statement is expected to select a
- * unique attribute that is the document IdRef (a.k.a. cmis:objectId) of the
- * result.
+ * Simple PageProvider implementation that uses the CMISQL api to be able to perform paginated joins. The CMISQL SELECT
+ * statement is expected to select a unique attribute that is the document IdRef (a.k.a. cmis:objectId) of the result.
  *
  * @author ogrisel
  */
-public class CMISQLDocumentPageProvider extends
-        AbstractPageProvider<DocumentModel> implements
+public class CMISQLDocumentPageProvider extends AbstractPageProvider<DocumentModel> implements
         PageProvider<DocumentModel> {
 
     public static final Log log = LogFactory.getLog(CMISQLDocumentPageProvider.class);
@@ -61,8 +58,8 @@ public class CMISQLDocumentPageProvider extends
 
     protected List<DocumentModel> currentPageDocumentModels;
 
-    public CMISQLDocumentPageProvider(CoreSession session, String query,
-            String docIdColumnName, String providerName) throws ClientException {
+    public CMISQLDocumentPageProvider(CoreSession session, String query, String docIdColumnName, String providerName)
+            throws ClientException {
         this.session = session;
         this.query = query;
         this.docIdColumnName = docIdColumnName;
@@ -88,8 +85,7 @@ public class CMISQLDocumentPageProvider extends
                 while (it.hasNext() && pos < pageSize) {
                     pos += 1;
                     Map<String, Serializable> selectedAttributes = it.next();
-                    DocumentRef docRef = new IdRef(selectedAttributes.get(
-                            docIdColumnName).toString());
+                    DocumentRef docRef = new IdRef(selectedAttributes.get(docIdColumnName).toString());
                     DocumentModel doc = session.getDocument(docRef);
                     currentPageDocumentModels.add(doc);
                 }

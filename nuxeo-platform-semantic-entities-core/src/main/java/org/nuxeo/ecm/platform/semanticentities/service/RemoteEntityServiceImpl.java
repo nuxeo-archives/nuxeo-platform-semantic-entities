@@ -40,13 +40,10 @@ import org.nuxeo.runtime.model.Extension;
 import com.hp.hpl.jena.rdf.model.Model;
 
 /**
- * {@inheritDoc}
- *
- * Default implementation for the RemoteEntityService component. Can be used to
- * register remote entity sources for linked data dereferencing.
+ * {@inheritDoc} Default implementation for the RemoteEntityService component. Can be used to register remote entity
+ * sources for linked data dereferencing.
  */
-public class RemoteEntityServiceImpl extends DefaultComponent implements
-        RemoteEntityService {
+public class RemoteEntityServiceImpl extends DefaultComponent implements RemoteEntityService {
 
     private static final Log log = LogFactory.getLog(RemoteEntityServiceImpl.class);
 
@@ -90,22 +87,19 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
             Object[] contribs = extension.getContributions();
             for (Object contrib : contribs) {
                 if (contrib instanceof RemoteEntitySourceDescriptor) {
-                    registerRemoteEntitySourceDescriptor(
-                            (RemoteEntitySourceDescriptor) contrib, extension);
+                    registerRemoteEntitySourceDescriptor((RemoteEntitySourceDescriptor) contrib, extension);
                 }
             }
         }
     }
 
-    protected void registerRemoteEntitySourceDescriptor(
-            RemoteEntitySourceDescriptor descriptor, Extension extension) {
+    protected void registerRemoteEntitySourceDescriptor(RemoteEntitySourceDescriptor descriptor, Extension extension) {
         descriptor.initializeInContext(extension.getContext());
         registeredSourceDescriptors.add(descriptor);
         // invalidate the cache of activeSources
         activeSources = null;
-        log.info(String.format(
-                "Registered entity source '%s' with class '%s'.",
-                descriptor.getName(), descriptor.getClassName()));
+        log.info(String.format("Registered entity source '%s' with class '%s'.", descriptor.getName(),
+                descriptor.getClassName()));
     }
 
     @Override
@@ -114,26 +108,21 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
             Object[] contribs = extension.getContributions();
             for (Object contrib : contribs) {
                 if (contrib instanceof RemoteEntitySourceDescriptor) {
-                    unregisterRemoteEntitySourceDescriptor(
-                            (RemoteEntitySourceDescriptor) contrib, extension);
+                    unregisterRemoteEntitySourceDescriptor((RemoteEntitySourceDescriptor) contrib, extension);
                 }
             }
         }
     }
 
-    protected void unregisterRemoteEntitySourceDescriptor(
-            RemoteEntitySourceDescriptor descriptor, Extension extension) {
+    protected void unregisterRemoteEntitySourceDescriptor(RemoteEntitySourceDescriptor descriptor, Extension extension) {
         int index = registeredSourceDescriptors.lastIndexOf(descriptor);
         if (index != -1) {
             RemoteEntitySourceDescriptor removed = registeredSourceDescriptors.remove(index);
             activeSources = null;
-            log.info(String.format(
-                    "Unregistered entity source '%s' with class '%s'.",
-                    removed.getName(), removed.getClassName()));
+            log.info(String.format("Unregistered entity source '%s' with class '%s'.", removed.getName(),
+                    removed.getClassName()));
         } else {
-            log.warn(String.format(
-                    "No registered remote source under name '%s'",
-                    descriptor.getName()));
+            log.warn(String.format("No registered remote source under name '%s'", descriptor.getName()));
         }
     }
 
@@ -157,60 +146,48 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public boolean dereferenceInto(DocumentModel localEntity, URI remoteEntity,
-            boolean override, boolean lazyResourceFetch)
-            throws DereferencingException {
-        RemoteEntitySource source = getSourceFor(remoteEntity);
-        if (source == null) {
-            return false;
-        }
-        log.debug(String.format("Dereferencing '%s' from source '%s'",
-                remoteEntity, source.getClass().getName()));
-        return source.dereferenceInto(localEntity, remoteEntity, override,
-                lazyResourceFetch);
-    }
-
-    @Override
-    public boolean dereferenceIntoFromModel(DocumentModel localEntity,
-            URI remoteEntity, Model rdfModel, boolean override,
+    public boolean dereferenceInto(DocumentModel localEntity, URI remoteEntity, boolean override,
             boolean lazyResourceFetch) throws DereferencingException {
         RemoteEntitySource source = getSourceFor(remoteEntity);
         if (source == null) {
             return false;
         }
-        log.debug(String.format(
-                "Dereferencing '%s' from source '%s' and prefetched model.",
-                remoteEntity, source.getClass().getName()));
-        return source.dereferenceIntoFromModel(localEntity, remoteEntity,
-                rdfModel, override, lazyResourceFetch);
+        log.debug(String.format("Dereferencing '%s' from source '%s'", remoteEntity, source.getClass().getName()));
+        return source.dereferenceInto(localEntity, remoteEntity, override, lazyResourceFetch);
+    }
+
+    @Override
+    public boolean dereferenceIntoFromModel(DocumentModel localEntity, URI remoteEntity, Model rdfModel,
+            boolean override, boolean lazyResourceFetch) throws DereferencingException {
+        RemoteEntitySource source = getSourceFor(remoteEntity);
+        if (source == null) {
+            return false;
+        }
+        log.debug(String.format("Dereferencing '%s' from source '%s' and prefetched model.", remoteEntity,
+                source.getClass().getName()));
+        return source.dereferenceIntoFromModel(localEntity, remoteEntity, rdfModel, override, lazyResourceFetch);
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * This implementation aggregates all the suggestions of the sources that
-     * can perform suggestions. Hence the number of aggregate suggestions might
-     * be larger than {@literal maxSuggestions}
+     * {@inheritDoc} This implementation aggregates all the suggestions of the sources that can perform suggestions.
+     * Hence the number of aggregate suggestions might be larger than {@literal maxSuggestions}
      */
     @Override
-    public List<EntitySuggestion> suggestRemoteEntity(String keywords,
-            String type, int maxSuggestions) throws IOException {
+    public List<EntitySuggestion> suggestRemoteEntity(String keywords, String type, int maxSuggestions)
+            throws IOException {
         List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
         for (RemoteEntitySource source : getActiveSources().values()) {
             if (source.canSuggestRemoteEntity()) {
-                suggestions.addAll(source.suggestRemoteEntity(keywords, type,
-                        maxSuggestions));
+                suggestions.addAll(source.suggestRemoteEntity(keywords, type, maxSuggestions));
             }
         }
-        log.debug(String.format(
-                "Entity Suggestions for '%s' and type '%s': [%s]", keywords,
-                type, StringUtils.join(suggestions.toArray(), ", ")));
+        log.debug(String.format("Entity Suggestions for '%s' and type '%s': [%s]", keywords, type,
+                StringUtils.join(suggestions.toArray(), ", ")));
         return suggestions;
     }
 
     @Override
-    public Set<String> getAdmissibleTypes(URI remoteEntity)
-            throws DereferencingException {
+    public Set<String> getAdmissibleTypes(URI remoteEntity) throws DereferencingException {
         Set<String> types = new TreeSet<String>();
         for (RemoteEntitySource source : getActiveSources().values()) {
             if (source.canDereference(remoteEntity)) {
@@ -221,18 +198,15 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public void removeSameAsLink(DocumentModel doc, URI uriToRemove)
-            throws ClientException {
+    public void removeSameAsLink(DocumentModel doc, URI uriToRemove) throws ClientException {
         if (doc.getPropertyValue(EntitySuggestion.SAMEAS_URI_PROPERTY) == null) {
             return;
         }
         String uriAsString = uriToRemove.toString();
         ArrayList<String> filteredURIs = new ArrayList<String>();
         ArrayList<String> filteredLabels = new ArrayList<String>();
-        String[] oldURIs = doc.getProperty(EntitySuggestion.SAMEAS_URI_PROPERTY).getValue(
-                String[].class);
-        String[] oldLabels = doc.getProperty(
-                EntitySuggestion.SAMEAS_LABEL_PROPERTY).getValue(String[].class);
+        String[] oldURIs = doc.getProperty(EntitySuggestion.SAMEAS_URI_PROPERTY).getValue(String[].class);
+        String[] oldLabels = doc.getProperty(EntitySuggestion.SAMEAS_LABEL_PROPERTY).getValue(String[].class);
 
         boolean changed = false;
         for (int i = 0; i < oldURIs.length; i++) {
@@ -244,10 +218,8 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements
             }
         }
         if (changed) {
-            doc.setPropertyValue(EntitySuggestion.SAMEAS_URI_PROPERTY,
-                    filteredURIs);
-            doc.setPropertyValue(EntitySuggestion.SAMEAS_LABEL_PROPERTY,
-                    filteredLabels);
+            doc.setPropertyValue(EntitySuggestion.SAMEAS_URI_PROPERTY, filteredURIs);
+            doc.setPropertyValue(EntitySuggestion.SAMEAS_LABEL_PROPERTY, filteredLabels);
         }
     }
 }

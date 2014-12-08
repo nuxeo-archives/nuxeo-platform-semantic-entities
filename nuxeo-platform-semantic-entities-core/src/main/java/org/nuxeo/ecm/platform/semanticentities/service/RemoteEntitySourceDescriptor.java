@@ -68,7 +68,7 @@ public class RemoteEntitySourceDescriptor {
     public Map<String, String> getReverseMappedTypes() {
         if (reverseMappedTypes == null) {
             Map<String, String> reversed = new TreeMap<String, String>();
-            for (Map.Entry<String, String> entry: mappedTypes.entrySet()) {
+            for (Map.Entry<String, String> entry : mappedTypes.entrySet()) {
                 reversed.put(entry.getValue(), entry.getKey());
             }
             reverseMappedTypes = reversed;
@@ -103,16 +103,14 @@ public class RemoteEntitySourceDescriptor {
     public void initializeInContext(RuntimeContext context) {
         if (className != null) {
             try {
-                source = (ParameterizedHTTPEntitySource) context.loadClass(
-                        className).newInstance();
+                source = (ParameterizedHTTPEntitySource) context.loadClass(className).newInstance();
             } catch (ReflectiveOperationException e) {
                 throw new RuntimeException(e);
             }
             source.setDescriptor(this);
         } else if (enabled) {
-            throw new RuntimeException(String.format(
-                    "Remote source descriptor '%s'  with enabled=\"true\""
-                            + " must provide a class to instantiate", name));
+            throw new RuntimeException(String.format("Remote source descriptor '%s'  with enabled=\"true\""
+                    + " must provide a class to instantiate", name));
         }
     }
 
@@ -124,12 +122,10 @@ public class RemoteEntitySourceDescriptor {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result
-                + ((className == null) ? 0 : className.hashCode());
+        result = prime * result + ((className == null) ? 0 : className.hashCode());
         result = prime * result + (enabled ? 1231 : 1237);
         result = prime * result + ((name == null) ? 0 : name.hashCode());
-        result = prime * result
-                + ((uriPrefix == null) ? 0 : uriPrefix.hashCode());
+        result = prime * result + ((uriPrefix == null) ? 0 : uriPrefix.hashCode());
         return result;
     }
 

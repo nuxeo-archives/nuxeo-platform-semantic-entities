@@ -57,8 +57,7 @@ import org.nuxeo.ecm.platform.semanticentities.service.ParameterizedHTTPEntitySo
 import org.nuxeo.ecm.platform.semanticentities.service.RemoteEntitySourceDescriptor;
 
 /**
- * Implementation of the RemoteEntitySource interface from the HTTP endpoint of
- * the EntityHub of a Stanbol instance.
+ * Implementation of the RemoteEntitySource interface from the HTTP endpoint of the EntityHub of a Stanbol instance.
  */
 public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
 
@@ -75,8 +74,7 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
     }
 
     @Override
-    public synchronized void setDescriptor(
-            RemoteEntitySourceDescriptor descriptor) {
+    public synchronized void setDescriptor(RemoteEntitySourceDescriptor descriptor) {
         this.descriptor = descriptor;
         endpointURL = descriptor.getParameters().get("stanbolURL");
         if ("${org.nuxeo.ecm.platform.semanticentities.stanbolUrl}".equals(endpointURL)) {
@@ -84,9 +82,7 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
             endpointURL = "https://stanbol.demo.nuxeo.com";
         }
         if (endpointURL == null || endpointURL.isEmpty()) {
-            throw new RuntimeException(
-                    "stanbolURL parameter is missing for the"
-                            + " StanbolEntityHubSource ");
+            throw new RuntimeException("stanbolURL parameter is missing for the" + " StanbolEntityHubSource ");
         }
         if (!endpointURL.endsWith("/")) {
             endpointURL += "/";
@@ -100,13 +96,12 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                 endpointURL += "site/" + site + "/";
             }
         }
-        log.info(String.format("Configured '%s' to endpoint: '%s'",
-                this.getClass().getName(), endpointURL));
+        log.info(String.format("Configured '%s' to endpoint: '%s'", this.getClass().getName(), endpointURL));
     }
 
     @SuppressWarnings("unchecked")
-    protected Map<String, Object> fetchJSONDescription(URI remoteEntity)
-            throws JsonParseException, JsonMappingException, IOException {
+    protected Map<String, Object> fetchJSONDescription(URI remoteEntity) throws JsonParseException,
+            JsonMappingException, IOException {
         // TODO: make the format configurable and upgrade to JSON-LD once
         // the spec is stabilizing a bit
 
@@ -114,22 +109,17 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
         // parameter since the JAX-RS server will decode it (once) while
         // UriBuilder will refuse 'double' encode occurrences of % followed by
         // 2 consecutive hexa digits.
-        String encodedResourceUri = URLEncoder.encode(remoteEntity.toString(),
-                "UTF-8");
-        URI resourceUri = UriBuilder.fromPath(endpointURL).path("entity").queryParam(
-                "id", encodedResourceUri).build();
-        return mapper.readValue(doHttpGet(resourceUri, "application/json"),
-                Map.class);
+        String encodedResourceUri = URLEncoder.encode(remoteEntity.toString(), "UTF-8");
+        URI resourceUri = UriBuilder.fromPath(endpointURL).path("entity").queryParam("id", encodedResourceUri).build();
+        return mapper.readValue(doHttpGet(resourceUri, "application/json"), Map.class);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public Set<String> getAdmissibleTypes(URI remoteEntity)
-            throws DereferencingException {
+    public Set<String> getAdmissibleTypes(URI remoteEntity) throws DereferencingException {
         Map<String, Object> representation;
         try {
-            representation = (Map<String, Object>) fetchJSONDescription(
-                    remoteEntity).get("representation");
+            representation = (Map<String, Object>) fetchJSONDescription(remoteEntity).get("representation");
         } catch (JsonParseException e) {
             throw new DereferencingException(e);
         } catch (JsonMappingException e) {
@@ -141,14 +131,11 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
     }
 
     @SuppressWarnings("unchecked")
-    protected Set<String> getAdmissibleTypes(
-            Map<String, Object> jsonRepresentation)
-            throws DereferencingException {
+    protected Set<String> getAdmissibleTypes(Map<String, Object> jsonRepresentation) throws DereferencingException {
         try {
             List<Map<String, String>> typeInfos = (List<Map<String, String>>) jsonRepresentation.get(RDF_TYPE);
             if (typeInfos == null) {
-                log.warn("Missing type information in JSON description for "
-                        + jsonRepresentation.get("id"));
+                log.warn("Missing type information in JSON description for " + jsonRepresentation.get("id"));
                 return Collections.emptySet();
             }
             Set<String> admissibleTypes = new TreeSet<String>();
@@ -167,25 +154,20 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
 
     @SuppressWarnings("unchecked")
     @Override
-    public boolean dereferenceInto(DocumentModel localEntity, URI remoteEntity,
-            boolean override, boolean lazyResourceFetch)
-            throws DereferencingException {
+    public boolean dereferenceInto(DocumentModel localEntity, URI remoteEntity, boolean override,
+            boolean lazyResourceFetch) throws DereferencingException {
         Map<String, Object> representation = Collections.emptyMap();
         try {
             Map<String, Object> jsonDescription = fetchJSONDescription(remoteEntity);
             representation = (Map<String, Object>) jsonDescription.get("representation");
             if (representation == null) {
-                throw new DereferencingException(
-                        "Invalid JSON response from Stanbol server:"
-                                + " missing 'representation' key: "
-                                + mapper.writeValueAsString(jsonDescription));
+                throw new DereferencingException("Invalid JSON response from Stanbol server:"
+                        + " missing 'representation' key: " + mapper.writeValueAsString(jsonDescription));
             }
             Set<String> possibleTypes = getAdmissibleTypes(representation);
             if (!possibleTypes.contains(localEntity.getType())) {
-                throw new DereferencingException(String.format(
-                        "Remote entity '%s' can be mapped to types:"
-                                + " ('%s') but not to '%s'", remoteEntity,
-                        StringUtils.join(possibleTypes, "', '"),
+                throw new DereferencingException(String.format("Remote entity '%s' can be mapped to types:"
+                        + " ('%s') but not to '%s'", remoteEntity, StringUtils.join(possibleTypes, "', '"),
                         localEntity.getType()));
             }
             // special handling for the entity:sameas property
@@ -202,29 +184,24 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
             }
             if (!samesas.contains(remoteEntity.toString())) {
                 samesas.add(remoteEntity.toString());
-                localEntity.setPropertyValue("entity:sameas",
-                        (Serializable) samesas);
+                localEntity.setPropertyValue("entity:sameas", (Serializable) samesas);
 
-                String titlePropUri = descriptor.getMappedProperties().get(
-                        "dc:title");
+                String titlePropUri = descriptor.getMappedProperties().get("dc:title");
                 String label = localEntity.getTitle();
                 label = label != null ? label : "Missing label";
                 if (titlePropUri != null) {
-                    String labelFromRDF = readDecodedLiteral(representation,
-                            titlePropUri, StringType.INSTANCE, "en").toString();
+                    String labelFromRDF = readDecodedLiteral(representation, titlePropUri, StringType.INSTANCE, "en").toString();
                     label = labelFromRDF != null ? labelFromRDF : label;
                 }
                 sameasDisplayLabel.add(label);
-                localEntity.setPropertyValue("entity:sameasDisplayLabel",
-                        (Serializable) sameasDisplayLabel);
+                localEntity.setPropertyValue("entity:sameasDisplayLabel", (Serializable) sameasDisplayLabel);
             }
         } catch (DereferencingException e) {
             throw e;
         } catch (Exception e) {
             throw new DereferencingException(e);
         }
-        HashMap<String, String> mapping = new HashMap<String, String>(
-                descriptor.getMappedProperties());
+        HashMap<String, String> mapping = new HashMap<String, String>(descriptor.getMappedProperties());
         // as sameas has a special handling, remove it from the list of
         // properties to synchronize the generic way
         mapping.remove("entity:sameas");
@@ -245,38 +222,29 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                     if (override) {
                         newValues.clear();
                     }
-                    for (String value : readStringList(representation,
-                            remotePropertyUri)) {
+                    for (String value : readStringList(representation, remotePropertyUri)) {
                         if (!newValues.contains(value)) {
                             newValues.add(value);
                         }
                     }
-                    localEntity.setPropertyValue(localPropertyName,
-                            (Serializable) newValues);
+                    localEntity.setPropertyValue(localPropertyName, (Serializable) newValues);
                 } else {
-                    if (localProperty.getValue() == null
-                            || "".equals(localProperty.getValue()) || override) {
-                        if (type.isComplexType()
-                                && "content".equals(type.getName())) {
+                    if (localProperty.getValue() == null || "".equals(localProperty.getValue()) || override) {
+                        if (type.isComplexType() && "content".equals(type.getName())) {
                             if (lazyResourceFetch) {
                                 // TODO: store the resource and property
                                 // info in a DocumentModel context data entry to
                                 // be used later by the entity serializer
                             } else {
-                                Serializable linkedResource = readLinkedResource(
-                                        representation, remotePropertyUri);
+                                Serializable linkedResource = readLinkedResource(representation, remotePropertyUri);
                                 if (linkedResource != null) {
-                                    localEntity.setPropertyValue(
-                                            localPropertyName, linkedResource);
+                                    localEntity.setPropertyValue(localPropertyName, linkedResource);
                                 }
                             }
                         } else {
-                            Serializable literal = readDecodedLiteral(
-                                    representation, remotePropertyUri, type,
-                                    "en");
+                            Serializable literal = readDecodedLiteral(representation, remotePropertyUri, type, "en");
                             if (literal != null) {
-                                localEntity.setPropertyValue(localPropertyName,
-                                        literal);
+                                localEntity.setPropertyValue(localPropertyName, literal);
                             }
                         }
                     }
@@ -291,8 +259,7 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
     }
 
     @SuppressWarnings("unchecked")
-    protected Serializable readLinkedResource(
-            Map<String, Object> jsonRepresentation, String propertyUri) {
+    protected Serializable readLinkedResource(Map<String, Object> jsonRepresentation, String propertyUri) {
         // download depictions or other kind of linked resources
         List<Map<String, String>> propInfos = (List<Map<String, String>>) jsonRepresentation.get(propertyUri);
         if (propInfos == null) {
@@ -332,8 +299,7 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
     }
 
     @SuppressWarnings("unchecked")
-    protected List<String> readStringList(
-            Map<String, Object> jsonRepresentation, String propertyUri) {
+    protected List<String> readStringList(Map<String, Object> jsonRepresentation, String propertyUri) {
         Set<String> values = new LinkedHashSet<String>();
         List<Map<String, String>> propInfos = (List<Map<String, String>>) jsonRepresentation.get(propertyUri);
         for (Map<String, String> propInfo : propInfos) {
@@ -346,9 +312,8 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
     }
 
     @SuppressWarnings("unchecked")
-    protected Serializable readDecodedLiteral(
-            Map<String, Object> jsonRepresentation, String propertyUri,
-            Type type, String filterLang) {
+    protected Serializable readDecodedLiteral(Map<String, Object> jsonRepresentation, String propertyUri, Type type,
+            String filterLang) {
         List<Map<String, String>> propInfos = (List<Map<String, String>>) jsonRepresentation.get(propertyUri);
         if (propInfos == null) {
             return null;
@@ -378,13 +343,12 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
 
     @SuppressWarnings("unchecked")
     @Override
-    public List<EntitySuggestion> suggestRemoteEntity(String keywords,
-            String type, int maxSuggestions) throws IOException {
+    public List<EntitySuggestion> suggestRemoteEntity(String keywords, String type, int maxSuggestions)
+            throws IOException {
         // build a field query on the entity hub
         Map<String, Object> query = new LinkedHashMap<String, Object>();
         List<Map<String, String>> constraints = new ArrayList<Map<String, String>>();
-        String namePropertyUri = descriptor.getMappedProperties().get(
-                "dc:title");
+        String namePropertyUri = descriptor.getMappedProperties().get("dc:title");
         Map<String, String> nameTextConstraint = new LinkedHashMap<String, String>();
         nameTextConstraint.put("type", "text");
         nameTextConstraint.put("field", namePropertyUri);
@@ -406,21 +370,16 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
         query.put("limit", maxSuggestions);
         query.put("constraints", constraints);
         String queryPayload = mapper.writeValueAsString(query);
-        InputStream responseStream = doHttpPost(
-                URI.create(endpointURL + "query"), "application/json",
+        InputStream responseStream = doHttpPost(URI.create(endpointURL + "query"), "application/json",
                 "application/json", queryPayload);
-        Map<String, Object> response = mapper.readValue(responseStream,
-                Map.class);
+        Map<String, Object> response = mapper.readValue(responseStream, Map.class);
         List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("results");
         if (results == null) {
-            throw new DereferencingException(
-                    "Stanbol EntityHub is missing a 'response' key: "
-                            + response);
+            throw new DereferencingException("Stanbol EntityHub is missing a 'response' key: " + response);
         }
         List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
         for (Map<String, Object> result : results) {
-            Serializable nameLiteral = readDecodedLiteral(result,
-                    namePropertyUri, StringType.INSTANCE, "en");
+            Serializable nameLiteral = readDecodedLiteral(result, namePropertyUri, StringType.INSTANCE, "en");
             if (nameLiteral == null) {
                 continue;
             }

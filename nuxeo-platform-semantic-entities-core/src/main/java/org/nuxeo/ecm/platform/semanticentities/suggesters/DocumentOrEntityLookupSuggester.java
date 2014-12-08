@@ -26,15 +26,13 @@ public class DocumentOrEntityLookupSuggester extends DocumentLookupSuggester {
     // Overide default method to pass userInput twice...
     @Override
     @SuppressWarnings("unchecked")
-    public List<Suggestion> suggest(String userInput, SuggestionContext context)
-            throws SuggestionException {
+    public List<Suggestion> suggest(String userInput, SuggestionContext context) throws SuggestionException {
         PageProviderService ppService = Framework.getLocalService(PageProviderService.class);
         if (ppService == null) {
             throw new SuggestionException("PageProviderService is not active");
         }
         Map<String, Serializable> props = new HashMap<String, Serializable>();
-        props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY,
-                (Serializable) context.session);
+        props.put(CoreQueryDocumentPageProvider.CORE_SESSION_PROPERTY, (Serializable) context.session);
         String trimedInput = userInput.trim();
         String sanitizedInput = NXQLQueryBuilder.sanitizeFulltextInput(trimedInput);
         LocalEntityService entityService = Framework.getLocalService(LocalEntityService.class);
@@ -50,16 +48,14 @@ public class DocumentOrEntityLookupSuggester extends DocumentLookupSuggester {
         }
         try {
             List<Suggestion> suggestions = new ArrayList<Suggestion>();
-            PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) ppService.getPageProvider(
-                    providerName, null, null, null, props, new Object[] {
-                            fulltextInput, normalizedInput });
+            PageProvider<DocumentModel> pp = (PageProvider<DocumentModel>) ppService.getPageProvider(providerName,
+                    null, null, null, props, new Object[] { fulltextInput, normalizedInput });
             for (DocumentModel doc : pp.getCurrentPage()) {
                 suggestions.add(DocumentSuggestion.fromDocumentModel(doc));
             }
             return suggestions;
         } catch (ClientException e) {
-            throw new SuggestionException(String.format(
-                    "Suggester '%s' failed to perform query with input '%s'",
+            throw new SuggestionException(String.format("Suggester '%s' failed to perform query with input '%s'",
                     descriptor.getName(), userInput), e);
         }
     }

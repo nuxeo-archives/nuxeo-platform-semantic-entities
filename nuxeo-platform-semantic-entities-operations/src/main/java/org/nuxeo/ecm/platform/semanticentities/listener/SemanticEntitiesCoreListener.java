@@ -92,8 +92,7 @@ public class SemanticEntitiesCoreListener implements PostCommitEventListener {
                 session = s;
             } else if (session != s) {
                 // cannot happen given current ReconnectedEventBundleImpl
-                throw new ClientException(
-                        "Several CoreSessions in one EventBundle");
+                throw new ClientException("Several CoreSessions in one EventBundle");
             }
         }
         if (session == null) {

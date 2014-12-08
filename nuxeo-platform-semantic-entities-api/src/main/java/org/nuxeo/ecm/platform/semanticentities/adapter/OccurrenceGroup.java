@@ -22,11 +22,10 @@ import java.util.List;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 
 /**
- * Data Transfer Object to suggest the creation of entities that do not yet
- * exist in the local DB along with the list of mentions
+ * Data Transfer Object to suggest the creation of entities that do not yet exist in the local DB along with the list of
+ * mentions
  *
  * @author ogrisel
- *
  */
 public class OccurrenceGroup implements Comparable<OccurrenceGroup> {
 

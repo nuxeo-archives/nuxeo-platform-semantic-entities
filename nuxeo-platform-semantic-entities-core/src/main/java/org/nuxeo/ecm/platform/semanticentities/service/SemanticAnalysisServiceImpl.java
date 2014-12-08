@@ -83,15 +83,14 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.rdf.model.StmtIterator;
 
-public class SemanticAnalysisServiceImpl extends DefaultComponent implements
-        SemanticAnalysisService {
+public class SemanticAnalysisServiceImpl extends DefaultComponent implements SemanticAnalysisService {
 
     private static final Log log = LogFactory.getLog(SemanticAnalysisServiceImpl.class);
 
     Pattern INVALID_XML_CHARS = Pattern.compile("[^\\u0009\\u000A\\u000D\\u0020-\\uD7FF\\uE000-\\uFFFD\uD800\uDC00-\uDBFF\uDFFF]");
 
-    protected final Cache<DocumentLocation, String> states = CacheBuilder.newBuilder().concurrencyLevel(
-            10).expireAfterWrite(30, TimeUnit.MINUTES).build();
+    protected final Cache<DocumentLocation, String> states = CacheBuilder.newBuilder().concurrencyLevel(10).expireAfterWrite(
+            30, TimeUnit.MINUTES).build();
 
     private static final String ANY2TEXT = "any2text";
 
@@ -145,8 +144,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     static {
         LOCAL_TYPES.put("http://dbpedia.org/ontology/Place", "Place");
         LOCAL_TYPES.put("http://dbpedia.org/ontology/Person", "Person");
-        LOCAL_TYPES.put("http://dbpedia.org/ontology/Organisation",
-                "Organization");
+        LOCAL_TYPES.put("http://dbpedia.org/ontology/Organisation", "Organization");
         LOCAL_TYPES.put("http://www.w3.org/2004/02/skos/core#Concept", "Topic");
     }
 
@@ -166,9 +164,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             @Override
             public boolean waitForAsyncCompletion() {
                 try {
-                    log.debug(String.format(
-                            "Wait for async executor '%s' to complete.",
-                            executor));
+                    log.debug(String.format("Wait for async executor '%s' to complete.", executor));
                     return executor.shutdown();
                 } finally {
                     log.debug(String.format("%s has completed.", executor));
@@ -179,9 +175,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             @Override
             public boolean shutdown() {
                 try {
-                    log.debug(String.format(
-                            "Wait for async executor '%s' to shut down.",
-                            executor));
+                    log.debug(String.format("Wait for async executor '%s' to shut down.", executor));
                     return executor.shutdownNow();
                 } finally {
                     log.debug(String.format("%s was shut down.", executor));
@@ -216,21 +210,17 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         if (!active) {
             return;
         }
-        log.debug(String.format(
-                "Scheduling serialization task for OccurrenceGroups '%s' on document '%s'.",
+        log.debug(String.format("Scheduling serialization task for OccurrenceGroups '%s' on document '%s'.",
                 task.getOccurrenceGroups(), task.getDocumentRef()));
-        states.put(task.getDocumentLocation(),
-                ProgressStatus.STATUS_LINKING_QUEUED);
+        states.put(task.getDocumentLocation(), ProgressStatus.STATUS_LINKING_QUEUED);
         executor.execute(task);
     }
 
     protected void initHttpClient() {
         // Create and initialize a scheme registry
         SchemeRegistry schemeRegistry = new SchemeRegistry();
-        schemeRegistry.register(new Scheme("http",
-                PlainSocketFactory.getSocketFactory(), 80));
-        schemeRegistry.register(new Scheme("https",
-                SSLSocketFactory.getSocketFactory(), 443));
+        schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
+        schemeRegistry.register(new Scheme("https", SSLSocketFactory.getSocketFactory(), 443));
 
         // Create an HttpClient with the ThreadSafeClientConnManager.
         // This connection manager must be used if more than one thread will
@@ -238,17 +228,13 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         HttpParams params = new BasicHttpParams();
         HttpConnectionParams.setSoTimeout(params, 600 * 1000); // 10 min
         HttpConnectionParams.setConnectionTimeout(params, 600 * 1000); // 10 min
-        ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(
-                params, schemeRegistry);
+        ThreadSafeClientConnManager cm = new ThreadSafeClientConnManager(params, schemeRegistry);
         httpClient = new DefaultHttpClient(cm, params);
     }
 
-    protected boolean shouldSkip(DocumentModel doc) throws PropertyException,
-            ClientException {
-        if (schemaManager.getDocumentTypeNamesExtending(Constants.ENTITY_TYPE).contains(
-                doc.getType())
-                || schemaManager.getDocumentTypeNamesExtending(
-                        Constants.OCCURRENCE_TYPE).contains(doc.getType())) {
+    protected boolean shouldSkip(DocumentModel doc) throws PropertyException, ClientException {
+        if (schemaManager.getDocumentTypeNamesExtending(Constants.ENTITY_TYPE).contains(doc.getType())
+                || schemaManager.getDocumentTypeNamesExtending(Constants.OCCURRENCE_TYPE).contains(doc.getType())) {
             // do not try to analyze local entities themselves
             return true;
         }
@@ -256,86 +242,71 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public void launchAnalysis(String repositoryName, DocumentRef docRef)
-            throws ClientException {
+    public void launchAnalysis(String repositoryName, DocumentRef docRef) throws ClientException {
         AnalysisTask task = new AnalysisTask(repositoryName, docRef, this);
         if (!executor.analysisTaskQueue.contains(task)) {
-            log.debug(String.format(
-                    "Scheduling analysis task for document '%s'.", docRef));
-            states.put(new DocumentLocationImpl(repositoryName, docRef),
-                    ProgressStatus.STATUS_ANALYSIS_QUEUED);
+            log.debug(String.format("Scheduling analysis task for document '%s'.", docRef));
+            states.put(new DocumentLocationImpl(repositoryName, docRef), ProgressStatus.STATUS_ANALYSIS_QUEUED);
             executor.execute(task);
         }
     }
 
     @Override
-    public void launchSynchronousAnalysis(DocumentModel doc, CoreSession session)
-            throws ClientException, IOException {
+    public void launchSynchronousAnalysis(DocumentModel doc, CoreSession session) throws ClientException, IOException {
         if (shouldSkip(doc)) {
             return;
         }
         try {
-            states.put(
-                    new DocumentLocationImpl(doc.getRepositoryName(),
-                            doc.getRef()),
+            states.put(new DocumentLocationImpl(doc.getRepositoryName(), doc.getRef()),
                     ProgressStatus.STATUS_ANALYSIS_PENDING);
             String textContent = extractText(doc);
             AnalysisResults results = analyze(session, textContent);
             results.savePropertiesToDocument(session, doc);
             createLinks(doc, session, results.groups);
         } finally {
-            states.invalidate(new DocumentLocationImpl(doc.getRepositoryName(),
-                    doc.getRef()));
+            states.invalidate(new DocumentLocationImpl(doc.getRepositoryName(), doc.getRef()));
         }
     }
 
     @Override
-    public void createLinks(DocumentModel doc, CoreSession session,
-            List<OccurrenceGroup> groups) throws ClientException, IOException {
+    public void createLinks(DocumentModel doc, CoreSession session, List<OccurrenceGroup> groups)
+            throws ClientException, IOException {
         if (groups.isEmpty()) {
             return;
         }
-        states.put(
-                new DocumentLocationImpl(doc.getRepositoryName(), doc.getRef()),
+        states.put(new DocumentLocationImpl(doc.getRepositoryName(), doc.getRef()),
                 ProgressStatus.STATUS_LINKING_PENDING);
         DocumentModel entityContainer = leService.getEntityContainer(session);
         for (OccurrenceGroup group : groups) {
 
             // hardcoded trick to avoid linking to persons just based on their
             // first name or last names for instance
-            if (!linkShortPersonNames && "Person".equals(group.type)
-                    && group.name.trim().split(" ").length <= 1) {
+            if (!linkShortPersonNames && "Person".equals(group.type) && group.name.trim().split(" ").length <= 1) {
                 continue;
             }
-            List<EntitySuggestion> suggestions = leService.suggestEntity(
-                    session, group, 3);
+            List<EntitySuggestion> suggestions = leService.suggestEntity(session, group, 3);
             if (suggestions.isEmpty() && linkToUnrecognizedEntities) {
                 DocumentModel localEntity = session.createDocumentModel(group.type);
                 localEntity.setPropertyValue("dc:title", group.name);
-                localEntity.setPropertyValue("entity:automaticallyCreated",
-                        true);
+                localEntity.setPropertyValue("entity:automaticallyCreated", true);
                 String pathSegment = pathService.generatePathSegment(localEntity);
-                localEntity.setPathInfo(entityContainer.getPathAsString(),
-                        pathSegment);
+                localEntity.setPathInfo(entityContainer.getPathAsString(), pathSegment);
                 localEntity = session.createDocument(localEntity);
                 session.save();
-                leService.addOccurrences(session, doc.getRef(),
-                        localEntity.getRef(), group.occurrences);
+                leService.addOccurrences(session, doc.getRef(), localEntity.getRef(), group.occurrences);
             } else {
                 if (suggestions.size() > 1 && !linkToAmbiguousEntities) {
                     continue;
                 }
                 EntitySuggestion bestGuess = suggestions.get(0);
-                leService.addOccurrences(session, doc.getRef(),
-                        bestGuess.withAutomaticallyCreated(true),
+                leService.addOccurrences(session, doc.getRef(), bestGuess.withAutomaticallyCreated(true),
                         group.occurrences);
             }
         }
     }
 
-    public List<OccurrenceGroup> findStanbolEntityOccurrences(
-            CoreSession session, Model model) throws DereferencingException,
-            ClientException {
+    public List<OccurrenceGroup> findStanbolEntityOccurrences(CoreSession session, Model model)
+            throws DereferencingException, ClientException {
         // Retrieve the existing text annotations handling the subsumption
         // relationships
         Property type = model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
@@ -347,8 +318,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         Resource textAnnotationType = model.getResource("http://fise.iks-project.eu/ontology/TextAnnotation");
         Resource topicAnnotationType = model.getResource("http://fise.iks-project.eu/ontology/TopicAnnotation");
 
-        ResIterator it = model.listSubjectsWithProperty(type,
-                textAnnotationType);
+        ResIterator it = model.listSubjectsWithProperty(type, textAnnotationType);
         List<OccurrenceGroup> groups = new ArrayList<OccurrenceGroup>();
         for (; it.hasNext();) {
             Resource annotation = it.nextResource();
@@ -369,17 +339,14 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             if (occInfo == null) {
                 continue;
             }
-            OccurrenceGroup group = new OccurrenceGroup(occInfo.mention,
-                    localType);
+            OccurrenceGroup group = new OccurrenceGroup(occInfo.mention, localType);
             group.occurrences.add(occInfo);
 
             // This is a first occurrence, collect any subsumed annotations
-            ResIterator it2 = model.listSubjectsWithProperty(dcRelation,
-                    annotation);
+            ResIterator it2 = model.listSubjectsWithProperty(dcRelation, annotation);
             for (; it2.hasNext();) {
                 Resource linkedResource = it2.nextResource();
-                OccurrenceInfo subMention = getOccurrenceInfo(model,
-                        linkedResource);
+                OccurrenceInfo subMention = getOccurrenceInfo(model, linkedResource);
                 if (subMention != null) {
                     // this is a sub-mention
                     group.occurrences.add(subMention);
@@ -387,8 +354,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 }
                 if (prefetchSuggestion) {
                     // maybe this is a suggestion, try to fetch it
-                    EntitySuggestion suggestion = getEntitySuggestion(session,
-                            model, linkedResource, localType);
+                    EntitySuggestion suggestion = getEntitySuggestion(session, model, linkedResource, localType);
                     if (suggestion != null) {
                         group.entitySuggestions.add(suggestion.withAutomaticallyCreated(true));
                     }
@@ -428,8 +394,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                 }
                 OccurrenceGroup topic = new OccurrenceGroup(label, localType);
                 // maybe this is a suggestion, try to fetch it
-                EntitySuggestion suggestion = getEntitySuggestion(session,
-                        model, topicAnnotation, localType);
+                EntitySuggestion suggestion = getEntitySuggestion(session, model, topicAnnotation, localType);
                 if (suggestion != null) {
                     topic.entitySuggestions.add(suggestion.withAutomaticallyCreated(true));
                 }
@@ -441,9 +406,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         return groups;
     }
 
-    protected EntitySuggestion getEntitySuggestion(CoreSession session,
-            Model model, Resource entitySuggestionResource, String localType)
-            throws DereferencingException, ClientException {
+    protected EntitySuggestion getEntitySuggestion(CoreSession session, Model model, Resource entitySuggestionResource,
+            String localType) throws DereferencingException, ClientException {
         Property entityReference = model.getProperty("http://fise.iks-project.eu/ontology/entity-reference");
         Property scoreProperty = model.getProperty("http://fise.iks-project.eu/ontology/confidence");
         Property entityLabelProperty = model.getProperty("http://fise.iks-project.eu/ontology/entity-label");
@@ -452,8 +416,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             return null;
         }
         Statement scoreStmt = entitySuggestionResource.getProperty(scoreProperty);
-        double score = scoreStmt != null ? scoreStmt.getObject().asLiteral().getDouble()
-                : 0.0;
+        double score = scoreStmt != null ? scoreStmt.getObject().asLiteral().getDouble() : 0.0;
         // check whether the pre-fetched model has additional info on the linked
         // resource
         Property type = model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
@@ -464,13 +427,13 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
             // information from the
             // remote sources
             DocumentModel entity = session.createDocumentModel(localType);
-            boolean found = getRemoteEntityService().dereferenceIntoFromModel(
-                    entity, URI.create(remoteEntityUri), model, true, true);
+            boolean found = getRemoteEntityService().dereferenceIntoFromModel(entity, URI.create(remoteEntityUri),
+                    model, true, true);
             if (found) {
                 return new EntitySuggestion(entity).withScore(score);
             } else {
-                log.warn(String.format("No description found in registered"
-                        + " sources for remote entity '%s'.", remoteEntityUri));
+                log.warn(String.format("No description found in registered" + " sources for remote entity '%s'.",
+                        remoteEntityUri));
             }
         } else {
             // treat the suggestion as a lazily fetched remote entity
@@ -483,16 +446,13 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         return null;
     }
 
-
-    protected void collectSuggestedProperties(CoreSession session, Model model,
-            AnalysisResults results) {
+    protected void collectSuggestedProperties(CoreSession session, Model model, AnalysisResults results) {
         // TODO: write a generic property mapper with a configurable mappings from an extension point
         Property type = model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
         Property dcLanguage = model.getProperty("http://purl.org/dc/terms/language");
         Resource textAnnotationType = model.getResource("http://fise.iks-project.eu/ontology/TextAnnotation");
 
-        ResIterator it = model.listSubjectsWithProperty(type,
-                textAnnotationType);
+        ResIterator it = model.listSubjectsWithProperty(type, textAnnotationType);
         for (; it.hasNext();) {
             Resource annotation = it.nextResource();
             NodeIterator languages = model.listObjectsOfProperty(annotation, dcLanguage);
@@ -541,13 +501,11 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public AnalysisResults analyze(CoreSession session, String textContent)
-            throws IOException, ClientException {
+    public AnalysisResults analyze(CoreSession session, String textContent) throws IOException, ClientException {
         AnalysisResults results = AnalysisResults.newInstance();
         if (textContent.split("\\s+").length > MIN_TEXT_WORD_LENGTH) {
             String output = callSemanticEngine(textContent, outputFormat, 2);
-            Model model = ModelFactory.createDefaultModel().read(
-                    new StringReader(output), null);
+            Model model = ModelFactory.createDefaultModel().read(new StringReader(output), null);
             results.groups.addAll(findStanbolEntityOccurrences(session, model));
             collectSuggestedProperties(session, model, results);
         }
@@ -555,10 +513,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public AnalysisResults analyze(CoreSession session, DocumentModel doc)
-            throws IOException, ClientException {
-        states.put(
-                new DocumentLocationImpl(doc.getRepositoryName(), doc.getRef()),
+    public AnalysisResults analyze(CoreSession session, DocumentModel doc) throws IOException, ClientException {
+        states.put(new DocumentLocationImpl(doc.getRepositoryName(), doc.getRef()),
                 ProgressStatus.STATUS_ANALYSIS_PENDING);
         if (shouldSkip(doc)) {
             return AnalysisResults.newInstance();
@@ -566,15 +522,13 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         return analyze(session, extractText(doc));
     }
 
-    public String callSemanticEngine(String textContent, String outputFormat,
-            int retry) throws IOException {
+    public String callSemanticEngine(String textContent, String outputFormat, int retry) throws IOException {
 
         String effectiveEnhancerUrl = engineURL;
         if (effectiveEnhancerUrl == null) {
             // no Automation Chain configuration available: use the
             // configuration from a properties file
-            effectiveEnhancerUrl = Framework.getProperty(STANBOL_URL_PROPERTY,
-                    DEFAULT_STANBOL_URL);
+            effectiveEnhancerUrl = Framework.getProperty(STANBOL_URL_PROPERTY, DEFAULT_STANBOL_URL);
             if (effectiveEnhancerUrl.trim().isEmpty()) {
                 effectiveEnhancerUrl = DEFAULT_STANBOL_URL;
             }
@@ -608,25 +562,21 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
                     } catch (InterruptedException e) {
                         // pass
                     }
-                    return callSemanticEngine(textContent, outputFormat,
-                            retry - 1);
+                    return callSemanticEngine(textContent, outputFormat, retry - 1);
                 } else {
-                    String errorMsg = String.format(
-                            "Unexpected response from '%s': %s\n %s",
-                            effectiveEnhancerUrl,
+                    String errorMsg = String.format("Unexpected response from '%s': %s\n %s", effectiveEnhancerUrl,
                             response.getStatusLine().toString(), body);
                     throw new IOException(errorMsg);
                 }
             }
         } catch (ClientProtocolException e) {
             post.abort();
-            throw new ClientProtocolException(String.format(
-                    "Error connecting to '%s': %s", effectiveEnhancerUrl,
+            throw new ClientProtocolException(String.format("Error connecting to '%s': %s", effectiveEnhancerUrl,
                     e.getMessage(), e));
         } catch (IOException e) {
             post.abort();
-            throw new IOException(String.format("Error connecting to '%s': %s",
-                    effectiveEnhancerUrl, e.getMessage()), e);
+            throw new IOException(String.format("Error connecting to '%s': %s", effectiveEnhancerUrl, e.getMessage()),
+                    e);
         }
     }
 
@@ -665,8 +615,8 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
         if (doc.hasFacet(FacetNames.HAS_RELATED_TEXT)) {
             @SuppressWarnings("unchecked")
-            List<Map<String, String>> resources = doc.getProperty(
-                    "relatedtext:relatedtextresources").getValue(List.class);
+            List<Map<String, String>> resources = doc.getProperty("relatedtext:relatedtextresources").getValue(
+                    List.class);
             for (Map<String, String> relatedResource : resources) {
                 String text = relatedResource.get("relatedtext");
                 if (text != null && !text.trim().isEmpty()) {
@@ -690,8 +640,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
         for (Blob blob : blobs) {
             try {
                 SimpleBlobHolder bh = new SimpleBlobHolder(blob);
-                BlobHolder result = conversionService.convert(ANY2TEXT, bh,
-                        null);
+                BlobHolder result = conversionService.convert(ANY2TEXT, bh, null);
                 if (result == null) {
                     continue;
                 }
@@ -714,8 +663,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
     }
 
     @Override
-    public ProgressStatus getProgressStatus(String repositoryName,
-            DocumentRef docRef) {
+    public ProgressStatus getProgressStatus(String repositoryName, DocumentRef docRef) {
         DocumentLocation loc = new DocumentLocationImpl(repositoryName, docRef);
         String status = states.getIfPresent(loc);
         if (status == null) {
@@ -764,8 +712,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements
 
         public NamedThreadFactory(String prefix) {
             SecurityManager sm = System.getSecurityManager();
-            group = sm == null ? Thread.currentThread().getThreadGroup()
-                    : sm.getThreadGroup();
+            group = sm == null ? Thread.currentThread().getThreadGroup() : sm.getThreadGroup();
             namePrefix = prefix + ' ' + poolNumber.incrementAndGet() + '-';
         }
 

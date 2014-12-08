@@ -128,8 +128,8 @@ public class SemanticEntitiesActions {
         String i18nStatus = (String) Contexts.getEventContext().get(contextKey);
         if (i18nStatus == null) {
             DocumentRef docRef = new IdRef(docId);
-            ProgressStatus status = getSemanticAnalysisService().getProgressStatus(
-                    documentManager.getRepositoryName(), docRef);
+            ProgressStatus status = getSemanticAnalysisService().getProgressStatus(documentManager.getRepositoryName(),
+                    docRef);
             if (status == null) {
                 i18nStatus = "";
             } else {
@@ -142,8 +142,7 @@ public class SemanticEntitiesActions {
                 if (i18nMessageTemplate == null) {
                     i18nStatus = "";
                 } else {
-                    i18nStatus = Interpolator.instance().interpolate(
-                            i18nMessageTemplate, status.positionInQueue,
+                    i18nStatus = Interpolator.instance().interpolate(i18nMessageTemplate, status.positionInQueue,
                             status.queueSize);
                 }
             }
@@ -168,8 +167,7 @@ public class SemanticEntitiesActions {
     }
 
     public void launchAsyncAnalysis(DocumentModel doc) throws ClientException {
-        getSemanticAnalysisService().launchAnalysis(doc.getRepositoryName(),
-                doc.getRef());
+        getSemanticAnalysisService().launchAnalysis(doc.getRepositoryName(), doc.getRef());
         invalidateCurrentDocumentProviders();
         String key = getSemanticWorkInProgressMessageKey(doc.getId());
         Contexts.getEventContext().remove(key);
@@ -186,15 +184,13 @@ public class SemanticEntitiesActions {
             for (DocumentModel doc : docList) {
                 launchAsyncAnalysis(doc);
             }
-            facesMessages.add(StatusMessage.Severity.INFO,
-                    messages.get("status.worklist.semanticAnalysis"),
+            facesMessages.add(StatusMessage.Severity.INFO, messages.get("status.worklist.semanticAnalysis"),
                     docList.size());
         }
     }
 
     public String goToEntityContainer() throws Exception {
-        DocumentModel entityContainer = getLocalEntityService().getEntityContainer(
-                documentManager);
+        DocumentModel entityContainer = getLocalEntityService().getEntityContainer(documentManager);
         if (entityContainer == null) {
             // the user does not have the permission to browse the entities
             return null;
@@ -203,65 +199,50 @@ public class SemanticEntitiesActions {
     }
 
     @Factory(scope = ScopeType.CONVERSATION, value = "entityOccurrenceProvider")
-    public PageProvider<DocumentModel> getCurrentEntityOccurrenceProvider()
-            throws ClientException, Exception {
+    public PageProvider<DocumentModel> getCurrentEntityOccurrenceProvider() throws ClientException, Exception {
         return getEntityOccurrenceProvider(navigationContext.getCurrentDocument());
     }
 
     /**
      * Return the documents that hold an occurrence to the given entity.
      */
-    public PageProvider<DocumentModel> getEntityOccurrenceProvider(
-            DocumentModel entity) throws ClientException, Exception {
-        return getLocalEntityService().getRelatedDocuments(documentManager,
-                entity.getRef(), null);
+    public PageProvider<DocumentModel> getEntityOccurrenceProvider(DocumentModel entity) throws ClientException,
+            Exception {
+        return getLocalEntityService().getRelatedDocuments(documentManager, entity.getRef(), null);
     }
 
     @Factory(scope = ScopeType.EVENT, value = "relatedPeopleOccurrences")
-    public List<EntityOccurrence> getRelatedPeopleOccurrences()
-            throws ClientException, Exception {
-        return getRelatedOccurrences(navigationContext.getCurrentDocument(),
-                "Person");
+    public List<EntityOccurrence> getRelatedPeopleOccurrences() throws ClientException, Exception {
+        return getRelatedOccurrences(navigationContext.getCurrentDocument(), "Person");
     }
 
     @Factory(scope = ScopeType.EVENT, value = "relatedTopicsOccurrences")
-    public List<EntityOccurrence> getRelatedTopicsOccurrences()
-            throws ClientException, Exception {
-        return getRelatedOccurrences(navigationContext.getCurrentDocument(),
-                "Topic");
+    public List<EntityOccurrence> getRelatedTopicsOccurrences() throws ClientException, Exception {
+        return getRelatedOccurrences(navigationContext.getCurrentDocument(), "Topic");
     }
 
     @Factory(scope = ScopeType.EVENT, value = "relatedPlacesOccurrences")
-    public List<EntityOccurrence> getRelatedPlacesProvider()
-            throws ClientException, Exception {
-        return getRelatedOccurrences(navigationContext.getCurrentDocument(),
-                "Place");
+    public List<EntityOccurrence> getRelatedPlacesProvider() throws ClientException, Exception {
+        return getRelatedOccurrences(navigationContext.getCurrentDocument(), "Place");
     }
 
     @Factory(scope = ScopeType.EVENT, value = "relatedOrganizationsOccurrences")
-    public List<EntityOccurrence> getRelatedOrganizationsProvider()
-            throws ClientException, Exception {
-        return getRelatedOccurrences(navigationContext.getCurrentDocument(),
-                "Organization");
+    public List<EntityOccurrence> getRelatedOrganizationsProvider() throws ClientException, Exception {
+        return getRelatedOccurrences(navigationContext.getCurrentDocument(), "Organization");
     }
 
     /**
-     * Return occurrence information to the local entities linked to the given
-     * document.
-     *
-     * TODO: make it a provider to enable pagination TODO: make it possible to
-     * choose the type of relation (occurrence, topic, ...)
+     * Return occurrence information to the local entities linked to the given document. TODO: make it a provider to
+     * enable pagination TODO: make it possible to choose the type of relation (occurrence, topic, ...)
      */
-    protected List<EntityOccurrence> getRelatedOccurrences(DocumentModel doc,
-            String entityType) throws ClientException {
-        PageProvider<DocumentModel> entities = getLocalEntityService().getRelatedEntities(
-                documentManager, doc.getRef(), entityType);
+    protected List<EntityOccurrence> getRelatedOccurrences(DocumentModel doc, String entityType) throws ClientException {
+        PageProvider<DocumentModel> entities = getLocalEntityService().getRelatedEntities(documentManager,
+                doc.getRef(), entityType);
         List<EntityOccurrence> occurrences = new ArrayList<EntityOccurrence>();
         for (DocumentModel entity : entities.getCurrentPage()) {
-            OccurrenceRelation relation = getLocalEntityService().getOccurrenceRelation(
-                    documentManager, doc.getRef(), entity.getRef());
-            EntityOccurrence occ = new EntityOccurrence(doc, entity,
-                    relation.getOccurrenceDocument(),
+            OccurrenceRelation relation = getLocalEntityService().getOccurrenceRelation(documentManager, doc.getRef(),
+                    entity.getRef());
+            EntityOccurrence occ = new EntityOccurrence(doc, entity, relation.getOccurrenceDocument(),
                     relation.getOccurrences(), 3);
             occurrences.add(occ);
         }
@@ -274,12 +255,10 @@ public class SemanticEntitiesActions {
 
     public List<DocumentModel> suggestDocuments(Object keywords) {
         try {
-            return getLocalEntityService().suggestDocument(documentManager,
-                    keywords.toString(), null, 10);
+            return getLocalEntityService().suggestDocument(documentManager, keywords.toString(), null, 10);
         } catch (Exception e) {
             log.error(e, e);
-            facesMessages.add(StatusMessage.Severity.ERROR,
-                    messages.get("error.fetchingDocuments"));
+            facesMessages.add(StatusMessage.Severity.ERROR, messages.get("error.fetchingDocuments"));
             return Collections.emptyList();
         }
     }
@@ -290,12 +269,10 @@ public class SemanticEntitiesActions {
 
     public List<EntitySuggestion> suggestEntities(Object keywords) {
         try {
-            return getLocalEntityService().suggestEntity(documentManager,
-                    keywords.toString(), null, 10);
+            return getLocalEntityService().suggestEntity(documentManager, keywords.toString(), null, 10);
         } catch (Exception e) {
             log.error(e, e);
-            facesMessages.add(StatusMessage.Severity.ERROR,
-                    messages.get("error.fetchingEntities"));
+            facesMessages.add(StatusMessage.Severity.ERROR, messages.get("error.fetchingEntities"));
             return Collections.emptyList();
         }
     }
@@ -307,16 +284,12 @@ public class SemanticEntitiesActions {
     public void addNewOccurrenceRelation() {
         try {
             if (selectedDocumentId != null) {
-                getLocalEntityService().addOccurrences(documentManager,
-                        new IdRef(selectedDocumentId),
+                getLocalEntityService().addOccurrences(documentManager, new IdRef(selectedDocumentId),
                         navigationContext.getCurrentDocument().getRef(), null);
             } else if (selectedEntitySuggestion != null) {
-                DocumentModel localEntity = leService.asLocalEntity(
-                        documentManager, selectedEntitySuggestion);
-                OccurrenceRelation relation = leService.addOccurrences(
-                        documentManager,
-                        navigationContext.getCurrentDocument().getRef(),
-                        localEntity.getRef(), null);
+                DocumentModel localEntity = leService.asLocalEntity(documentManager, selectedEntitySuggestion);
+                OccurrenceRelation relation = leService.addOccurrences(documentManager,
+                        navigationContext.getCurrentDocument().getRef(), localEntity.getRef(), null);
                 DocumentRef occRef = relation.getOccurrenceDocument().getRef();
                 if ("deleted".equals(documentManager.getCurrentLifeCycleState(occRef))) {
                     documentManager.followTransition(occRef, "undelete");
@@ -324,27 +297,22 @@ public class SemanticEntitiesActions {
             }
         } catch (Exception e) {
             log.error(e, e);
-            facesMessages.add(StatusMessage.Severity.ERROR,
-                    messages.get("error.addingRelation"));
+            facesMessages.add(StatusMessage.Severity.ERROR, messages.get("error.addingRelation"));
         }
         invalidateCurrentDocumentProviders();
     }
 
     public void updateOccurrenceRelation(String occurrenceId) {
         try {
-            DocumentModel occurrenceModel = documentManager.getDocument(new IdRef(
-                    occurrenceId));
+            DocumentModel occurrenceModel = documentManager.getDocument(new IdRef(occurrenceId));
             OccurrenceRelation oldRelation = occurrenceModel.getAdapter(OccurrenceRelation.class);
 
             // merge the old relation occurrence information into a
             // (potentially new) relation pointing to the selected suggested
             // entity
-            DocumentModel localEntity = leService.asLocalEntity(
-                    documentManager, selectedEntitySuggestion);
-            OccurrenceRelation updatedRelation = leService.addOccurrences(
-                    documentManager,
-                    navigationContext.getCurrentDocument().getRef(),
-                    localEntity.getRef(), oldRelation.getOccurrences());
+            DocumentModel localEntity = leService.asLocalEntity(documentManager, selectedEntitySuggestion);
+            OccurrenceRelation updatedRelation = leService.addOccurrences(documentManager,
+                    navigationContext.getCurrentDocument().getRef(), localEntity.getRef(), oldRelation.getOccurrences());
             DocumentRef occRef = updatedRelation.getOccurrenceDocument().getRef();
             if ("deleted".equals(documentManager.getCurrentLifeCycleState(occRef))) {
                 documentManager.followTransition(occRef, "undelete");
@@ -354,26 +322,21 @@ public class SemanticEntitiesActions {
             DocumentRef oldEntityRef = oldRelation.getTargetEntityRef();
             DocumentRef newEntityRef = updatedRelation.getTargetEntityRef();
             if (!oldEntityRef.equals(newEntityRef)) {
-                removeOccurrenceRelation(
-                        oldRelation.getSourceDocumentRef().toString(),
-                        oldEntityRef.toString());
+                removeOccurrenceRelation(oldRelation.getSourceDocumentRef().toString(), oldEntityRef.toString());
             }
         } catch (Exception e) {
             log.error(e, e);
-            facesMessages.add(StatusMessage.Severity.ERROR,
-                    messages.get("error.updatingRelation"));
+            facesMessages.add(StatusMessage.Severity.ERROR, messages.get("error.updatingRelation"));
         }
         invalidateCurrentDocumentProviders();
     }
 
     public void removeOccurrenceRelation(String docId, String entityId) {
         try {
-            getLocalEntityService().removeOccurrences(documentManager,
-                    new IdRef(docId), new IdRef(entityId), false);
+            getLocalEntityService().removeOccurrences(documentManager, new IdRef(docId), new IdRef(entityId), false);
         } catch (Exception e) {
             log.error(e, e);
-            facesMessages.add(StatusMessage.Severity.ERROR,
-                    messages.get("error.removingRelation"));
+            facesMessages.add(StatusMessage.Severity.ERROR, messages.get("error.removingRelation"));
         }
         invalidateCurrentDocumentProviders();
     }
@@ -384,20 +347,18 @@ public class SemanticEntitiesActions {
             DocumentRef docRef = doc.getRef();
             LocalEntityService leService = getLocalEntityService();
             while (true) {
-                PageProvider<DocumentModel> relatedEntities = leService.getRelatedEntities(
-                        documentManager, docRef, null);
+                PageProvider<DocumentModel> relatedEntities = leService.getRelatedEntities(documentManager, docRef,
+                        null);
                 if (relatedEntities.getCurrentPage().isEmpty()) {
                     break;
                 }
-                for (DocumentModel entity: relatedEntities.getCurrentPage()) {
-                    leService.removeOccurrences(documentManager,
-                            docRef, entity.getRef(), true);
+                for (DocumentModel entity : relatedEntities.getCurrentPage()) {
+                    leService.removeOccurrences(documentManager, docRef, entity.getRef(), true);
                 }
             }
         } catch (Exception e) {
             log.error(e, e);
-            facesMessages.add(StatusMessage.Severity.ERROR,
-                    messages.get("error.removingRelation"));
+            facesMessages.add(StatusMessage.Severity.ERROR, messages.get("error.removingRelation"));
         }
         invalidateCurrentDocumentProviders();
         String key = getSemanticWorkInProgressMessageKey(doc.getId());
@@ -414,8 +375,7 @@ public class SemanticEntitiesActions {
             return EntitySuggestion.fromDocument(navigationContext.getCurrentDocument());
         } catch (ClientException e) {
             log.error(e, e);
-            facesMessages.add(StatusMessage.Severity.ERROR,
-                    messages.get("error.fetchingLocalLinkedEntities"));
+            facesMessages.add(StatusMessage.Severity.ERROR, messages.get("error.fetchingLocalLinkedEntities"));
             return Collections.emptyList();
         }
     }
@@ -434,16 +394,14 @@ public class SemanticEntitiesActions {
         try {
             RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
             List<EntitySuggestion> filteredSuggestions = new ArrayList<EntitySuggestion>();
-            List<EntitySuggestion> suggestions = remoteEntityService.suggestRemoteEntity(
-                    keywords, type, 5);
+            List<EntitySuggestion> suggestions = remoteEntityService.suggestRemoteEntity(keywords, type, 5);
             // TODO: filter out entities that already have a local entity synced
             // to them
             filteredSuggestions.addAll(suggestions);
             return filteredSuggestions;
         } catch (Exception e) {
             log.error(e, e);
-            facesMessages.add(StatusMessage.Severity.ERROR,
-                    messages.get("error.fetchingRemoteEntities"));
+            facesMessages.add(StatusMessage.Severity.ERROR, messages.get("error.fetchingRemoteEntities"));
             return Collections.emptyList();
         }
     }
@@ -457,8 +415,7 @@ public class SemanticEntitiesActions {
     }
 
     public void addRemoteEntityLinkAndSync() {
-        if (selectedEntitySuggestionLabel == null
-                || selectedEntitySuggestionUri == null) {
+        if (selectedEntitySuggestionLabel == null || selectedEntitySuggestionUri == null) {
             // TODO: display some user friendly warning
             return;
         }
@@ -470,12 +427,10 @@ public class SemanticEntitiesActions {
         try {
             // TODO: once the UI allows to set multiple links to several remote
             // sources we should set override back to false
-            syncAndSaveDocument(doc, URI.create(selectedEntitySuggestionUri),
-                    true);
+            syncAndSaveDocument(doc, URI.create(selectedEntitySuggestionUri), true);
         } catch (Exception e) {
             log.error(e, e);
-            facesMessages.add(StatusMessage.Severity.ERROR,
-                    messages.get("error.linkingToRemoteEntity"));
+            facesMessages.add(StatusMessage.Severity.ERROR, messages.get("error.linkingToRemoteEntity"));
         }
         Contexts.removeFromAllContexts("currentEntitySameAs");
     }
@@ -490,14 +445,12 @@ public class SemanticEntitiesActions {
             syncAndSaveDocument(doc, URI.create(uri), true);
         } catch (Exception e) {
             log.error(e, e);
-            facesMessages.add(StatusMessage.Severity.ERROR,
-                    messages.get("error.syncingWithRemoteEntity"));
+            facesMessages.add(StatusMessage.Severity.ERROR, messages.get("error.syncingWithRemoteEntity"));
         }
     }
 
-    protected void syncAndSaveDocument(DocumentModel doc, URI uri,
-            boolean fullSync) throws Exception, DereferencingException,
-            ClientException {
+    protected void syncAndSaveDocument(DocumentModel doc, URI uri, boolean fullSync) throws Exception,
+            DereferencingException, ClientException {
         RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
         if (remoteEntityService.canDereference(uri)) {
             remoteEntityService.dereferenceInto(doc, uri, fullSync, false);
@@ -521,8 +474,7 @@ public class SemanticEntitiesActions {
             notifyDocumentUpdated(doc);
         } catch (Exception e) {
             log.error(e, e);
-            facesMessages.add(StatusMessage.Severity.ERROR,
-                    messages.get("error.unlinkingRemoteEntity"));
+            facesMessages.add(StatusMessage.Severity.ERROR, messages.get("error.unlinkingRemoteEntity"));
         }
         Contexts.removeFromAllContexts("currentEntitySameAs");
     }
@@ -543,11 +495,9 @@ public class SemanticEntitiesActions {
         Contexts.removeFromAllContexts("relatedOrganizationsOccurrences");
     }
 
-    protected void notifyDocumentUpdated(DocumentModel doc)
-            throws ClientException {
+    protected void notifyDocumentUpdated(DocumentModel doc) throws ClientException {
         navigationContext.invalidateCurrentDocument();
-        facesMessages.add(StatusMessage.Severity.INFO,
-                messages.get("document_modified"), messages.get(doc.getType()));
+        facesMessages.add(StatusMessage.Severity.INFO, messages.get("document_modified"), messages.get(doc.getType()));
         EventManager.raiseEventsOnDocumentChange(doc);
     }
 
@@ -562,8 +512,7 @@ public class SemanticEntitiesActions {
                 Collections.reverse(tokens);
             }
             tokens = new ArrayList<String>(tokens.subList(0, maxWords));
-            if ((!reverse && content.startsWith(" "))
-                    || (reverse && content.endsWith(" "))) {
+            if ((!reverse && content.startsWith(" ")) || (reverse && content.endsWith(" "))) {
                 // re-add missing space removed by split
                 tokens.add(0, " ");
             }

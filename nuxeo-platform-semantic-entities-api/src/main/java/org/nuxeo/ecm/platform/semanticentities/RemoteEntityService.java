@@ -22,10 +22,8 @@ import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 
 /**
- * Service to suggest by name, lookup and fetch data by URI from entities
- * definitions hosted on remote HTTP servers using the Linked Data philosophy.
- *
- * See {@link http://en.wikipedia.org/wiki/Linked_Data }.
+ * Service to suggest by name, lookup and fetch data by URI from entities definitions hosted on remote HTTP servers
+ * using the Linked Data philosophy. See {@link http://en.wikipedia.org/wiki/Linked_Data }.
  */
 public interface RemoteEntityService extends RemoteEntitySource {
 
@@ -33,10 +31,8 @@ public interface RemoteEntityService extends RemoteEntitySource {
     // potentially many registered resources
 
     /**
-     * Helper API to unlink a local entity from a remote entity identified by
-     * it's URI. It is the responsability of the caller to save the change in
-     * back to the repository if persistence is required.
+     * Helper API to unlink a local entity from a remote entity identified by it's URI. It is the responsability of the
+     * caller to save the change in back to the repository if persistence is required.
      */
-    void removeSameAsLink(DocumentModel localEntity, URI remoteEntityURI)
-            throws ClientException;
+    void removeSameAsLink(DocumentModel localEntity, URI remoteEntityURI) throws ClientException;
 }

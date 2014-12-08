@@ -29,13 +29,11 @@ import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 
 /**
- * Data transfer object for the name lookup API of the LocalEntityService: it is
- * represent both local entities (DocumentModel) and remote entities that don't
- * have a match in the local repo represented as in memory DocumentModel or
- * dereferenceable URIs.
+ * Data transfer object for the name lookup API of the LocalEntityService: it is represent both local entities
+ * (DocumentModel) and remote entities that don't have a match in the local repo represented as in memory DocumentModel
+ * or dereferenceable URIs.
  */
-public class EntitySuggestion implements Comparable<EntitySuggestion>,
-        Serializable {
+public class EntitySuggestion implements Comparable<EntitySuggestion>, Serializable {
 
     private static final Log log = LogFactory.getLog(EntitySuggestion.class);
 
@@ -66,10 +64,8 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
         this.entity = entity;
         label = entity.getTitle();
         type = entity.getType();
-        remoteEntityUris.addAll(entity.getProperty(SAMEAS_URI_PROPERTY).getValue(
-                List.class));
-        alternativeNames.addAll(entity.getProperty(ALTNAMES_PROPERTY).getValue(
-                List.class));
+        remoteEntityUris.addAll(entity.getProperty(SAMEAS_URI_PROPERTY).getValue(List.class));
+        alternativeNames.addAll(entity.getProperty(ALTNAMES_PROPERTY).getValue(List.class));
     }
 
     public EntitySuggestion(String label, String remoteEntityUri, String type) {
@@ -83,9 +79,8 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
         return this;
     }
 
-    public EntitySuggestion withAutomaticallyCreated(
-            boolean automaticallyCreated) {
-        this.automaticallyCreated  = automaticallyCreated;
+    public EntitySuggestion withAutomaticallyCreated(boolean automaticallyCreated) {
+        this.automaticallyCreated = automaticallyCreated;
         return this;
     }
 
@@ -95,10 +90,7 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
 
     /*
      * (non-Javadoc)
-     *
-     * @see java.lang.Comparable#compareTo(java.lang.Object)
-     *
-     * Largest scores fist.
+     * @see java.lang.Comparable#compareTo(java.lang.Object) Largest scores fist.
      */
     @Override
     public int compareTo(EntitySuggestion o) {
@@ -139,32 +131,24 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>,
 
     @Override
     public String toString() {
-        return String.format("EntitySuggestion(%s, %s, %s)", label,
-                getRemoteUri(), type);
+        return String.format("EntitySuggestion(%s, %s, %s)", label, getRemoteUri(), type);
     }
 
     /**
-     * Static helper to turn a document complex property into a list of
-     * RemoteEntity instances suitable to the UI layer.
+     * Static helper to turn a document complex property into a list of RemoteEntity instances suitable to the UI layer.
      */
-    public static List<EntitySuggestion> fromDocument(DocumentModel doc)
-            throws ClientException {
-        String[] entityURIs = doc.getProperty(SAMEAS_URI_PROPERTY).getValue(
-                String[].class);
-        String[] entityLabels = doc.getProperty(SAMEAS_LABEL_PROPERTY).getValue(
-                String[].class);
+    public static List<EntitySuggestion> fromDocument(DocumentModel doc) throws ClientException {
+        String[] entityURIs = doc.getProperty(SAMEAS_URI_PROPERTY).getValue(String[].class);
+        String[] entityLabels = doc.getProperty(SAMEAS_LABEL_PROPERTY).getValue(String[].class);
 
         List<EntitySuggestion> entities = new ArrayList<EntitySuggestion>();
         if (entityURIs.length != entityLabels.length) {
-            log.warn(String.format(
-                    "inconsistent linked remote entities for local entity '%s': (%s) and (%s)",
-                    doc.getTitle(), StringUtils.join(entityURIs),
-                    StringUtils.join(entityLabels)));
+            log.warn(String.format("inconsistent linked remote entities for local entity '%s': (%s) and (%s)",
+                    doc.getTitle(), StringUtils.join(entityURIs), StringUtils.join(entityLabels)));
             return entities;
         }
         for (int i = 0; i < entityURIs.length; i++) {
-            entities.add(new EntitySuggestion(entityLabels[i], entityURIs[i],
-                    doc.getType()));
+            entities.add(new EntitySuggestion(entityLabels[i], entityURIs[i], doc.getType()));
         }
         return entities;
     }
