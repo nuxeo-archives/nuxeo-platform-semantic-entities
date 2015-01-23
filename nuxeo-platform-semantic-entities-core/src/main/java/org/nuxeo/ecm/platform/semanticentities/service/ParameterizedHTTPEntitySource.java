@@ -34,7 +34,7 @@ import org.apache.http.params.HttpParams;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.core.api.impl.blob.StreamingBlob;
+import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
 import org.nuxeo.ecm.core.api.model.Property;
 import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.core.schema.types.Type;
@@ -286,27 +286,17 @@ public abstract class ParameterizedHTTPEntitySource implements RemoteEntitySourc
             if (lastSlashIndex != -1) {
                 filename = contentURI.substring(lastSlashIndex + 1);
             }
-            InputStream is = null;
-            try {
-                is = doHttpGet(URI.create(contentURI), null);
-                if (is == null) {
+            try (InputStream in = doHttpGet(URI.create(contentURI), null)) {
+                if (in == null) {
                     log.warn("failed to fetch resource: " + contentURI);
                     return null;
                 }
-                Blob blob = StreamingBlob.createFromStream(is).persist();
+                Blob blob = new FileBlob(in);
                 blob.setFilename(filename);
                 return blob;
             } catch (IOException e) {
                 log.warn(e.getMessage());
                 return null;
-            } finally {
-                if (is != null) {
-                    try {
-                        is.close();
-                    } catch (IOException e) {
-                        log.error(e, e);
-                    }
-                }
             }
         }
         return null;

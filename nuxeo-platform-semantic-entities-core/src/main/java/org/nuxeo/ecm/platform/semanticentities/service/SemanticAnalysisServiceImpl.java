@@ -44,7 +44,7 @@ import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.blobholder.BlobHolder;
 import org.nuxeo.ecm.core.api.blobholder.SimpleBlobHolder;
 import org.nuxeo.ecm.core.api.impl.DocumentLocationImpl;
-import org.nuxeo.ecm.core.api.impl.blob.StreamingBlob;
+import org.nuxeo.ecm.core.api.impl.blob.StringBlob;
 import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.core.api.pathsegment.PathSegmentService;
 import org.nuxeo.ecm.core.convert.api.ConversionService;
@@ -597,8 +597,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
         try {
             String noteContent = (String) doc.getPropertyValue("note:note");
             noteContent = INVALID_XML_CHARS.matcher(noteContent).replaceAll("");
-            StreamingBlob blob = StreamingBlob.createFromString(noteContent);
-            blob.setMimeType("text/html");
+            Blob blob = new StringBlob(noteContent, "text/html");
             BlobHolder bh = new SimpleBlobHolder(blob);
             BlobHolder converted = conversionService.convert(ANY2TEXT, bh, null);
             sb.append(converted.getBlob().getString());
