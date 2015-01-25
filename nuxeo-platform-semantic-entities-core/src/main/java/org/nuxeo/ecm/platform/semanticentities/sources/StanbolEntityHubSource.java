@@ -43,9 +43,9 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.nuxeo.ecm.core.api.Blob;
+import org.nuxeo.ecm.core.api.Blobs;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
 import org.nuxeo.ecm.core.api.model.Property;
 import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.core.schema.types.Type;
@@ -280,7 +280,7 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                     log.warn("failed to fetch resource: " + contentURI);
                     return null;
                 }
-                Blob blob = new FileBlob(in);
+                Blob blob = Blobs.createBlob(in);
                 blob.setFilename(filename);
                 return (Serializable) blob;
             } catch (IOException e) {

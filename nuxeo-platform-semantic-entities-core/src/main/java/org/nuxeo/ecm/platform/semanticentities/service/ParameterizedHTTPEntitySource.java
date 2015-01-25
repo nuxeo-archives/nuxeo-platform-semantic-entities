@@ -32,9 +32,9 @@ import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpParams;
 import org.nuxeo.ecm.core.api.Blob;
+import org.nuxeo.ecm.core.api.Blobs;
 import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.core.api.impl.blob.FileBlob;
 import org.nuxeo.ecm.core.api.model.Property;
 import org.nuxeo.ecm.core.api.model.PropertyException;
 import org.nuxeo.ecm.core.schema.types.Type;
@@ -291,7 +291,7 @@ public abstract class ParameterizedHTTPEntitySource implements RemoteEntitySourc
                     log.warn("failed to fetch resource: " + contentURI);
                     return null;
                 }
-                Blob blob = new FileBlob(in);
+                Blob blob = Blobs.createBlob(in);
                 blob.setFilename(filename);
                 return blob;
             } catch (IOException e) {
