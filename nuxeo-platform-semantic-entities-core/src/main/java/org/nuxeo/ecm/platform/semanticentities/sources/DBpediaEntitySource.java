@@ -193,7 +193,10 @@ public class DBpediaEntitySource extends ParameterizedHTTPEntitySource {
 
         List<EntitySuggestion> suggestions = new ArrayList<EntitySuggestion>();
         try {
-            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+
             Document document = builder.parse(new ByteArrayInputStream(content.getBytes("utf-8")));
             XPath xpath = XPathFactory.newInstance().newXPath();
             NodeList resultNodes = (NodeList) xpath.evaluate(RESULT_NODE_XPATH, document, XPathConstants.NODESET);
