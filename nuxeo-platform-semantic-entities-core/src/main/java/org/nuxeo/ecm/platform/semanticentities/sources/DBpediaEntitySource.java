@@ -487,9 +487,11 @@ public class DBpediaEntitySource extends ParameterizedRemoteEntitySource {
 
         List<RemoteEntity> suggestions = new ArrayList<RemoteEntity>();
         try {
-            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            Document document = builder.parse(new ByteArrayInputStream(
-                    content.getBytes("utf-8")));
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+
+            Document document = builder.parse(new ByteArrayInputStream(content.getBytes("utf-8")));
             XPath xpath = XPathFactory.newInstance().newXPath();
             NodeList resultNodes = (NodeList) xpath.evaluate(RESULT_NODE_XPATH,
                     document, XPathConstants.NODESET);
