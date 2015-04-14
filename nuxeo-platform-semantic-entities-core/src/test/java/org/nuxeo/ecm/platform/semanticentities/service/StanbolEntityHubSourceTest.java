@@ -7,24 +7,25 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import org.junit.Before;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.runtime.api.Framework;
+import org.nuxeo.runtime.test.runner.LocalDeploy;
 
+// deploy off-line mock DBpedia source to override the default source that needs an internet connection:
+// comment the following contrib to test again the real Stanbol server
+@LocalDeploy("org.nuxeo.ecm.platform.semanticentities.core.tests:OSGI-INF/test-semantic-entities-stanbol-entity-contrib.xml")
 public class StanbolEntityHubSourceTest extends RemoteEntityServiceTest {
 
-    @Override
-    protected void deployRemoteEntityServiceOverride() throws Exception {
+    @Before
+    public void setUpStanbol() throws Exception {
         Framework.getProperties().put("org.nuxeo.ecm.platform.semanticentities.stanbolUrl", "http://localhost:9090/");
-        // deploy off-line mock DBpedia source to override the default source
-        // that needs an internet connection: comment the following contrib to
-        // test again the real Stanbol server
-        deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
-                "OSGI-INF/test-semantic-entities-stanbol-entity-contrib.xml");
     }
 
     @Override

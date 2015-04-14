@@ -17,6 +17,12 @@
 
 package org.nuxeo.ecm.platform.semanticentities.service;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.net.URI;
 import java.text.DateFormat;
@@ -26,21 +32,38 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
 
+import javax.inject.Inject;
+
 import org.apache.commons.lang.StringUtils;
 import org.junit.Before;
-import org.junit.After;
 import org.junit.Test;
-import static org.junit.Assert.*;
-
+import org.junit.runner.RunWith;
 import org.nuxeo.ecm.core.api.Blob;
+import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
-import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
+import org.nuxeo.ecm.core.test.CoreFeature;
+import org.nuxeo.ecm.core.test.TransactionalFeature;
+import org.nuxeo.ecm.core.test.annotations.Granularity;
+import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
 import org.nuxeo.ecm.platform.semanticentities.EntitySuggestion;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
-import org.nuxeo.runtime.api.Framework;
+import org.nuxeo.runtime.test.runner.Deploy;
+import org.nuxeo.runtime.test.runner.Features;
+import org.nuxeo.runtime.test.runner.FeaturesRunner;
 
-public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
+@RunWith(FeaturesRunner.class)
+@Features({ TransactionalFeature.class, CoreFeature.class })
+@RepositoryConfig(cleanup = Granularity.METHOD)
+@Deploy({
+// necessary for the fulltext indexer
+        "org.nuxeo.ecm.core.convert.api", //
+        "org.nuxeo.ecm.core.convert", //
+        "org.nuxeo.ecm.core.convert.plugins", //
+        // semantic entities types
+        "org.nuxeo.ecm.platform.semanticentities.core", //
+})
+public abstract class RemoteEntityServiceTest {
 
     protected static final URI WIKIPEDIA_LONDON_URI = URI.create("http://en.wikipedia.org/wiki/London");
 
@@ -50,39 +73,18 @@ public abstract class RemoteEntityServiceTest extends SQLRepositoryTestCase {
 
     protected static final URI DBPEDIA_MICHELLE_OBAMA_URI = URI.create("http://dbpedia.org/resource/Michelle_Obama");
 
+    @Inject
+    protected CoreSession session;
+
+    @Inject
     RemoteEntityService service;
 
     @Before
     public void setUp() throws Exception {
-        super.setUp();
-        deployBundle("org.nuxeo.ecm.core.schema");
-        // necessary for the fulltext indexer
-        deployBundle("org.nuxeo.ecm.core.convert.api");
-        deployBundle("org.nuxeo.ecm.core.convert");
-        deployBundle("org.nuxeo.ecm.core.convert.plugins");
-
-        // semantic entities types
-        deployBundle("org.nuxeo.ecm.platform.semanticentities.core");
-
-        deployRemoteEntityServiceOverride();
-
-        // initialize the session field
-        openSession();
         DocumentModel domain = session.createDocumentModel("/", "default-domain", "Folder");
         session.createDocument(domain);
         session.save();
-
-        service = Framework.getService(RemoteEntityService.class);
-        assertNotNull(service);
     }
-
-    @After
-    public void tearDown() throws Exception {
-        closeSession();
-        super.tearDown();
-    }
-
-    protected abstract void deployRemoteEntityServiceOverride() throws Exception;
 
     @Test
     public void testSuggestRemoteEntity() throws IOException {

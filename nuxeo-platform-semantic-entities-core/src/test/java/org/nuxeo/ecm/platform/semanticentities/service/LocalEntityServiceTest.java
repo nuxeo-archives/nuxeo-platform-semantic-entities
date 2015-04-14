@@ -17,28 +17,39 @@
 
 package org.nuxeo.ecm.platform.semanticentities.service;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+
 import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.GregorianCalendar;
+import java.util.HashSet;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.After;
-import org.junit.Test;
-
-import static org.junit.Assert.*;
+import javax.inject.Inject;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.nuxeo.ecm.core.api.ClientException;
+import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
 import org.nuxeo.ecm.core.api.VersioningOption;
 import org.nuxeo.ecm.core.event.EventService;
 import org.nuxeo.ecm.core.opencmis.impl.server.NuxeoRepository;
-import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
+import org.nuxeo.ecm.core.test.CoreFeature;
+import org.nuxeo.ecm.core.test.TransactionalFeature;
+import org.nuxeo.ecm.core.test.annotations.Granularity;
+import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
 import org.nuxeo.ecm.core.versioning.VersioningService;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
@@ -47,11 +58,48 @@ import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceInfo;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceRelation;
 import org.nuxeo.runtime.api.Framework;
+import org.nuxeo.runtime.test.runner.Deploy;
+import org.nuxeo.runtime.test.runner.Features;
+import org.nuxeo.runtime.test.runner.FeaturesRunner;
+import org.nuxeo.runtime.test.runner.LocalDeploy;
+import org.nuxeo.runtime.test.runner.RuntimeHarness;
+import org.nuxeo.runtime.transaction.TransactionHelper;
 
-public class LocalEntityServiceTest extends SQLRepositoryTestCase {
+@RunWith(FeaturesRunner.class)
+@Features({ TransactionalFeature.class, CoreFeature.class })
+@RepositoryConfig(cleanup = Granularity.METHOD)
+@Deploy({
+// necessary for the fulltext indexer
+        "org.nuxeo.ecm.core.convert.api", //
+        "org.nuxeo.ecm.core.convert", //
+        "org.nuxeo.ecm.core.convert.plugins", //
+        // dublincore contributors are required to check whether non system users have edited an entity or not
+        "org.nuxeo.ecm.platform.dublincore", //
+        // semantic entities types
+        "org.nuxeo.ecm.platform.semanticentities.core", //
+        // CMIS query maker
+        "org.nuxeo.ecm.core.opencmis.impl", //
+})
+// deploy off-line mock DBpedia source to override the default source that needs an internet connection:
+// comment the following contrib to test again the real DBpedia server
+@LocalDeploy("org.nuxeo.ecm.platform.semanticentities.core.tests:OSGI-INF/test-semantic-entities-dbpedia-entity-contrib.xml")
+public class LocalEntityServiceTest {
 
     public static final Log log = LogFactory.getLog(LocalEntityServiceTest.class);
 
+    @Inject
+    protected RuntimeHarness runtimeHarness;
+
+    @Inject
+    protected CoreFeature coreFeature;
+
+    @Inject
+    protected CoreSession session;
+
+    @Inject
+    protected EventService eventService;
+
+    @Inject
     LocalEntityService service;
 
     protected DocumentModel john;
@@ -74,47 +122,20 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
     @Before
     public void setUp() throws Exception {
-        super.setUp();
-        deployBundle("org.nuxeo.ecm.core.schema");
-        // necessary for the fulltext indexer
-        deployBundle("org.nuxeo.ecm.core.convert.api");
-        deployBundle("org.nuxeo.ecm.core.convert");
-        deployBundle("org.nuxeo.ecm.core.convert.plugins");
+        assumeTrue("Needs multi-fulltext support",
+                coreFeature.getStorageConfiguration().supportsMultipleFulltextIndexes());
 
-        // dublincore contributors are required to check whether non system
-        // users have edited an entity or not
-        deployBundle("org.nuxeo.ecm.platform.dublincore");
-
-        // semantic entities types
-        deployBundle("org.nuxeo.ecm.platform.semanticentities.core");
-
-        // CMIS query maker
-        deployBundle("org.nuxeo.ecm.core.opencmis.impl");
+        // set CMISQL JOINs allowed
         Framework.getProperties().setProperty(NuxeoRepository.SUPPORTS_JOINS_PROP, "true");
 
         // override remote entity service
         Framework.getProperties().put("org.nuxeo.ecm.platform.semanticentities.stanbolUrl", "http://localhost:9090/");
-        // deploy off-line mock DBpedia source to override the default source
-        // that needs an internet connection: comment the following contrib to
-        // test again the real DBpedia server
-        deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
-                "OSGI-INF/test-semantic-entities-dbpedia-entity-contrib.xml");
 
-        // initialize the session field
-        openSession();
         DocumentModel domain = session.createDocumentModel("/", "default-domain", "Folder");
         session.createDocument(domain);
         session.save();
 
-        service = Framework.getService(LocalEntityService.class);
-        assertNotNull(service);
         makeSomeDocuments();
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        closeSession();
-        super.tearDown();
     }
 
     public void makeSomeDocuments() throws ClientException {
@@ -151,7 +172,7 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         doc7 = session.createDocument(doc7);
 
         session.save(); // force write to SQL backend
-        Framework.getLocalService(EventService.class).waitForAsyncCompletion();
+        waitForAsyncCompletion();
     }
 
     public void makeSomeEntities() throws ClientException {
@@ -214,27 +235,25 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         liverpool.setPropertyValue("place:longitude", -2.983);
         liverpool = session.createDocument(liverpool);
         session.save();
-        Framework.getLocalService(EventService.class).waitForAsyncCompletion();
+        waitForAsyncCompletion();
+    }
+
+    protected void waitForAsyncCompletion() {
+        if (TransactionHelper.isTransactionActiveOrMarkedRollback()) {
+            TransactionHelper.commitOrRollbackTransaction();
+            TransactionHelper.startTransaction();
+        }
+        eventService.waitForAsyncCompletion();
     }
 
     @Test
     public void testCreateEntities() throws ClientException {
-        if (!database.supportsMultipleFulltextIndexes()) {
-            warnSkippedTest();
-            return;
-        }
-
         makeSomeEntities();
     }
 
     @SuppressWarnings("unchecked")
     @Test
     public void testAddOccurrences() throws Exception {
-        if (!database.supportsMultipleFulltextIndexes()) {
-            warnSkippedTest();
-            return;
-        }
-
         makeSomeEntities();
 
         // fetch the initial john popularity for later comparison
@@ -292,11 +311,6 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
     @Test
     public void testGetRelatedDocumentsAndEntities() throws Exception {
-        if (!database.supportsMultipleFulltextIndexes()) {
-            warnSkippedTest();
-            return;
-        }
-
         // create some entities in the KB and an unrelated document
         makeSomeEntities();
 
@@ -356,22 +370,12 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
     @Test
     public void testSuggestLocalEntitiesEmptyKB() throws ClientException {
-        if (!database.supportsMultipleFulltextIndexes()) {
-            warnSkippedTest();
-            return;
-        }
-
         List<EntitySuggestion> suggestions = service.suggestLocalEntity(session, "John", null, 3);
         assertTrue(suggestions.isEmpty());
     }
 
     @Test
     public void testSuggestLocalEntities() throws ClientException {
-        if (!database.supportsMultipleFulltextIndexes()) {
-            warnSkippedTest();
-            return;
-        }
-
         makeSomeEntities();
 
         List<EntitySuggestion> suggestions = service.suggestLocalEntity(session, "John", "Person", 3);
@@ -432,11 +436,6 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
     @Test
     public void testSuggestLocalEntitiesWithNormalizedNames() throws ClientException {
-        if (!database.supportsMultipleFulltextIndexes()) {
-            warnSkippedTest();
-            return;
-        }
-
         makeSomeEntities();
 
         // Sanity check: using the fulltext index for the title
@@ -460,89 +459,82 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
     @Test
     public void testSuggestEntities() throws Exception {
-        if (!database.supportsMultipleFulltextIndexes()) {
-            warnSkippedTest();
-            return;
-        }
-
         // deploy off-line mock DBpedia source to override the default source
         // that needs an internet connection: comment the following contrib to
         // test again the real DBpedia server
-        deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
+        runtimeHarness.deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
                 "OSGI-INF/test-semantic-entities-dbpedia-entity-contrib.xml");
+        try {
+            // empty local KB, only remote source output
+            List<EntitySuggestion> suggestions = service.suggestEntity(session, "Barack Obama", "Person", 3);
+            assertNotNull(suggestions);
+            assertEquals(suggestions.size(), 1);
+            EntitySuggestion firstGuess = suggestions.get(0);
+            assertEquals("Barack Obama", firstGuess.label);
+            assertEquals("http://dbpedia.org/resource/Barack_Obama", firstGuess.getRemoteUri());
+            assertEquals("Person", firstGuess.type);
+            assertFalse(firstGuess.isLocal());
 
-        // empty local KB, only remote source output
-        List<EntitySuggestion> suggestions = service.suggestEntity(session, "Barack Obama", "Person", 3);
-        assertNotNull(suggestions);
-        assertEquals(suggestions.size(), 1);
-        EntitySuggestion firstGuess = suggestions.get(0);
-        assertEquals("Barack Obama", firstGuess.label);
-        assertEquals("http://dbpedia.org/resource/Barack_Obama", firstGuess.getRemoteUri());
-        assertEquals("Person", firstGuess.type);
-        assertFalse(firstGuess.isLocal());
+            // synchronize the remote entity as a local entity
+            DocumentModel localEntity = service.asLocalEntity(session, firstGuess);
+            assertEquals(localEntity.getTitle(), "Barack Obama");
 
-        // synchronize the remote entity as a local entity
-        DocumentModel localEntity = service.asLocalEntity(session, firstGuess);
-        assertEquals(localEntity.getTitle(), "Barack Obama");
-
-        // perform the same suggestion query again: this time the result is
-        // local
-        suggestions = service.suggestEntity(session, "Barack Obama", "Person", 3);
-        assertNotNull(suggestions);
-        assertEquals(suggestions.size(), 1);
-        firstGuess = suggestions.get(0);
-        assertEquals("Barack Obama", firstGuess.label);
-        assertEquals("http://dbpedia.org/resource/Barack_Obama", firstGuess.getRemoteUri());
-        assertEquals("Person", firstGuess.type);
-        assertTrue(firstGuess.isLocal());
+            // perform the same suggestion query again: this time the result is
+            // local
+            suggestions = service.suggestEntity(session, "Barack Obama", "Person", 3);
+            assertNotNull(suggestions);
+            assertEquals(suggestions.size(), 1);
+            firstGuess = suggestions.get(0);
+            assertEquals("Barack Obama", firstGuess.label);
+            assertEquals("http://dbpedia.org/resource/Barack_Obama", firstGuess.getRemoteUri());
+            assertEquals("Person", firstGuess.type);
+            assertTrue(firstGuess.isLocal());
+        } finally {
+            runtimeHarness.undeployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
+                    "OSGI-INF/test-semantic-entities-dbpedia-entity-contrib.xml");
+        }
     }
 
     @Test
     public void testSuggestEntitiesWithoutTypeRestriction() throws Exception {
-        if (!database.supportsMultipleFulltextIndexes()) {
-            warnSkippedTest();
-            return;
-        }
-
         // deploy off-line mock DBpedia source to override the default source
         // that needs an internet connection: comment the following contrib to
         // test again the real DBpedia server
-        deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
+        runtimeHarness.deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
                 "OSGI-INF/test-semantic-entities-dbpedia-entity-contrib.xml");
+        try {
+            // empty local KB, only remote source output
+            List<EntitySuggestion> suggestions = service.suggestEntity(session, "Barack Obama", null, 3);
+            assertNotNull(suggestions);
+            assertEquals(suggestions.size(), 1);
+            EntitySuggestion firstGuess = suggestions.get(0);
+            assertEquals("Barack Obama", firstGuess.label);
+            assertEquals("http://dbpedia.org/resource/Barack_Obama", firstGuess.getRemoteUri());
+            assertEquals("Person", firstGuess.type);
+            assertFalse(firstGuess.isLocal());
 
-        // empty local KB, only remote source output
-        List<EntitySuggestion> suggestions = service.suggestEntity(session, "Barack Obama", null, 3);
-        assertNotNull(suggestions);
-        assertEquals(suggestions.size(), 1);
-        EntitySuggestion firstGuess = suggestions.get(0);
-        assertEquals("Barack Obama", firstGuess.label);
-        assertEquals("http://dbpedia.org/resource/Barack_Obama", firstGuess.getRemoteUri());
-        assertEquals("Person", firstGuess.type);
-        assertFalse(firstGuess.isLocal());
+            // synchronize the remote entity as a local entity
+            DocumentModel localEntity = service.asLocalEntity(session, firstGuess);
+            assertEquals(localEntity.getTitle(), "Barack Obama");
 
-        // synchronize the remote entity as a local entity
-        DocumentModel localEntity = service.asLocalEntity(session, firstGuess);
-        assertEquals(localEntity.getTitle(), "Barack Obama");
-
-        // perform the same suggestion query again: this time the result is
-        // local
-        suggestions = service.suggestEntity(session, "Barack Obama", "Person", 3);
-        assertNotNull(suggestions);
-        assertEquals(suggestions.size(), 1);
-        firstGuess = suggestions.get(0);
-        assertEquals("Barack Obama", firstGuess.label);
-        assertEquals("http://dbpedia.org/resource/Barack_Obama", firstGuess.getRemoteUri());
-        assertEquals("Person", firstGuess.type);
-        assertTrue(firstGuess.isLocal());
+            // perform the same suggestion query again: this time the result is
+            // local
+            suggestions = service.suggestEntity(session, "Barack Obama", "Person", 3);
+            assertNotNull(suggestions);
+            assertEquals(suggestions.size(), 1);
+            firstGuess = suggestions.get(0);
+            assertEquals("Barack Obama", firstGuess.label);
+            assertEquals("http://dbpedia.org/resource/Barack_Obama", firstGuess.getRemoteUri());
+            assertEquals("Person", firstGuess.type);
+            assertTrue(firstGuess.isLocal());
+        } finally {
+            runtimeHarness.undeployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
+                    "OSGI-INF/test-semantic-entities-dbpedia-entity-contrib.xml");
+        }
     }
 
     @Test
     public void testGetOccurrenceRelation() throws Exception {
-        if (!database.supportsMultipleFulltextIndexes()) {
-            warnSkippedTest();
-            return;
-        }
-
         makeSomeEntities();
         OccurrenceRelation relation = service.getOccurrenceRelation(session, doc1.getRef(), john.getRef());
         assertNull(relation);
@@ -560,11 +552,6 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
     @Test
     public void testAddRemoveOccurrenceRelationWithEmptyOccurrenceData() throws Exception {
-        if (!database.supportsMultipleFulltextIndexes()) {
-            warnSkippedTest();
-            return;
-        }
-
         makeSomeEntities();
         OccurrenceRelation relation = service.getOccurrenceRelation(session, doc1.getRef(), john.getRef());
         assertNull(relation);
@@ -604,11 +591,6 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
     @Test
     public void testSuggestDocument() throws Exception {
-        if (!database.supportsMultipleFulltextIndexes()) {
-            warnSkippedTest();
-            return;
-        }
-
         List<DocumentModel> suggestions = service.suggestDocument(session, "lemon", null, 3);
         assertNotNull(suggestions);
         assertEquals(1, suggestions.size());
@@ -617,25 +599,22 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
         suggestions = service.suggestDocument(session, "Lennon John", null, 3);
         assertNotNull(suggestions);
         assertEquals(2, suggestions.size());
-        assertEquals(doc1.getTitle(), suggestions.get(0).getTitle());
-        assertEquals(doc2.getTitle(), suggestions.get(1).getTitle());
+        // order is not deterministic
+        assertEquals(new HashSet<>(Arrays.asList(doc1.getId(), doc2.getId())),
+                new HashSet<>(Arrays.asList(suggestions.get(0).getId(), suggestions.get(1).getId())));
 
         // check that entities don't show up in the results
         makeSomeEntities();
         suggestions = service.suggestDocument(session, "Lennon John", null, 3);
         assertNotNull(suggestions);
         assertEquals(2, suggestions.size());
-        assertEquals(doc1.getTitle(), suggestions.get(0).getTitle());
-        assertEquals(doc2.getTitle(), suggestions.get(1).getTitle());
+        // order is not deterministic
+        assertEquals(new HashSet<>(Arrays.asList(doc1.getId(), doc2.getId())),
+                new HashSet<>(Arrays.asList(suggestions.get(0).getId(), suggestions.get(1).getId())));
     }
 
     @Test
     public void testSuggestEntityWithSpecialCharacters() throws Exception {
-        if (!database.supportsMultipleFulltextIndexes()) {
-            warnSkippedTest();
-            return;
-        }
-
         DocumentModel container = service.getEntityContainer(session);
         assertNotNull(container);
         assertEquals(Constants.ENTITY_CONTAINER_TYPE, container.getType());
@@ -653,11 +632,6 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
     @Test
     public void testGetLinkedLocalEntity() throws Exception {
-        if (!database.supportsMultipleFulltextIndexes()) {
-            warnSkippedTest();
-            return;
-        }
-
         URI johnURI = URI.create("http://dbpedia.org/resource/John_Lennon");
 
         // empty KB will not yield any match
@@ -688,10 +662,6 @@ public class LocalEntityServiceTest extends SQLRepositoryTestCase {
 
         // check arabic diacritics normalization: hamza above
         assertEquals(service.normalizeName(obamaWithoutHamza), service.normalizeName(obamaWithHamza));
-    }
-
-    protected void warnSkippedTest() {
-        log.warn("Skipping test that needs multi-fulltext support for database: " + database.getClass().getName());
     }
 
 }

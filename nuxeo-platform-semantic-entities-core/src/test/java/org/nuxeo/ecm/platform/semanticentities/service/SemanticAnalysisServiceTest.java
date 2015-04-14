@@ -22,6 +22,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -29,27 +30,55 @@ import java.util.Arrays;
 import java.util.GregorianCalendar;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.junit.After;
+import javax.inject.Inject;
+
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.nuxeo.ecm.core.api.ClientException;
+import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.event.EventService;
 import org.nuxeo.ecm.core.opencmis.impl.server.NuxeoRepository;
-import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
+import org.nuxeo.ecm.core.test.CoreFeature;
+import org.nuxeo.ecm.core.test.TransactionalFeature;
+import org.nuxeo.ecm.core.test.annotations.Granularity;
+import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
 import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService;
 import org.nuxeo.ecm.platform.semanticentities.adapter.OccurrenceGroup;
 import org.nuxeo.runtime.api.Framework;
+import org.nuxeo.runtime.test.runner.Deploy;
+import org.nuxeo.runtime.test.runner.Features;
+import org.nuxeo.runtime.test.runner.FeaturesRunner;
+import org.nuxeo.runtime.test.runner.LocalDeploy;
+import org.nuxeo.runtime.transaction.TransactionHelper;
 
-public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
-
-    private static final Log log = LogFactory.getLog(SemanticAnalysisServiceTest.class);
+@RunWith(FeaturesRunner.class)
+@Features({ TransactionalFeature.class, CoreFeature.class })
+@RepositoryConfig(cleanup = Granularity.METHOD)
+@Deploy({
+// necessary for the fulltext indexer and text extraction for analysis
+        "org.nuxeo.ecm.core.convert.api", //
+        "org.nuxeo.ecm.core.convert", //
+        "org.nuxeo.ecm.core.convert.plugins", //
+        // dublincore contributors are required to check whether non system users have edited an entity or not
+        "org.nuxeo.ecm.platform.dublincore", //
+        // semantic entities types
+        "org.nuxeo.ecm.platform.semanticentities.core", //
+        // CMIS query maker
+        "org.nuxeo.ecm.core.opencmis.impl", //
+})
+@LocalDeploy({
+// deploy off-line mock for the semantic analysis service
+        "org.nuxeo.ecm.platform.semanticentities.core.tests:OSGI-INF/test-semantic-entities-analysis-service.xml",
+        // deploy off-line mock DBpedia source to override the default source that needs an internet connection:
+        // comment the following contrib to test again a real Stanbol server
+        "org.nuxeo.ecm.platform.semanticentities.core.tests:OSGI-INF/test-semantic-entities-stanbol-entity-contrib.xml" })
+public class SemanticAnalysisServiceTest {
 
     private DocumentModel john;
 
@@ -59,66 +88,36 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
     private DocumentModel liverpool;
 
+    @Inject
+    protected CoreFeature coreFeature;
+
+    @Inject
+    protected CoreSession session;
+
+    @Inject
+    protected EventService eventService;
+
+    @Inject
     private LocalEntityService leService;
 
-    private RemoteEntityService reService;
-
+    @Inject
     private SemanticAnalysisService saService;
 
     @Before
     public void setUp() throws Exception {
-        super.setUp();
-        deployBundle("org.nuxeo.ecm.core.schema");
-        // necessary for the fulltext indexer and text extraction for analysis
-        deployBundle("org.nuxeo.ecm.core.convert.api");
-        deployBundle("org.nuxeo.ecm.core.convert");
-        deployBundle("org.nuxeo.ecm.core.convert.plugins");
+        assumeTrue("Needs multi-fulltext support",
+                coreFeature.getStorageConfiguration().supportsMultipleFulltextIndexes());
 
-        // dublincore contributors are required to check whether non system
-        // users have edited an entity or not
-        deployBundle("org.nuxeo.ecm.platform.dublincore");
-
-        // semantic entities types
-        deployBundle("org.nuxeo.ecm.platform.semanticentities.core");
-
-        // deploy off-line mock for the semantic analysis service
-        deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
-                "OSGI-INF/test-semantic-entities-analysis-service.xml");
-
-        // deploy off-line mock DBpedia source to override the default source
-        // that needs an internet connection: comment the following contrib to
-        // test again a real Stanbol server
+        // deploy off-line mock DBpedia source to override the default source that needs an internet connection:
+        // comment the following contrib to test again a real Stanbol server
         Framework.getProperties().put(SemanticAnalysisServiceImpl.STANBOL_URL_PROPERTY, "http://localhost:9090/");
-        deployContrib("org.nuxeo.ecm.platform.semanticentities.core.tests",
-                "OSGI-INF/test-semantic-entities-stanbol-entity-contrib.xml");
 
-        // CMIS query maker
-        deployBundle("org.nuxeo.ecm.core.opencmis.impl");
+        // set CMISQL JOINs allowed
         Framework.getProperties().setProperty(NuxeoRepository.SUPPORTS_JOINS_PROP, "true");
 
-        // initialize the session field
-        openSession();
         DocumentModel domain = session.createDocumentModel("/", "default-domain", "Folder");
         session.createDocument(domain);
         session.save();
-
-        leService = Framework.getService(LocalEntityService.class);
-        assertNotNull(leService);
-
-        reService = Framework.getService(RemoteEntityService.class);
-        assertNotNull(reService);
-
-        saService = Framework.getService(SemanticAnalysisService.class);
-        assertNotNull(saService);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        log.info("Tearing down");
-        // ensure that all threads are closed before shutting down the runtime
-        ((SemanticAnalysisServiceImpl) saService).deactivate(null);
-        closeSession();
-        super.tearDown();
     }
 
     public void makeSomeEntities() throws ClientException {
@@ -170,7 +169,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         liverpool.setPropertyValue("place:longitude", -2.983);
         liverpool = session.createDocument(liverpool);
         session.save();
-        Framework.getLocalService(EventService.class).waitForAsyncCompletion();
+        waitForAsyncCompletion();
     }
 
     public DocumentModel createSampleDocumentModel(String id) throws ClientException {
@@ -189,26 +188,29 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
         doc = session.createDocument(doc);
         if (saveAndWait) {
             session.save(); // force write to SQL backend
-            Framework.getLocalService(EventService.class).waitForAsyncCompletion(1000 * 10);
+            waitForAsyncCompletion();
         }
         return doc;
+    }
+
+    protected void waitForAsyncCompletion() {
+        if (TransactionHelper.isTransactionActiveOrMarkedRollback()) {
+            TransactionHelper.commitOrRollbackTransaction();
+            TransactionHelper.startTransaction();
+        }
+        eventService.waitForAsyncCompletion();
     }
 
     @Test
     // NXP-12551: disabled because failing randomly
     @Ignore
     public void testAsyncAnalysis() throws Exception {
-        if (!database.supportsMultipleFulltextIndexes()) {
-            warnSkippedTest();
-            return;
-        }
-        EventService es = Framework.getLocalService(EventService.class);
         List<DocumentModel> docs = new ArrayList<DocumentModel>();
         for (int i = 0; i < 5; i++) {
             docs.add(createSampleDocumentModel(String.format("john-bio-%d", i), false));
         }
         session.save(); // force write to SQL backend
-        es.waitForAsyncCompletion();
+        waitForAsyncCompletion();
 
         // launch asynchronous analysis on each documents (in concurrently using
         // the thread pool executors)
@@ -218,9 +220,7 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
         // wait for all the analysis to complete thanks to a hook registered in
         // the Event Service at activation of the Semantic Analysis Service.
-        es.waitForAsyncCompletion();
-        closeSession();
-        openSession();
+        waitForAsyncCompletion();
 
         // check the results of the analysis
         for (DocumentModel doc : docs) {
@@ -234,10 +234,6 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
 
     @Test
     public void testSynchronousAnalysis() throws Exception {
-        if (!database.supportsMultipleFulltextIndexes()) {
-            warnSkippedTest();
-            return;
-        }
         DocumentModel doc = createSampleDocumentModel("john-bio1");
         saService.launchSynchronousAnalysis(doc, session);
         checkRemoveRelatedEntities(doc);
@@ -380,10 +376,6 @@ public class SemanticAnalysisServiceTest extends SQLRepositoryTestCase {
                 + "'Lennon' hence should rank high for suggestions on such keywords.\n\n"
 
                 + "'' is an invalid control char and should be ignored.", extractedText);
-    }
-
-    protected void warnSkippedTest() {
-        log.warn("Skipping test that needs multi-fulltext support for database: " + database.getClass().getName());
     }
 
 }

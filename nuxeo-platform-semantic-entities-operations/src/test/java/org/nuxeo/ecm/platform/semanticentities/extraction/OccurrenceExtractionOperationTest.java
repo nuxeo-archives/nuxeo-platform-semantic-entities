@@ -16,27 +16,51 @@
  */
 package org.nuxeo.ecm.platform.semanticentities.extraction;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.GregorianCalendar;
 import java.util.List;
 
+import javax.inject.Inject;
+
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
-
+import org.junit.runner.RunWith;
 import org.nuxeo.ecm.core.api.ClientException;
+import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.event.EventService;
-import org.nuxeo.ecm.core.storage.sql.SQLRepositoryTestCase;
+import org.nuxeo.ecm.core.test.CoreFeature;
+import org.nuxeo.ecm.core.test.TransactionalFeature;
+import org.nuxeo.ecm.core.test.annotations.Granularity;
+import org.nuxeo.ecm.core.test.annotations.RepositoryConfig;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.semanticentities.Constants;
 import org.nuxeo.ecm.platform.semanticentities.LocalEntityService;
-import org.nuxeo.ecm.platform.semanticentities.RemoteEntityService;
 import org.nuxeo.ecm.platform.semanticentities.SemanticAnalysisService;
-import org.nuxeo.runtime.api.Framework;
+import org.nuxeo.runtime.test.runner.Deploy;
+import org.nuxeo.runtime.test.runner.Features;
+import org.nuxeo.runtime.test.runner.FeaturesRunner;
+import org.nuxeo.runtime.transaction.TransactionHelper;
 
-public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
+// !!! NOTE !!! that this test is currently disabled from pom.xml
+@RunWith(FeaturesRunner.class)
+@Features({ TransactionalFeature.class, CoreFeature.class })
+@RepositoryConfig(cleanup = Granularity.METHOD)
+@Deploy({
+// necessary for the fulltext indexer and text extraction for analysis
+        "org.nuxeo.ecm.core.convert.api", //
+        "org.nuxeo.ecm.core.convert", //
+        "org.nuxeo.ecm.core.convert.plugins", //
+        // semantic entities types
+        "org.nuxeo.ecm.platform.semanticentities.core", //
+        // CMIS query maker
+        "org.nuxeo.ecm.core.opencmis.impl", //
+})
+public class OccurrenceExtractionOperationTest {
 
     private DocumentModel john;
 
@@ -46,40 +70,23 @@ public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
 
     private DocumentModel liverpool;
 
+    @Inject
+    protected CoreSession session;
+
+    @Inject
+    protected EventService eventService;
+
+    @Inject
     private LocalEntityService leService;
 
-    private RemoteEntityService reService;
-
+    @Inject
     private SemanticAnalysisService saService;
 
     @Before
     public void setUp() throws Exception {
-        super.setUp();
-        // necessary for the fulltext indexer and text extraction for analysis
-        deployBundle("org.nuxeo.ecm.core.convert.api");
-        deployBundle("org.nuxeo.ecm.core.convert");
-        deployBundle("org.nuxeo.ecm.core.convert.plugins");
-
-        // semantic entities types
-        deployBundle("org.nuxeo.ecm.platform.semanticentities.core");
-
-        // CMIS query maker
-        deployBundle("org.nuxeo.ecm.core.opencmis.impl");
-
-        // initialize the session field
-        openSession();
         DocumentModel domain = session.createDocumentModel("/", "default-domain", "Folder");
         session.createDocument(domain);
         session.save();
-
-        leService = Framework.getService(LocalEntityService.class);
-        assertNotNull(leService);
-
-        reService = Framework.getService(RemoteEntityService.class);
-        assertNotNull(reService);
-
-        saService = Framework.getService(SemanticAnalysisService.class);
-        assertNotNull(saService);
     }
 
     public void makeSomeEntities() throws ClientException {
@@ -131,7 +138,7 @@ public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
         liverpool.setPropertyValue("place:longitude", -2.983);
         liverpool = session.createDocument(liverpool);
         session.save();
-        Framework.getLocalService(EventService.class).waitForAsyncCompletion();
+        waitForAsyncCompletion();
     }
 
     public DocumentModel createSampleDocumentModel() throws ClientException {
@@ -146,8 +153,16 @@ public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
                 + "<!-- this is a HTML comment about Bob Marley. -->" + " </body></html>");
         doc = session.createDocument(doc);
         session.save(); // force write to SQL backend
-        Framework.getLocalService(EventService.class).waitForAsyncCompletion(1000 * 10);
+        waitForAsyncCompletion();
         return doc;
+    }
+
+    protected void waitForAsyncCompletion() {
+        if (TransactionHelper.isTransactionActiveOrMarkedRollback()) {
+            TransactionHelper.commitOrRollbackTransaction();
+            TransactionHelper.startTransaction();
+        }
+        eventService.waitForAsyncCompletion();
     }
 
     @Test
@@ -172,13 +187,11 @@ public class OccurrenceExtractionOperationTest extends SQLRepositoryTestCase {
     }
 
     @Test
+    // TODO: deploy a the mock HTTP operation instead of the default core event listener
+    @Deploy("org.nuxeo.ecm.platform.semanticentities.operations")
     public void testCoreEventListener() throws Exception {
-        // TODO: deploy a the mock HTTP operation instead of the default core
-        // event listener
-        deployBundle("org.nuxeo.ecm.platform.semanticentities.operations");
-
         DocumentModel doc = createSampleDocumentModel();
-        Framework.getLocalService(EventService.class).waitForAsyncCompletion();
+        waitForAsyncCompletion();
         while (saService.getProgressStatus(doc.getRepositoryName(), doc.getRef()) != null) {
             Thread.sleep(100);
         }
