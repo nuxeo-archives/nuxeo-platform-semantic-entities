@@ -89,7 +89,7 @@ public class OccurrenceExtractionOperationTest {
         session.save();
     }
 
-    public void makeSomeEntities() throws ClientException {
+    public void makeSomeEntities() {
         DocumentModel container = leService.getEntityContainer(session);
         assertNotNull(container);
         assertEquals(Constants.ENTITY_CONTAINER_TYPE, container.getType());
@@ -141,7 +141,7 @@ public class OccurrenceExtractionOperationTest {
         waitForAsyncCompletion();
     }
 
-    public DocumentModel createSampleDocumentModel() throws ClientException {
+    public DocumentModel createSampleDocumentModel() {
         DocumentModel doc = session.createDocumentModel("/", "john-bio", "Note");
         doc.setPropertyValue("dc:title", "A short bio for John Lennon");
         doc.setPropertyValue("note:note", "<html><body>" + "<h1>This is an HTML title</h1>"

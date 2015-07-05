@@ -48,7 +48,7 @@ public interface LocalEntityService {
      * @return the DocumentModel of type EntityContainer (create it if missing) or null if the user does not have the
      *         permission to see it
      */
-    DocumentModel getEntityContainer(CoreSession session) throws ClientException;
+    DocumentModel getEntityContainer(CoreSession session);
 
     /**
      * Helper method to suggest entities by keyword match on names. This method will call both the local entity lookup
@@ -61,7 +61,7 @@ public interface LocalEntityService {
      * @return a list of maximum maxSuggestions matching entities
      */
     List<EntitySuggestion> suggestEntity(CoreSession session, String keywords, String type, int maxSuggestions)
-            throws ClientException, DereferencingException;
+            throws DereferencingException;
 
     /**
      * Helper method to suggest entities by keyword match on names. This method will call both the local entity lookup
@@ -76,7 +76,7 @@ public interface LocalEntityService {
      * @return a list of maximum maxSuggestions matching entities
      */
     List<EntitySuggestion> suggestEntity(CoreSession session, OccurrenceGroup group, int maxSuggestions)
-            throws DereferencingException, ClientException;
+            throws DereferencingException;
 
     /**
      * Helper method to suggest local entities by keyword match on names.
@@ -86,8 +86,7 @@ public interface LocalEntityService {
      * @param maxSuggestions maximum number of entities to suggest
      * @return a list of maximum maxSuggestions matching entities
      */
-    List<EntitySuggestion> suggestLocalEntity(CoreSession session, String keywords, String type, int maxSuggestions)
-            throws ClientException;
+    List<EntitySuggestion> suggestLocalEntity(CoreSession session, String keywords, String type, int maxSuggestions);
 
     /**
      * Helper method to suggest documents by keyword match on fulltext content.
@@ -114,7 +113,7 @@ public interface LocalEntityService {
      * @return the DocumentModel of type Occurrence holding the relation
      */
     OccurrenceRelation addOccurrence(CoreSession session, DocumentRef docRef, DocumentRef entityRef,
-            String quoteContext, int startPosInContext, int endPosInContext) throws ClientException;
+            String quoteContext, int startPosInContext, int endPosInContext);
 
     /**
      * Add several occurrences of the same entity in to a given document (occurring in several text snippets).
@@ -126,7 +125,7 @@ public interface LocalEntityService {
      * @return an OccurrenceRelation holding the aggregated occurrence data
      */
     OccurrenceRelation addOccurrences(CoreSession session, DocumentRef docRef, DocumentRef entityRef,
-            List<OccurrenceInfo> occurrences) throws ClientException;
+            List<OccurrenceInfo> occurrences);
 
     /**
      * Add several occurrences of the same entity in to a given document (occurring in several text snippets).
@@ -139,7 +138,7 @@ public interface LocalEntityService {
      * @throws IOException if dereferencing remote entity fails
      */
     void addOccurrences(CoreSession session, DocumentRef ref, EntitySuggestion entitySuggestion,
-            List<OccurrenceInfo> occurrences) throws ClientException, IOException;
+            List<OccurrenceInfo> occurrences) throws IOException;
 
     /**
      * Remove any occurrence information of an entity on the specified documents. If the entity was automatically
@@ -152,8 +151,7 @@ public interface LocalEntityService {
      * @param forcePhysicalDelete perform physical deletion (no trash)
      * @throws ClientException if the repository fails or the document does not exist.
      */
-    void removeOccurrences(CoreSession session, DocumentRef docRef, DocumentRef entityRef, boolean forcePhysicalDelete)
-            throws ClientException;
+    void removeOccurrences(CoreSession session, DocumentRef docRef, DocumentRef entityRef, boolean forcePhysicalDelete);
 
     /**
      * Find the occurrence relation instance linking a document to an entity. Return null if no such relation exist in
@@ -164,8 +162,7 @@ public interface LocalEntityService {
      * @param entityRef the reference of the targeted entity
      * @return an instance of OccurrenceRelation or null
      */
-    OccurrenceRelation getOccurrenceRelation(CoreSession session, DocumentRef documentRef, DocumentRef entityRef)
-            throws ClientException;
+    OccurrenceRelation getOccurrenceRelation(CoreSession session, DocumentRef documentRef, DocumentRef entityRef);
 
     /**
      * Find entities of a given type related to a given document.
@@ -175,8 +172,7 @@ public interface LocalEntityService {
      * @param entityType the Nuxeo type of entities to lookup (can be null)
      * @return a paginated collection of matching entities
      */
-    PageProvider<DocumentModel> getRelatedEntities(CoreSession session, DocumentRef docRef, String entityType)
-            throws ClientException;
+    PageProvider<DocumentModel> getRelatedEntities(CoreSession session, DocumentRef docRef, String entityType);
 
     /**
      * Find entities of a given type related to a given document.
@@ -186,8 +182,7 @@ public interface LocalEntityService {
      * @param documentType the Nuxeo type of documents to lookup (can be null)
      * @return a paginated collection of matching entities
      */
-    PageProvider<DocumentModel> getRelatedDocuments(CoreSession session, DocumentRef entityRef, String documentType)
-            throws ClientException;
+    PageProvider<DocumentModel> getRelatedDocuments(CoreSession session, DocumentRef entityRef, String documentType);
 
     /**
      * Lookup the local repo to find a local entity that is linked to the given remote entity URI through a owl:sameAs
@@ -197,7 +192,7 @@ public interface LocalEntityService {
      * @return the matching local document model or null if none
      * @throws ClientException in case of problem accessing the local repo
      */
-    DocumentModel getLinkedLocalEntity(CoreSession session, URI remoteEntityURI) throws ClientException;
+    DocumentModel getLinkedLocalEntity(CoreSession session, URI remoteEntityURI);
 
     /**
      * @return the document type names deriving from the Entity type
@@ -209,7 +204,7 @@ public interface LocalEntityService {
      * Ensure that the suggestion is local. If not, use the remote entity service to dereference it into a new local
      * entity using the provided core session.
      */
-    DocumentModel asLocalEntity(CoreSession session, EntitySuggestion suggestion) throws ClientException, IOException;
+    DocumentModel asLocalEntity(CoreSession session, EntitySuggestion suggestion) throws IOException;
 
     /**
      * Normalize names for being able to match entity by names without having access to full-fledged fulltext index as
@@ -223,8 +218,7 @@ public interface LocalEntityService {
      * @param doc the document to update
      * @param performUpdate performs the update even if the source fields are not dirty.
      * @return true if the field was updated.
-     * @throws ClientException
      */
-    boolean updateNormalizedNames(DocumentModel doc, boolean forceUpdate) throws ClientException;
+    boolean updateNormalizedNames(DocumentModel doc, boolean forceUpdate);
 
 }

@@ -60,7 +60,7 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>, Serializa
     public boolean automaticallyCreated = false;
 
     @SuppressWarnings("unchecked")
-    public EntitySuggestion(DocumentModel entity) throws ClientException {
+    public EntitySuggestion(DocumentModel entity) {
         this.entity = entity;
         label = entity.getTitle();
         type = entity.getType();
@@ -137,7 +137,7 @@ public class EntitySuggestion implements Comparable<EntitySuggestion>, Serializa
     /**
      * Static helper to turn a document complex property into a list of RemoteEntity instances suitable to the UI layer.
      */
-    public static List<EntitySuggestion> fromDocument(DocumentModel doc) throws ClientException {
+    public static List<EntitySuggestion> fromDocument(DocumentModel doc) {
         String[] entityURIs = doc.getProperty(SAMEAS_URI_PROPERTY).getValue(String[].class);
         String[] entityLabels = doc.getProperty(SAMEAS_LABEL_PROPERTY).getValue(String[].class);
 

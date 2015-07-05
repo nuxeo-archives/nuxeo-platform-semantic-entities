@@ -34,7 +34,7 @@ public interface SemanticAnalysisService {
      * @throws IOException if the engine is not reachable or fails
      * @throws ClientException if the in-memory creation of prefetched entity suggestions fails (very unlikely)
      */
-    AnalysisResults analyze(CoreSession session, String textContent) throws IOException, ClientException;
+    AnalysisResults analyze(CoreSession session, String textContent) throws IOException;
 
     /**
      * Synchronous analysis of a document (without linking).
@@ -46,7 +46,7 @@ public interface SemanticAnalysisService {
      * @throws ClientException if the text extraction fails
      * @throws IOException if the engine is not reachable or fails
      */
-    AnalysisResults analyze(CoreSession session, DocumentModel doc) throws IOException, ClientException;
+    AnalysisResults analyze(CoreSession session, DocumentModel doc) throws IOException;
 
     /**
      * Asynchronously save the result of the analyze using a dedicated sequential thread.
@@ -64,7 +64,7 @@ public interface SemanticAnalysisService {
      * @throws ClientException if a property of the document to analyze is not available due to a database connection
      *             issue for instance.
      */
-    void launchAnalysis(String repositoryName, DocumentRef docRef) throws ClientException;
+    void launchAnalysis(String repositoryName, DocumentRef docRef);
 
     /**
      * Launch a analysis of a document and wait for the result before returning. The result of the analysis is stored
@@ -78,7 +78,7 @@ public interface SemanticAnalysisService {
      * @throws DereferencingException if the dereferencing process fails (e.g. due to a network failure to a remote
      *             knowledge base).
      */
-    void launchSynchronousAnalysis(DocumentModel doc, CoreSession session) throws ClientException,
+    void launchSynchronousAnalysis(DocumentModel doc, CoreSession session) throws
             DereferencingException, IOException;
 
     /**
@@ -101,6 +101,6 @@ public interface SemanticAnalysisService {
      * @throws ClientException if the document repository fails during local lookups or saving entities and occurrences
      */
     void createLinks(DocumentModel document, CoreSession session, List<OccurrenceGroup> occurrenceGroups)
-            throws ClientException, IOException;
+            throws IOException;
 
 }

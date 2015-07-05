@@ -38,40 +38,40 @@ public interface OccurrenceRelation {
     /**
      * @return the reference of the document that holds the text quotes mentioning the entity
      */
-    DocumentRef getSourceDocumentRef() throws ClientException;
+    DocumentRef getSourceDocumentRef();
 
     /**
      * @return the reference of the entity that is mentioned by the document
      */
-    DocumentRef getTargetEntityRef() throws ClientException;
+    DocumentRef getTargetEntityRef();
 
     /**
      * @return the snippet info and the precise locations of the mentioned names inside those of snippets
      */
-    List<OccurrenceInfo> getOccurrences() throws ClientException;
+    List<OccurrenceInfo> getOccurrences();
 
-    List<OccurrenceInfo> getOccurrences(int maxOccurrences) throws ClientException;
+    List<OccurrenceInfo> getOccurrences(int maxOccurrences);
 
     /**
      * Merge the list of occurrences with the existing occurrence info held by the underlying document model using.
      * Remove the duplicated entries without altering the ordering.
      */
-    void addOccurrences(List<OccurrenceInfo> occurrences) throws ClientException;
+    void addOccurrences(List<OccurrenceInfo> occurrences);
 
     /**
      * Replace existing occurrences with the a new list of occurrence info. Remove the duplicated entries without
      * altering the ordering.
      */
-    void setOccurrences(List<OccurrenceInfo> occurrences) throws ClientException;
+    void setOccurrences(List<OccurrenceInfo> occurrences);
 
     /**
      * Lazy fetch the DocumentModel of the entity being mentioned.
      */
-    public DocumentModel getTargetEntity() throws ClientException;
+    public DocumentModel getTargetEntity();
 
     /**
      * Lazy fetch the DocumentModel of the document carrying the entity mentions.
      */
-    public DocumentModel getSourceDocument() throws ClientException;
+    public DocumentModel getSourceDocument();
 
 }

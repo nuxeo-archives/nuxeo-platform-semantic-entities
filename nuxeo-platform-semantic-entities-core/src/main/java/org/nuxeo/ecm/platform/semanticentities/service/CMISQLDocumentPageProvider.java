@@ -59,7 +59,7 @@ public class CMISQLDocumentPageProvider extends AbstractPageProvider<DocumentMod
     protected List<DocumentModel> currentPageDocumentModels;
 
     public CMISQLDocumentPageProvider(CoreSession session, String query, String docIdColumnName, String providerName)
-            throws ClientException {
+            {
         this.session = session;
         this.query = query;
         this.docIdColumnName = docIdColumnName;

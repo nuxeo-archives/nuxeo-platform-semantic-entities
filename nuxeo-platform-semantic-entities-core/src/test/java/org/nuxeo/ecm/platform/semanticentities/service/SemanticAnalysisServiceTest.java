@@ -120,7 +120,7 @@ public class SemanticAnalysisServiceTest {
         session.save();
     }
 
-    public void makeSomeEntities() throws ClientException {
+    public void makeSomeEntities() {
         DocumentModel container = leService.getEntityContainer(session);
         assertNotNull(container);
         assertEquals(Constants.ENTITY_CONTAINER_TYPE, container.getType());
@@ -172,11 +172,11 @@ public class SemanticAnalysisServiceTest {
         waitForAsyncCompletion();
     }
 
-    public DocumentModel createSampleDocumentModel(String id) throws ClientException {
+    public DocumentModel createSampleDocumentModel(String id) {
         return createSampleDocumentModel(id, true);
     }
 
-    public DocumentModel createSampleDocumentModel(String id, boolean saveAndWait) throws ClientException {
+    public DocumentModel createSampleDocumentModel(String id, boolean saveAndWait) {
         DocumentModel doc = session.createDocumentModel("/", id, "Note");
         doc.setPropertyValue("dc:title", "A short bio for John Lennon");
         doc.setPropertyValue("note:note", "<html><body>" + "<h1>This is an HTML title</h1>"
@@ -297,7 +297,7 @@ public class SemanticAnalysisServiceTest {
                 + "Area, which has a population of 816,216.", liverpool.getPropertyValue("entity:summary"));
     }
 
-    protected void checkRelatedEntities(DocumentModel doc) throws ClientException {
+    protected void checkRelatedEntities(DocumentModel doc) {
         List<DocumentModel> relatedPeople = leService.getRelatedEntities(session, doc.getRef(), "Person").getCurrentPage();
         assertEquals(String.format(doc.getPathAsString() + " should have been linked to an entity"), 1,
                 relatedPeople.size());
@@ -322,7 +322,7 @@ public class SemanticAnalysisServiceTest {
      * Check that the expected relations are there and that removal of the link also remove automatically created
      * entities
      */
-    protected void checkRemoveRelatedEntities(DocumentModel doc) throws ClientException {
+    protected void checkRemoveRelatedEntities(DocumentModel doc) {
         List<DocumentModel> relatedPeople = leService.getRelatedEntities(session, doc.getRef(), "Person").getCurrentPage();
         assertEquals(String.format(doc.getPathAsString() + " should have been linked to an entity"), 1,
                 relatedPeople.size());
@@ -352,7 +352,7 @@ public class SemanticAnalysisServiceTest {
     }
 
     @Test
-    public void testTextExtract() throws ClientException {
+    public void testTextExtract() {
         DocumentModel doc = session.createDocumentModel("/", "docWithControlChars", "Note");
         doc.setPropertyValue("dc:title", "A short bio for John Lennon");
         doc.setPropertyValue("dc:description",

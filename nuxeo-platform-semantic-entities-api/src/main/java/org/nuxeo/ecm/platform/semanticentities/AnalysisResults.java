@@ -38,8 +38,7 @@ public class AnalysisResults {
         return this;
     }
 
-    public void savePropertiesToDocument(CoreSession session, DocumentModel doc) throws PropertyException,
-            ClientException {
+    public void savePropertiesToDocument(CoreSession session, DocumentModel doc) throws PropertyException {
         for (Map.Entry<String, Object> property : properties.entrySet()) {
             if (property.getValue() != null) {
                 doc.setPropertyValue(property.getKey(), (Serializable) property.getValue());

@@ -138,7 +138,7 @@ public class LocalEntityServiceTest {
         makeSomeDocuments();
     }
 
-    public void makeSomeDocuments() throws ClientException {
+    public void makeSomeDocuments() {
         doc1 = session.createDocumentModel("/", "doc1", "File");
         doc1.setPropertyValue("dc:title", "A short bio for John");
         doc1.setPropertyValue("dc:description", "John Lennon was born in Liverpool in 1940. John was a musician."
@@ -175,7 +175,7 @@ public class LocalEntityServiceTest {
         waitForAsyncCompletion();
     }
 
-    public void makeSomeEntities() throws ClientException {
+    public void makeSomeEntities() {
         DocumentModel container = service.getEntityContainer(session);
         assertNotNull(container);
         assertEquals(Constants.ENTITY_CONTAINER_TYPE, container.getType());
@@ -247,7 +247,7 @@ public class LocalEntityServiceTest {
     }
 
     @Test
-    public void testCreateEntities() throws ClientException {
+    public void testCreateEntities() {
         makeSomeEntities();
     }
 
@@ -369,13 +369,13 @@ public class LocalEntityServiceTest {
     }
 
     @Test
-    public void testSuggestLocalEntitiesEmptyKB() throws ClientException {
+    public void testSuggestLocalEntitiesEmptyKB() {
         List<EntitySuggestion> suggestions = service.suggestLocalEntity(session, "John", null, 3);
         assertTrue(suggestions.isEmpty());
     }
 
     @Test
-    public void testSuggestLocalEntities() throws ClientException {
+    public void testSuggestLocalEntities() {
         makeSomeEntities();
 
         List<EntitySuggestion> suggestions = service.suggestLocalEntity(session, "John", "Person", 3);
@@ -435,7 +435,7 @@ public class LocalEntityServiceTest {
     }
 
     @Test
-    public void testSuggestLocalEntitiesWithNormalizedNames() throws ClientException {
+    public void testSuggestLocalEntitiesWithNormalizedNames() {
         makeSomeEntities();
 
         // Sanity check: using the fulltext index for the title

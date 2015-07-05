@@ -232,7 +232,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
         httpClient = new DefaultHttpClient(cm, params);
     }
 
-    protected boolean shouldSkip(DocumentModel doc) throws PropertyException, ClientException {
+    protected boolean shouldSkip(DocumentModel doc) throws PropertyException {
         if (schemaManager.getDocumentTypeNamesExtending(Constants.ENTITY_TYPE).contains(doc.getType())
                 || schemaManager.getDocumentTypeNamesExtending(Constants.OCCURRENCE_TYPE).contains(doc.getType())) {
             // do not try to analyze local entities themselves
@@ -242,7 +242,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
     }
 
     @Override
-    public void launchAnalysis(String repositoryName, DocumentRef docRef) throws ClientException {
+    public void launchAnalysis(String repositoryName, DocumentRef docRef) {
         AnalysisTask task = new AnalysisTask(repositoryName, docRef, this);
         if (!executor.analysisTaskQueue.contains(task)) {
             log.debug(String.format("Scheduling analysis task for document '%s'.", docRef));
@@ -252,7 +252,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
     }
 
     @Override
-    public void launchSynchronousAnalysis(DocumentModel doc, CoreSession session) throws ClientException, IOException {
+    public void launchSynchronousAnalysis(DocumentModel doc, CoreSession session) throws IOException {
         if (shouldSkip(doc)) {
             return;
         }
@@ -270,7 +270,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
 
     @Override
     public void createLinks(DocumentModel doc, CoreSession session, List<OccurrenceGroup> groups)
-            throws ClientException, IOException {
+            throws IOException {
         if (groups.isEmpty()) {
             return;
         }
@@ -306,7 +306,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
     }
 
     public List<OccurrenceGroup> findStanbolEntityOccurrences(CoreSession session, Model model)
-            throws DereferencingException, ClientException {
+            throws DereferencingException {
         // Retrieve the existing text annotations handling the subsumption
         // relationships
         Property type = model.getProperty("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
@@ -407,7 +407,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
     }
 
     protected EntitySuggestion getEntitySuggestion(CoreSession session, Model model, Resource entitySuggestionResource,
-            String localType) throws DereferencingException, ClientException {
+            String localType) throws DereferencingException {
         Property entityReference = model.getProperty("http://fise.iks-project.eu/ontology/entity-reference");
         Property scoreProperty = model.getProperty("http://fise.iks-project.eu/ontology/confidence");
         Property entityLabelProperty = model.getProperty("http://fise.iks-project.eu/ontology/entity-label");
@@ -501,7 +501,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
     }
 
     @Override
-    public AnalysisResults analyze(CoreSession session, String textContent) throws IOException, ClientException {
+    public AnalysisResults analyze(CoreSession session, String textContent) throws IOException {
         AnalysisResults results = AnalysisResults.newInstance();
         if (textContent.split("\\s+").length > MIN_TEXT_WORD_LENGTH) {
             String output = callSemanticEngine(textContent, outputFormat, 2);
@@ -513,7 +513,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
     }
 
     @Override
-    public AnalysisResults analyze(CoreSession session, DocumentModel doc) throws IOException, ClientException {
+    public AnalysisResults analyze(CoreSession session, DocumentModel doc) throws IOException {
         states.put(new DocumentLocationImpl(doc.getRepositoryName(), doc.getRef()),
                 ProgressStatus.STATUS_ANALYSIS_PENDING);
         if (shouldSkip(doc)) {
@@ -580,7 +580,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
         }
     }
 
-    protected String extractText(DocumentModel doc) throws ClientException {
+    protected String extractText(DocumentModel doc) {
         StringBuilder sb = new StringBuilder();
         // TODO: un-hardcode me and refactorize into a reuseable, standalone
         // operation

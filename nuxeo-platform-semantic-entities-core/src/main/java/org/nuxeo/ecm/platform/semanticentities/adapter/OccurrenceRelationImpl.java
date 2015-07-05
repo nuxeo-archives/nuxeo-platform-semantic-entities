@@ -38,7 +38,7 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<OccurrenceInfo> getOccurrences() throws ClientException {
+    public List<OccurrenceInfo> getOccurrences() {
         List<OccurrenceInfo> occurrences = new ArrayList<OccurrenceInfo>();
         List<Map<String, Serializable>> occMaps = doc.getProperty("occurrence:quotes").getValue(List.class);
         for (Map<String, Serializable> occMap : occMaps) {
@@ -50,7 +50,7 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
     }
 
     @Override
-    public List<OccurrenceInfo> getOccurrences(int maxOccurrences) throws ClientException {
+    public List<OccurrenceInfo> getOccurrences(int maxOccurrences) {
         List<OccurrenceInfo> occurrences = getOccurrences();
         if (occurrences.size() <= maxOccurrences) {
             return occurrences;
@@ -59,7 +59,7 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
     }
 
     @Override
-    public void addOccurrences(List<OccurrenceInfo> occurrences) throws ClientException {
+    public void addOccurrences(List<OccurrenceInfo> occurrences) {
         Set<OccurrenceInfo> dedupedOccurrences = new LinkedHashSet<OccurrenceInfo>(getOccurrences());
         dedupedOccurrences.addAll(occurrences);
         List<Map<String, Serializable>> quotes = new ArrayList<Map<String, Serializable>>();
@@ -70,7 +70,7 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
     }
 
     @Override
-    public void setOccurrences(List<OccurrenceInfo> occurrences) throws ClientException {
+    public void setOccurrences(List<OccurrenceInfo> occurrences) {
         List<Map<String, Serializable>> newQuotes = new ArrayList<Map<String, Serializable>>();
         // use a temporary LinkedHashSet to remove any dupe without altering the
         // ordering
@@ -81,7 +81,7 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
     }
 
     @Override
-    public DocumentRef getSourceDocumentRef() throws ClientException {
+    public DocumentRef getSourceDocumentRef() {
         Object source = doc.getPropertyValue("relation:source");
         if (source != null) {
             return new IdRef(source.toString());
@@ -90,7 +90,7 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
     }
 
     @Override
-    public DocumentRef getTargetEntityRef() throws ClientException {
+    public DocumentRef getTargetEntityRef() {
         Object target = doc.getPropertyValue("relation:target");
         if (target != null) {
             return new IdRef(target.toString());
@@ -104,12 +104,12 @@ public class OccurrenceRelationImpl implements OccurrenceRelation {
     }
 
     @Override
-    public DocumentModel getTargetEntity() throws ClientException {
+    public DocumentModel getTargetEntity() {
         return doc.getCoreSession().getDocument(getTargetEntityRef());
     }
 
     @Override
-    public DocumentModel getSourceDocument() throws ClientException {
+    public DocumentModel getSourceDocument() {
         return doc.getCoreSession().getDocument(getSourceDocumentRef());
     }
 

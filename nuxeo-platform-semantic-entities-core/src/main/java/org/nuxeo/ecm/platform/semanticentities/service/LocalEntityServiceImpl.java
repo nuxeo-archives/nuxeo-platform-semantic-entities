@@ -95,7 +95,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
             30, TimeUnit.MINUTES).build();
 
     @Override
-    synchronized public DocumentModel getEntityContainer(CoreSession session) throws ClientException {
+    synchronized public DocumentModel getEntityContainer(CoreSession session) {
 
         final PathRef ref = new PathRef(ENTITY_CONTAINER_PATH);
 
@@ -109,7 +109,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
 
             UnrestrictedSessionRunner runner = new UnrestrictedSessionRunner(session) {
                 @Override
-                public void run() throws ClientException {
+                public void run() {
                     if (!session.exists(ref)) {
 
                         // create the entity container
@@ -153,7 +153,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
         return session.getDocument(ref);
     }
 
-    public DocumentModel getOccurrenceContainer(CoreSession session) throws ClientException {
+    public DocumentModel getOccurrenceContainer(CoreSession session) {
         DocumentModel entityContainer = getEntityContainer(session);
         String parentPath = entityContainer.getPathAsString();
         String localId = "occurrences";
@@ -163,20 +163,20 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
 
     @Override
     public OccurrenceRelation addOccurrence(CoreSession session, DocumentRef docRef, DocumentRef entityRef,
-            String quoteContext, int startPosInContext, int endPosInContext) throws ClientException {
+            String quoteContext, int startPosInContext, int endPosInContext) {
         OccurrenceInfo info = new OccurrenceInfo(quoteContext, startPosInContext, endPosInContext);
         return addOccurrences(session, docRef, entityRef, Arrays.asList(info));
     }
 
     @Override
     public OccurrenceRelation getOccurrenceRelation(CoreSession session, DocumentRef docRef, DocumentRef entityRef)
-            throws ClientException {
+            {
         return getOccurrenceRelation(session, docRef, entityRef, false);
     }
 
     @Override
     public void removeOccurrences(CoreSession session, DocumentRef docRef, final DocumentRef entityRef,
-            final boolean forcePhysicalDelete) throws ClientException {
+            final boolean forcePhysicalDelete) {
         OccurrenceRelation rel = getOccurrenceRelation(session, docRef, entityRef, false);
         if (rel == null) {
             return;
@@ -204,7 +204,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
         UnrestrictedSessionRunner runner = new UnrestrictedSessionRunner(session) {
 
             @Override
-            public void run() throws ClientException {
+            public void run() {
                 if (!docToDelete.contains(entityRef)) {
                     // update the popularity count of the entity
                     DocumentModel entity = session.getDocument(entityRef);
@@ -232,7 +232,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
     }
 
     public OccurrenceRelation getOccurrenceRelation(CoreSession session, DocumentRef docRef, DocumentRef entityRef,
-            boolean createIfMissing) throws ClientException {
+            boolean createIfMissing) {
         String q = String.format("SELECT * FROM Occurrence" + " WHERE relation:source = '%s'"
                 + " AND relation:target = '%s'" + " ORDER BY dc:created LIMIT 2", docRef, entityRef);
         DocumentModelList occurrences = session.query(q);
@@ -263,7 +263,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
 
     @Override
     public void addOccurrences(CoreSession session, DocumentRef docRef, EntitySuggestion entitySuggestion,
-            List<OccurrenceInfo> occurrences) throws ClientException, IOException {
+            List<OccurrenceInfo> occurrences) throws IOException {
 
         DocumentRef entityRef = null;
         if (entitySuggestion.isLocal()) {
@@ -287,7 +287,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
 
     @Override
     public OccurrenceRelation addOccurrences(CoreSession session, DocumentRef docRef, DocumentRef entityRef,
-            List<OccurrenceInfo> occurrences) throws ClientException {
+            List<OccurrenceInfo> occurrences) {
         if (!session.hasPermission(docRef, Constants.ADD_OCCURRENCE_PERMISSION)) {
             // check the permission on the source document
             throw new SecurityException(String.format("%s has not the permission to add an entity"
@@ -319,7 +319,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
 
         @SuppressWarnings("unchecked")
         @Override
-        public void run() throws ClientException {
+        public void run() {
             // update the entity aggregated alternative names for better
             // fulltext indexing
             DocumentModel entity = null;
@@ -390,7 +390,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
 
     @Override
     public PageProvider<DocumentModel> getRelatedDocuments(CoreSession session, DocumentRef entityRef,
-            String documentType) throws ClientException {
+            String documentType) {
         if (documentType == null) {
             documentType = "cmis:document";
         }
@@ -406,7 +406,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
 
     @Override
     public PageProvider<DocumentModel> getRelatedEntities(CoreSession session, DocumentRef docRef, String entityType)
-            throws ClientException {
+            {
         if (entityType == null) {
             entityType = Constants.ENTITY_TYPE;
         }
@@ -434,8 +434,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
     }
 
     @SuppressWarnings("unchecked")
-    public boolean updateNormalizedNames(DocumentModel doc, boolean forceUpdate) throws PropertyException,
-            ClientException {
+    public boolean updateNormalizedNames(DocumentModel doc, boolean forceUpdate) throws PropertyException {
         if (!doc.hasSchema("entity")) {
             log.warn(String.format("Cannot normalize names on document '%s' as it does not have the 'entity' schema",
                     doc.getTitle()));
@@ -465,7 +464,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
 
     @Override
     public List<EntitySuggestion> suggestLocalEntity(CoreSession session, String keywords, String type,
-            int maxSuggestions) throws ClientException {
+            int maxSuggestions) {
         Set<String> entityTypeNames = new TreeSet<String>();
         if (type == null) {
             try {
@@ -494,7 +493,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
 
     @Override
     public List<EntitySuggestion> suggestEntity(CoreSession session, OccurrenceGroup group, int maxSuggestions)
-            throws DereferencingException, ClientException {
+            throws DereferencingException {
         if (group.hasPrefetchedSuggestions()) {
             return suggestEntity(session, group.name, group.type, group.entitySuggestions, maxSuggestions);
         } else {
@@ -504,12 +503,12 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
 
     @Override
     public List<EntitySuggestion> suggestEntity(CoreSession session, String keywords, String type, int maxSuggestions)
-            throws ClientException, DereferencingException {
+            throws DereferencingException {
         return suggestEntity(session, keywords, type, null, maxSuggestions);
     }
 
     protected List<EntitySuggestion> suggestEntity(CoreSession session, String keywords, String type,
-            List<EntitySuggestion> precomputedRemoteSuggestions, int maxSuggestions) throws ClientException,
+            List<EntitySuggestion> precomputedRemoteSuggestions, int maxSuggestions) throws
             DereferencingException {
         // lookup remote entities
         RemoteEntityService reService;
@@ -577,7 +576,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
     }
 
     @Override
-    public DocumentModel getLinkedLocalEntity(CoreSession session, URI remoteEntityURI) throws ClientException {
+    public DocumentModel getLinkedLocalEntity(CoreSession session, URI remoteEntityURI) {
         String query = String.format("SELECT cmis:objectId FROM Entity "
                 + "WHERE '%s' = ANY entity:sameas ORDER BY dc:created", remoteEntityURI.toString());
         PageProvider<DocumentModel> provider = new CMISQLDocumentPageProvider(session, query, "cmis:objectId",
@@ -595,7 +594,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
     }
 
     @Override
-    public DocumentModel asLocalEntity(CoreSession session, EntitySuggestion suggestion) throws ClientException,
+    public DocumentModel asLocalEntity(CoreSession session, EntitySuggestion suggestion) throws
             IOException {
         if (suggestion.isLocal()) {
             return suggestion.entity;

@@ -50,7 +50,7 @@ public class SemanticEntitiesCoreListener implements PostCommitEventListener {
     protected List<String> documentTypes = new ArrayList<String>();
 
     @Override
-    public void handleEvent(EventBundle events) throws ClientException {
+    public void handleEvent(EventBundle events) {
         SemanticAnalysisService saService;
         Set<String> typesToIgnore = new HashSet<String>(Arrays.asList("Occurrence"));
         try {

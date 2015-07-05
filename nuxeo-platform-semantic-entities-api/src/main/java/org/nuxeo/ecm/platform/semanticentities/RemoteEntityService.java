@@ -34,5 +34,5 @@ public interface RemoteEntityService extends RemoteEntitySource {
      * Helper API to unlink a local entity from a remote entity identified by it's URI. It is the responsability of the
      * caller to save the change in back to the repository if persistence is required.
      */
-    void removeSameAsLink(DocumentModel localEntity, URI remoteEntityURI) throws ClientException;
+    void removeSameAsLink(DocumentModel localEntity, URI remoteEntityURI);
 }

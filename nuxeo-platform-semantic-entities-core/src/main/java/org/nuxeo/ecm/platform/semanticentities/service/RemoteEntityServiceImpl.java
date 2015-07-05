@@ -198,7 +198,7 @@ public class RemoteEntityServiceImpl extends DefaultComponent implements RemoteE
     }
 
     @Override
-    public void removeSameAsLink(DocumentModel doc, URI uriToRemove) throws ClientException {
+    public void removeSameAsLink(DocumentModel doc, URI uriToRemove) {
         if (doc.getPropertyValue(EntitySuggestion.SAMEAS_URI_PROPERTY) == null) {
             return;
         }

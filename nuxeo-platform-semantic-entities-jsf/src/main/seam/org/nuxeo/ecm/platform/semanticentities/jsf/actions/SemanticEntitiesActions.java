@@ -161,19 +161,19 @@ public class SemanticEntitiesActions {
         return getLocalEntityService().getEntityContainer(documentManager) != null;
     }
 
-    public void launchAsyncAnalysis() throws ClientException {
+    public void launchAsyncAnalysis() {
         DocumentModel doc = navigationContext.getCurrentDocument();
         launchAsyncAnalysis(doc);
     }
 
-    public void launchAsyncAnalysis(DocumentModel doc) throws ClientException {
+    public void launchAsyncAnalysis(DocumentModel doc) {
         getSemanticAnalysisService().launchAnalysis(doc.getRepositoryName(), doc.getRef());
         invalidateCurrentDocumentProviders();
         String key = getSemanticWorkInProgressMessageKey(doc.getId());
         Contexts.getEventContext().remove(key);
     }
 
-    public void analyzeCurrentList() throws ClientException {
+    public void analyzeCurrentList() {
         if (clipboardActions == null) {
             // no hard runtime dependencies on the clipboardActions seam
             // component
@@ -199,35 +199,35 @@ public class SemanticEntitiesActions {
     }
 
     @Factory(scope = ScopeType.CONVERSATION, value = "entityOccurrenceProvider")
-    public PageProvider<DocumentModel> getCurrentEntityOccurrenceProvider() throws ClientException, Exception {
+    public PageProvider<DocumentModel> getCurrentEntityOccurrenceProvider() throws Exception {
         return getEntityOccurrenceProvider(navigationContext.getCurrentDocument());
     }
 
     /**
      * Return the documents that hold an occurrence to the given entity.
      */
-    public PageProvider<DocumentModel> getEntityOccurrenceProvider(DocumentModel entity) throws ClientException,
+    public PageProvider<DocumentModel> getEntityOccurrenceProvider(DocumentModel entity) throws
             Exception {
         return getLocalEntityService().getRelatedDocuments(documentManager, entity.getRef(), null);
     }
 
     @Factory(scope = ScopeType.EVENT, value = "relatedPeopleOccurrences")
-    public List<EntityOccurrence> getRelatedPeopleOccurrences() throws ClientException, Exception {
+    public List<EntityOccurrence> getRelatedPeopleOccurrences() throws Exception {
         return getRelatedOccurrences(navigationContext.getCurrentDocument(), "Person");
     }
 
     @Factory(scope = ScopeType.EVENT, value = "relatedTopicsOccurrences")
-    public List<EntityOccurrence> getRelatedTopicsOccurrences() throws ClientException, Exception {
+    public List<EntityOccurrence> getRelatedTopicsOccurrences() throws Exception {
         return getRelatedOccurrences(navigationContext.getCurrentDocument(), "Topic");
     }
 
     @Factory(scope = ScopeType.EVENT, value = "relatedPlacesOccurrences")
-    public List<EntityOccurrence> getRelatedPlacesProvider() throws ClientException, Exception {
+    public List<EntityOccurrence> getRelatedPlacesProvider() throws Exception {
         return getRelatedOccurrences(navigationContext.getCurrentDocument(), "Place");
     }
 
     @Factory(scope = ScopeType.EVENT, value = "relatedOrganizationsOccurrences")
-    public List<EntityOccurrence> getRelatedOrganizationsProvider() throws ClientException, Exception {
+    public List<EntityOccurrence> getRelatedOrganizationsProvider() throws Exception {
         return getRelatedOccurrences(navigationContext.getCurrentDocument(), "Organization");
     }
 
@@ -235,7 +235,7 @@ public class SemanticEntitiesActions {
      * Return occurrence information to the local entities linked to the given document. TODO: make it a provider to
      * enable pagination TODO: make it possible to choose the type of relation (occurrence, topic, ...)
      */
-    protected List<EntityOccurrence> getRelatedOccurrences(DocumentModel doc, String entityType) throws ClientException {
+    protected List<EntityOccurrence> getRelatedOccurrences(DocumentModel doc, String entityType) {
         PageProvider<DocumentModel> entities = getLocalEntityService().getRelatedEntities(documentManager,
                 doc.getRef(), entityType);
         List<EntityOccurrence> occurrences = new ArrayList<EntityOccurrence>();
@@ -450,7 +450,7 @@ public class SemanticEntitiesActions {
     }
 
     protected void syncAndSaveDocument(DocumentModel doc, URI uri, boolean fullSync) throws Exception,
-            DereferencingException, ClientException {
+            DereferencingException {
         RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
         if (remoteEntityService.canDereference(uri)) {
             remoteEntityService.dereferenceInto(doc, uri, fullSync, false);
@@ -495,7 +495,7 @@ public class SemanticEntitiesActions {
         Contexts.removeFromAllContexts("relatedOrganizationsOccurrences");
     }
 
-    protected void notifyDocumentUpdated(DocumentModel doc) throws ClientException {
+    protected void notifyDocumentUpdated(DocumentModel doc) {
         navigationContext.invalidateCurrentDocument();
         facesMessages.add(StatusMessage.Severity.INFO, messages.get("document_modified"), messages.get(doc.getType()));
         EventManager.raiseEventsOnDocumentChange(doc);
