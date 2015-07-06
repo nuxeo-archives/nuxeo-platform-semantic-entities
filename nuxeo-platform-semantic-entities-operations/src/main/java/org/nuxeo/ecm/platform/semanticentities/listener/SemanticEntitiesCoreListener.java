@@ -25,10 +25,10 @@ import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.IdRef;
+import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.api.event.DocumentEventTypes;
 import org.nuxeo.ecm.core.event.Event;
 import org.nuxeo.ecm.core.event.EventBundle;
@@ -92,14 +92,14 @@ public class SemanticEntitiesCoreListener implements PostCommitEventListener {
                 session = s;
             } else if (session != s) {
                 // cannot happen given current ReconnectedEventBundleImpl
-                throw new ClientException("Several CoreSessions in one EventBundle");
+                throw new NuxeoException("Several CoreSessions in one EventBundle");
             }
         }
         if (session == null) {
             if (ids.isEmpty()) {
                 return;
             }
-            throw new ClientException("Missing CoreSession");
+            throw new NuxeoException("Missing CoreSession");
         }
 
         for (Serializable id : ids) {

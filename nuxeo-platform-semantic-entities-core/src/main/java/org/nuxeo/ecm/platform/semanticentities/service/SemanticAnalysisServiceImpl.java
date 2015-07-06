@@ -37,11 +37,11 @@ import org.apache.http.params.HttpParams;
 import org.nuxeo.common.utils.StringUtils;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.Blobs;
-import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentLocation;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
+import org.nuxeo.ecm.core.api.NuxeoException;
 import org.nuxeo.ecm.core.api.blobholder.BlobHolder;
 import org.nuxeo.ecm.core.api.blobholder.SimpleBlobHolder;
 import org.nuxeo.ecm.core.api.impl.DocumentLocationImpl;
@@ -609,7 +609,7 @@ public class SemanticAnalysisServiceImpl extends DefaultComponent implements Sem
         } catch (PropertyException pe) {
             // ignore, not a note document
         } catch (IOException e) {
-            throw new ClientException(e);
+            throw new NuxeoException(e);
         }
 
         if (doc.hasFacet(FacetNames.HAS_RELATED_TEXT)) {

@@ -7,8 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
+import org.nuxeo.ecm.core.query.QueryParseException;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
 import org.nuxeo.ecm.platform.query.api.PageProviderService;
 import org.nuxeo.ecm.platform.query.nxql.CoreQueryDocumentPageProvider;
@@ -54,7 +54,7 @@ public class DocumentOrEntityLookupSuggester extends DocumentLookupSuggester {
                 suggestions.add(DocumentSuggestion.fromDocumentModel(doc));
             }
             return suggestions;
-        } catch (ClientException e) {
+        } catch (QueryParseException e) {
             throw new SuggestionException(String.format("Suggester '%s' failed to perform query with input '%s'",
                     descriptor.getName(), userInput), e);
         }

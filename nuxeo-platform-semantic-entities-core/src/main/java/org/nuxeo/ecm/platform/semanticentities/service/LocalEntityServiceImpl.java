@@ -35,7 +35,6 @@ import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentModelList;
@@ -50,6 +49,7 @@ import org.nuxeo.ecm.core.api.security.ACL;
 import org.nuxeo.ecm.core.api.security.ACP;
 import org.nuxeo.ecm.core.api.security.SecurityConstants;
 import org.nuxeo.ecm.core.api.security.impl.ACPImpl;
+import org.nuxeo.ecm.core.model.NoSuchDocumentException;
 import org.nuxeo.ecm.core.schema.SchemaManager;
 import org.nuxeo.ecm.core.trash.TrashService;
 import org.nuxeo.ecm.platform.query.api.PageProvider;
@@ -325,7 +325,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
             DocumentModel entity = null;
             try {
                 entity = session.getDocument(relation.getTargetEntityRef());
-            } catch (ClientException e) {
+            } catch (NoSuchDocumentException e) {
                 // There is a potential race condition if two users deference
                 // the same entity exactly at the same time.
 

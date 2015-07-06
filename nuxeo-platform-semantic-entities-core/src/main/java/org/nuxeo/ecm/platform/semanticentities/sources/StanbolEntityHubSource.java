@@ -44,7 +44,6 @@ import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.Blobs;
-import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.model.Property;
 import org.nuxeo.ecm.core.api.model.PropertyException;
@@ -250,8 +249,6 @@ public class StanbolEntityHubSource extends ParameterizedHTTPEntitySource {
                 }
             } catch (PropertyException e) {
                 // ignore missing properties
-            } catch (ClientException e) {
-                throw new DereferencingException(e);
             }
         }
         return true;

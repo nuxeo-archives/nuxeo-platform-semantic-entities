@@ -21,7 +21,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Set;
 
-import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
@@ -148,7 +147,7 @@ public interface LocalEntityService {
      * @param docRef the id of the document referring to the entity
      * @param entityRef the id of the entity to remove occurrences for
      * @param forcePhysicalDelete perform physical deletion (no trash)
-     * @throws ClientException if the repository fails or the document does not exist.
+     * @throws NoSuchDocumentException if the document does not exist.
      */
     void removeOccurrences(CoreSession session, DocumentRef docRef, DocumentRef entityRef, boolean forcePhysicalDelete);
 
@@ -189,7 +188,6 @@ public interface LocalEntityService {
      *
      * @param remoteEntityURI the entity URI to lookup locally
      * @return the matching local document model or null if none
-     * @throws ClientException in case of problem accessing the local repo
      */
     DocumentModel getLinkedLocalEntity(CoreSession session, URI remoteEntityURI);
 

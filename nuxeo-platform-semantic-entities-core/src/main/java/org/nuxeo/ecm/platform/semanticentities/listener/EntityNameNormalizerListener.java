@@ -17,7 +17,6 @@
 
 package org.nuxeo.ecm.platform.semanticentities.listener;
 
-import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.event.Event;
 import org.nuxeo.ecm.core.event.EventContext;

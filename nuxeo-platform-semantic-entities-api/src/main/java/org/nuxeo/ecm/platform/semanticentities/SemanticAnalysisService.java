@@ -3,7 +3,6 @@ package org.nuxeo.ecm.platform.semanticentities;
 import java.io.IOException;
 import java.util.List;
 
-import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
@@ -32,7 +31,6 @@ public interface SemanticAnalysisService {
      * @param textContent the text to send to the engines
      * @return Occurrence and properties suggestions
      * @throws IOException if the engine is not reachable or fails
-     * @throws ClientException if the in-memory creation of prefetched entity suggestions fails (very unlikely)
      */
     AnalysisResults analyze(CoreSession session, String textContent) throws IOException;
 
@@ -43,7 +41,6 @@ public interface SemanticAnalysisService {
      *            response.
      * @param doc the document to analyze (must be attached to an active core session to extract the text content)
      * @return Occurrence and properties suggestions
-     * @throws ClientException if the text extraction fails
      * @throws IOException if the engine is not reachable or fails
      */
     AnalysisResults analyze(CoreSession session, DocumentModel doc) throws IOException;
@@ -61,8 +58,6 @@ public interface SemanticAnalysisService {
      *
      * @param repositoryName the repository where the document is stored
      * @param docRef the reference of the document to analyze
-     * @throws ClientException if a property of the document to analyze is not available due to a database connection
-     *             issue for instance.
      */
     void launchAnalysis(String repositoryName, DocumentRef docRef);
 
@@ -72,8 +67,6 @@ public interface SemanticAnalysisService {
      * properties.
      *
      * @param doc the document to analyze
-     * @throws ClientException if a property of the document to analyze is not available due to a database connection
-     *             issue for instance.
      * @throws IOException if the connection to the analysis engine fails, or if the engine it-self fails
      * @throws DereferencingException if the dereferencing process fails (e.g. due to a network failure to a remote
      *             knowledge base).
@@ -98,7 +91,6 @@ public interface SemanticAnalysisService {
      * Save semantic links in the repository to materialize the occurrence relationships between documents and entities
      *
      * @throws IOException if the remote entity sources fail during lookups
-     * @throws ClientException if the document repository fails during local lookups or saving entities and occurrences
      */
     void createLinks(DocumentModel document, CoreSession session, List<OccurrenceGroup> occurrenceGroups)
             throws IOException;

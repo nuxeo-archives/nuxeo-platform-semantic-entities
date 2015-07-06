@@ -36,7 +36,6 @@ import org.jboss.seam.core.Interpolator;
 import org.jboss.seam.faces.FacesMessages;
 import org.jboss.seam.international.StatusMessage;
 import org.nuxeo.common.utils.StringUtils;
-import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
@@ -370,13 +369,7 @@ public class SemanticEntitiesActions {
 
     @Factory(scope = ScopeType.EVENT, value = "currentEntitySameAs")
     public List<EntitySuggestion> getCurrentEntitySameAs() {
-        try {
-            return EntitySuggestion.fromDocument(navigationContext.getCurrentDocument());
-        } catch (ClientException e) {
-            log.error(e, e);
-            facesMessages.add(StatusMessage.Severity.ERROR, messages.get("error.fetchingLocalLinkedEntities"));
-            return Collections.emptyList();
-        }
+        return EntitySuggestion.fromDocument(navigationContext.getCurrentDocument());
     }
 
     public void showSuggestRemoteEntitySearch() {

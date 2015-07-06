@@ -33,10 +33,10 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpParams;
 import org.nuxeo.ecm.core.api.Blob;
 import org.nuxeo.ecm.core.api.Blobs;
-import org.nuxeo.ecm.core.api.ClientException;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.model.Property;
 import org.nuxeo.ecm.core.api.model.PropertyException;
+import org.nuxeo.ecm.core.api.model.PropertyNotFoundException;
 import org.nuxeo.ecm.core.schema.types.Type;
 import org.nuxeo.ecm.core.schema.types.primitives.StringType;
 import org.nuxeo.ecm.platform.semanticentities.DereferencingException;
@@ -191,7 +191,7 @@ public abstract class ParameterizedHTTPEntitySource implements RemoteEntitySourc
                 sameasDisplayLabel.add(label);
                 localEntity.setPropertyValue("entity:sameasDisplayLabel", (Serializable) sameasDisplayLabel);
             }
-        } catch (Exception e) {
+        } catch (PropertyNotFoundException e) {
             throw new DereferencingException(e);
         }
 
@@ -246,8 +246,6 @@ public abstract class ParameterizedHTTPEntitySource implements RemoteEntitySourc
                 }
             } catch (PropertyException e) {
                 // ignore missing properties
-            } catch (ClientException e) {
-                throw new DereferencingException(e);
             }
         }
         return true;
