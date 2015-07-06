@@ -25,8 +25,6 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.nuxeo.ecm.core.api.ClientException;
-import org.nuxeo.ecm.core.api.ClientRuntimeException;
 import org.nuxeo.ecm.core.api.CoreSession;
 import org.nuxeo.ecm.core.api.DocumentModel;
 import org.nuxeo.ecm.core.api.DocumentRef;
@@ -89,8 +87,6 @@ public class CMISQLDocumentPageProvider extends AbstractPageProvider<DocumentMod
                     DocumentModel doc = session.getDocument(docRef);
                     currentPageDocumentModels.add(doc);
                 }
-            } catch (Exception e) {
-                throw new ClientRuntimeException(e);
             } finally {
                 cmisService.close();
                 if (result != null) {
