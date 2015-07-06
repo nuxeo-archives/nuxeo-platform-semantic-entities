@@ -152,7 +152,7 @@ public class SemanticEntitiesActions {
     }
 
     @Factory(scope = ScopeType.SESSION, value = "canBrowseEntityContainer")
-    public boolean getCanBrowseEntityContainer() throws Exception {
+    public boolean getCanBrowseEntityContainer() {
         // the ScopeType.SESSION scope might hide change in permissions on the
         // entity container unless affected users do logout but this is
         // necessary to avoid DB requests at each page view since the
@@ -189,7 +189,7 @@ public class SemanticEntitiesActions {
         }
     }
 
-    public String goToEntityContainer() throws Exception {
+    public String goToEntityContainer() {
         DocumentModel entityContainer = getLocalEntityService().getEntityContainer(documentManager);
         if (entityContainer == null) {
             // the user does not have the permission to browse the entities
@@ -199,35 +199,34 @@ public class SemanticEntitiesActions {
     }
 
     @Factory(scope = ScopeType.CONVERSATION, value = "entityOccurrenceProvider")
-    public PageProvider<DocumentModel> getCurrentEntityOccurrenceProvider() throws Exception {
+    public PageProvider<DocumentModel> getCurrentEntityOccurrenceProvider() {
         return getEntityOccurrenceProvider(navigationContext.getCurrentDocument());
     }
 
     /**
      * Return the documents that hold an occurrence to the given entity.
      */
-    public PageProvider<DocumentModel> getEntityOccurrenceProvider(DocumentModel entity) throws
-            Exception {
+    public PageProvider<DocumentModel> getEntityOccurrenceProvider(DocumentModel entity) {
         return getLocalEntityService().getRelatedDocuments(documentManager, entity.getRef(), null);
     }
 
     @Factory(scope = ScopeType.EVENT, value = "relatedPeopleOccurrences")
-    public List<EntityOccurrence> getRelatedPeopleOccurrences() throws Exception {
+    public List<EntityOccurrence> getRelatedPeopleOccurrences() {
         return getRelatedOccurrences(navigationContext.getCurrentDocument(), "Person");
     }
 
     @Factory(scope = ScopeType.EVENT, value = "relatedTopicsOccurrences")
-    public List<EntityOccurrence> getRelatedTopicsOccurrences() throws Exception {
+    public List<EntityOccurrence> getRelatedTopicsOccurrences() {
         return getRelatedOccurrences(navigationContext.getCurrentDocument(), "Topic");
     }
 
     @Factory(scope = ScopeType.EVENT, value = "relatedPlacesOccurrences")
-    public List<EntityOccurrence> getRelatedPlacesProvider() throws Exception {
+    public List<EntityOccurrence> getRelatedPlacesProvider() {
         return getRelatedOccurrences(navigationContext.getCurrentDocument(), "Place");
     }
 
     @Factory(scope = ScopeType.EVENT, value = "relatedOrganizationsOccurrences")
-    public List<EntityOccurrence> getRelatedOrganizationsProvider() throws Exception {
+    public List<EntityOccurrence> getRelatedOrganizationsProvider() {
         return getRelatedOccurrences(navigationContext.getCurrentDocument(), "Organization");
     }
 
@@ -449,8 +448,7 @@ public class SemanticEntitiesActions {
         }
     }
 
-    protected void syncAndSaveDocument(DocumentModel doc, URI uri, boolean fullSync) throws Exception,
-            DereferencingException {
+    protected void syncAndSaveDocument(DocumentModel doc, URI uri, boolean fullSync) throws DereferencingException {
         RemoteEntityService remoteEntityService = Framework.getService(RemoteEntityService.class);
         if (remoteEntityService.canDereference(uri)) {
             remoteEntityService.dereferenceInto(doc, uri, fullSync, false);

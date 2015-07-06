@@ -554,8 +554,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
     }
 
     @Override
-    public List<DocumentModel> suggestDocument(CoreSession session, String keywords, String type, int maxSuggestions)
-            throws Exception {
+    public List<DocumentModel> suggestDocument(CoreSession session, String keywords, String type, int maxSuggestions) {
         if (type == null) {
             type = "cmis:document";
         }
@@ -569,7 +568,7 @@ public class LocalEntityServiceImpl extends DefaultComponent implements LocalEnt
     }
 
     @Override
-    public Set<String> getEntityTypeNames() throws Exception {
+    public Set<String> getEntityTypeNames() {
         Set<String> types = Framework.getService(SchemaManager.class).getDocumentTypeNamesExtending(
                 Constants.ENTITY_TYPE);
         return new TreeSet<String>(types);

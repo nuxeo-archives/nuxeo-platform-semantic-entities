@@ -1,5 +1,7 @@
 package org.nuxeo.ecm.platform.semanticentities.extraction;
 
+import java.io.IOException;
+
 /*
  * (C) Copyright 2010 Nuxeo SAS (http://nuxeo.com/) and contributors.
  *
@@ -51,11 +53,7 @@ public class OccurrenceExtractionOperation {
     protected SemanticAnalysisService saService;
 
     public OccurrenceExtractionOperation() {
-        try {
-            saService = Framework.getService(SemanticAnalysisService.class);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        saService = Framework.getService(SemanticAnalysisService.class);
     }
 
     public OccurrenceExtractionOperation(CoreSession session) {
@@ -67,15 +65,19 @@ public class OccurrenceExtractionOperation {
     protected CoreSession session;
 
     @OperationMethod
-    public DocumentRef run(DocumentRef docRef) throws Exception {
+    public DocumentRef run(DocumentRef docRef) {
         DocumentModel doc = session.getDocument(docRef);
         doc = run(doc);
         return doc.getRef();
     }
 
     @OperationMethod
-    public DocumentModel run(DocumentModel doc) throws Exception {
-        saService.launchSynchronousAnalysis(doc, session);
+    public DocumentModel run(DocumentModel doc) {
+        try {
+            saService.launchSynchronousAnalysis(doc, session);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         return doc;
     }
 
@@ -84,7 +86,7 @@ public class OccurrenceExtractionOperation {
      */
 
     @OperationMethod
-    public DocumentModelList run(DocumentModelList docs) throws Exception {
+    public DocumentModelList run(DocumentModelList docs) {
         DocumentModelList result = new DocumentModelListImpl((int) docs.totalSize());
         for (DocumentModel doc : docs) {
             result.add(run(doc));
@@ -93,7 +95,7 @@ public class OccurrenceExtractionOperation {
     }
 
     @OperationMethod
-    public DocumentModelList run(DocumentRefList docRefs) throws Exception {
+    public DocumentModelList run(DocumentRefList docRefs) {
         DocumentModelList result = new DocumentModelListImpl((int) docRefs.totalSize());
         for (DocumentRef docRef : docRefs) {
             result.add(session.getDocument(run(docRef)));

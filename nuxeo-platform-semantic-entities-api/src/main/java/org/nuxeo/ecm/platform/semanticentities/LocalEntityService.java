@@ -96,8 +96,7 @@ public interface LocalEntityService {
      * @param maxSuggestions maximum number of entities to suggest
      * @return a list of maximum maxSuggestions matching documents ordered by relevance
      */
-    List<DocumentModel> suggestDocument(CoreSession session, String keywords, String type, int maxSuggestions)
-            throws Exception;
+    List<DocumentModel> suggestDocument(CoreSession session, String keywords, String type, int maxSuggestions);
 
     /**
      * Assert that an entity is referred to in the text content of a document. As document content might change the
@@ -196,9 +195,8 @@ public interface LocalEntityService {
 
     /**
      * @return the document type names deriving from the Entity type
-     * @throws Exception thrown if the TypeManager is not available
      */
-    Set<String> getEntityTypeNames() throws Exception;
+    Set<String> getEntityTypeNames();
 
     /**
      * Ensure that the suggestion is local. If not, use the remote entity service to dereference it into a new local
