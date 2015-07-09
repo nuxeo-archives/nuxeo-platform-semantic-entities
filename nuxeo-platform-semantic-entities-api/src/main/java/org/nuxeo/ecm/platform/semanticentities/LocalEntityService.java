@@ -147,7 +147,6 @@ public interface LocalEntityService {
      * @param docRef the id of the document referring to the entity
      * @param entityRef the id of the entity to remove occurrences for
      * @param forcePhysicalDelete perform physical deletion (no trash)
-     * @throws NoSuchDocumentException if the document does not exist.
      */
     void removeOccurrences(CoreSession session, DocumentRef docRef, DocumentRef entityRef, boolean forcePhysicalDelete);
 
