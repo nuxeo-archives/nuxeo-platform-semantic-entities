@@ -1,0 +1,1 @@
+The semantic entities modules have been deprecated since 5.8 and removed from 8.4.
